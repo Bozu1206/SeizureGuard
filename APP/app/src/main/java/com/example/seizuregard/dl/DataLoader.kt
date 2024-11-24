@@ -1,6 +1,7 @@
 package com.example.seizuregard.dl
 
 import android.content.Context
+import android.util.Log
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 
