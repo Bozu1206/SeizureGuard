@@ -1,8 +1,12 @@
 package com.example.seizuregard
 
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
+import android.util.Log
+import android.widget.Toast
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -23,24 +27,42 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material3.Button
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MaterialTheme.colorScheme
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.TileMode
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.colorResource
+import androidx.compose.ui.semantics.Role.Companion.Button
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.example.seizuregard.ui.theme.SeizuregardTheme
+import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
+import com.example.seizuregard.ui.theme.AppTheme
 
 @Composable
 fun HomeScreen() {
+    val context = LocalContext.current
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -63,12 +85,12 @@ fun HomeScreen() {
             Spacer(modifier = Modifier.height(24.dp))
 
             // Graph Section
-            GraphSection()
+            // GraphSection()
 
             Spacer(modifier = Modifier.height(24.dp))
 
             // Quick Actions
-            QuickActionsSection()
+            QuickActionsSection(context)
         }
     }
 }
@@ -78,15 +100,17 @@ fun WelcomeSection() {
     Column(
         modifier = Modifier.fillMaxWidth()
     ) {
-        Text(
-            text = "Welcome, François!",
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold
-        )
+        Row {
+            Text(
+                text = "Welcome, François!",
+                style = MaterialTheme.typography.headlineLarge,
+                fontWeight = FontWeight.Bold
+            )
+        }
+
         Text(
             text = "Here's an overview of your health status",
-            style = MaterialTheme.typography.bodySmall,
-            color = colorScheme.onSurface.copy(alpha = 0.7f)
+            style = MaterialTheme.typography.bodyLarge,
         )
     }
 }
@@ -96,22 +120,8 @@ fun HealthMetricsSection() {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(
-                colorScheme.surface,
-                shape = RoundedCornerShape(12.dp)
-            )
-            .border(
-                width = 0.4.dp,
-                color = colorScheme.primary,
-                shape = RoundedCornerShape(12.dp))
             .padding(16.dp)
     ) {
-        Text(
-            text = "Recent Metrics",
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(bottom = 8.dp)
-        )
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceAround
@@ -155,7 +165,10 @@ fun MetricCard(title: String, value: String, unit: String) {
 }
 
 @Composable
-fun QuickActionsSection() {
+fun QuickActionsSection(context: Context) {
+    var showLogEventModal by remember { mutableStateOf(false) }
+    var showGuidelines by remember { mutableStateOf(false) }
+
     Column(
         modifier = Modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally
@@ -171,17 +184,44 @@ fun QuickActionsSection() {
             modifier = Modifier.fillMaxWidth()
         ) {
             QuickActionButton(icon = Icons.Default.Call, label = "Emergency") {
-                /* TODO */
+                val emergencyNumber = "112"
+                val intent = Intent(Intent.ACTION_DIAL).apply {
+                    data = Uri.parse("tel:$emergencyNumber")
+                }
+                try {
+                    context.startActivity(intent)
+                } catch (e: Exception) {
+                    Toast.makeText(context, "Unable to start emergency call", Toast.LENGTH_SHORT).show()
+                }
             }
             QuickActionButton(icon = Icons.Default.Add, label = "Log Event") {
-                /* TODO */
+                showLogEventModal = true
             }
             QuickActionButton(icon = Icons.Default.Info, label = "Guidelines") {
-                /* TODO */
+                showGuidelines = true
+            }
+
+            if (showGuidelines) {
+                GuidelinesModal(
+                    onDismiss = { showGuidelines = false }
+                )
+            }
+
+            if (showLogEventModal) {
+                LogSeizureEventModal(
+                    onDismiss = { showLogEventModal = false },
+                    onSave = { event ->
+                        // next would be to save the event into local db using Room
+                        Log.d("SeizureEvent", "Logged Event: $event")
+                    }
+                )
             }
         }
     }
 }
+
+
+
 
 @Composable
 fun QuickActionButton(icon: ImageVector, label: String, onClick: () -> Unit) {
@@ -240,10 +280,12 @@ fun GraphSection() {
 fun SeizureTrendGraph(dataPoints: List<Int>, labels: List<String>) {
     val maxY = (dataPoints.maxOrNull() ?: 1) + 1
 
-    Canvas(modifier = Modifier
-        .fillMaxWidth()
-        .height(200.dp)
+    Canvas(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(200.dp)
     ) {
+        val color = Color(0xFF678840)
         val graphWidth = size.width
         val graphHeight = size.height
         val xStep = graphWidth / (dataPoints.size - 1)
@@ -269,7 +311,7 @@ fun SeizureTrendGraph(dataPoints: List<Int>, labels: List<String>) {
                 val endY = graphHeight - (dataPoints[index + 1] * yStep)
 
                 drawLine(
-                    color = Color.Blue.copy(alpha = 0.6f),
+                    color = color,
                     start = Offset(startX, startY),
                     end = Offset(endX, endY),
                     strokeWidth = 2.dp.toPx(),
@@ -283,7 +325,7 @@ fun SeizureTrendGraph(dataPoints: List<Int>, labels: List<String>) {
             val x = index * xStep
             val y = graphHeight - (value * yStep)
             drawCircle(
-                color = Color.Blue,
+                color = color,
                 radius = 3.dp.toPx(),
                 center = Offset(x, y)
             )
@@ -309,7 +351,7 @@ fun SeizureTrendGraph(dataPoints: List<Int>, labels: List<String>) {
 @Preview(showBackground = true)
 @Composable
 fun HomeScreenPreview() {
-    SeizuregardTheme {
+    AppTheme {
         HomeScreen()
     }
 }

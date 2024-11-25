@@ -13,7 +13,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.constraintlayout.compose.ConstraintLayout
 import com.example.seizuregard.dl.metrics.Metrics
-import com.example.seizuregard.ui.theme.SeizuregardTheme
+import com.example.seizuregard.ui.theme.AppTheme
 
 @Composable
 fun InferenceHomePage(
@@ -78,7 +78,7 @@ fun InferenceHomePage(
 @Preview(showBackground = true)
 @Composable
 fun InferenceHomePagePreview() {
-    SeizuregardTheme {
+    AppTheme {
         InferenceHomePage( Metrics(0.0,0.0,0.0,0.0), {})
     }
 }

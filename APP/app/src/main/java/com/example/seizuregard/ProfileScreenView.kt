@@ -34,7 +34,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.seizuregard.dl.metrics.Metrics
-import com.example.seizuregard.ui.theme.SeizuregardTheme
+import com.example.seizuregard.ui.theme.AppTheme
 
 @Composable
 fun ProfileScreen() {
@@ -70,7 +70,8 @@ fun UserProfileSection() {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier
+            .fillMaxWidth()
             .padding(16.dp)
     ) {
         // User Avatar
@@ -182,7 +183,7 @@ fun UploadMedicalHistorySection() {
 @Preview(showBackground = true)
 @Composable
 fun ProfileScreenPreview() {
-    SeizuregardTheme {
+    AppTheme {
         ProfileScreen()
     }
 }

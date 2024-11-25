@@ -4,8 +4,7 @@ import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
@@ -13,7 +12,6 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
@@ -22,7 +20,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
@@ -35,14 +32,12 @@ import com.example.seizuregard.dl.DataLoader
 import com.example.seizuregard.dl.InferenceProcessor
 import com.example.seizuregard.dl.OnnxHelper
 import com.example.seizuregard.dl.metrics.Metrics
-import com.example.seizuregard.dl.utils.utils.generateRandomInputAndRunInference
-import com.example.seizuregard.ui.theme.SeizuregardTheme
+import com.example.seizuregard.ui.theme.AppTheme
 
 
 class MainActivity : ComponentActivity() {
     // Metrics for model validation
     private var metrics by mutableStateOf(Metrics(-1.0, -1.0, -1.0, -1.0))
-    private var predictedLabel by mutableStateOf(-1)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -53,10 +48,9 @@ class MainActivity : ComponentActivity() {
             val onnxHelper = OnnxHelper()
             val inferenceProcessor = InferenceProcessor(context, dataLoader, onnxHelper)
 
-            SeizuregardTheme {
+            AppTheme {
                 AppContent(
                     metrics = metrics,
-                    predictedLabel = predictedLabel,
                     onRunInference = {
                         inferenceProcessor.runInference { newMetrics ->
                             metrics = newMetrics
@@ -78,7 +72,6 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun AppContent(
     metrics: Metrics,
-    predictedLabel: Int,
     onRunInference: () -> Unit,
 ) {
     val navController = rememberNavController()
@@ -86,7 +79,7 @@ fun AppContent(
     Scaffold(
         bottomBar = {
             BottomNavigationBar(navController)
-        }
+        },
     ) { innerPadding ->
         NavHost(
             navController = navController,
@@ -94,7 +87,7 @@ fun AppContent(
             Modifier.padding(innerPadding)
         ) {
             composable("inference") {
-                InferenceScreen(metrics = metrics, predictedLabel = predictedLabel, onRunInference = onRunInference)
+                InferenceScreen(metrics = metrics, onRunInference = onRunInference)
             }
             composable("home") {
                 HomeScreen()
@@ -145,7 +138,6 @@ data class BottomNavItem(val label: String, val icon: ImageVector, val route: St
 @Composable
 fun InferenceScreen(
     metrics: Metrics,
-    predictedLabel: Int,
     onRunInference: () -> Unit,
 ) {
     InferenceHomePage(metrics = metrics, onPerformInference = onRunInference)
