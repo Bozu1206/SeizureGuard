@@ -33,14 +33,24 @@ import com.example.seizuregard.dl.InferenceProcessor
 import com.example.seizuregard.dl.OnnxHelper
 import com.example.seizuregard.dl.metrics.Metrics
 import com.example.seizuregard.ui.theme.AppTheme
-
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     // Metrics for model validation
     private var metrics by mutableStateOf(Metrics(-1.0, -1.0, -1.0, -1.0))
+    lateinit var databaseRoom: SeizureDao
+    private lateinit var seizureViewModel: SeizureViewModel
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        val application = requireNotNull(this).application
+        val dataSource = SeizureDatabase.getInstance(application).seizureDao
+        seizureViewModel = ViewModelProvider(this).get(SeizureViewModel::class.java)
+
+        databaseRoom = dataSource
 
         setContent {
             val context = LocalContext.current
@@ -61,7 +71,6 @@ class MainActivity : ComponentActivity() {
                             )
                         }
                     }
-
                 )
             }
         }
@@ -72,7 +81,7 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun AppContent(
     metrics: Metrics,
-    onRunInference: () -> Unit,
+    onRunInference: () -> Unit
 ) {
     val navController = rememberNavController()
 
@@ -141,6 +150,28 @@ fun InferenceScreen(
     onRunInference: () -> Unit,
 ) {
     InferenceHomePage(metrics = metrics, onPerformInference = onRunInference)
+}
+
+fun logAllPastSeizures(seizureDao: SeizureDao) { // temporary, for debug purpose
+    CoroutineScope(Dispatchers.IO).launch {
+        try {
+            val seizures = seizureDao.getAllSeizureEvents()
+            seizures.forEach { seizure ->
+                Log.d(
+                    "SeizureLog", """
+                        Seizure ID: ${seizure.seizureKey}
+                        Type: ${seizure.type}
+                        Duration: ${seizure.duration} minutes
+                        Severity: ${seizure.severity}
+                        Triggers: ${seizure.triggers.joinToString(", ")}
+                        Timestamp: ${seizure.timestamp}
+                    """.trimIndent()
+                )
+            }
+        } catch (e: Exception) {
+            Log.e("SeizureLogError", "Failed to fetch seizures: ${e.message}")
+        }
+    }
 }
 
 

@@ -1,5 +1,6 @@
 package com.example.seizuregard
 
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -96,6 +97,7 @@ fun LogSeizureEventModal(onDismiss: () -> Unit, onSave: (SeizureEvent) -> Unit) 
             val seizureType = selectedOption
             Button(
                 onClick = {
+                    Log.d("Saving seizure","Saving seizure")
                     val seizureEvent = SeizureEvent(
                         type = seizureType,
                         duration = duration.toIntOrNull() ?: 0,
@@ -193,7 +195,6 @@ fun MultiSelectChips(
         }
     }
 }
-
 
 data class SeizureEvent(
     val type: String,

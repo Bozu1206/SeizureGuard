@@ -1,4 +1,4 @@
-package com.example.seizuregard
+package com.example.seizureguard
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -12,8 +12,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.constraintlayout.compose.ConstraintLayout
-import com.example.seizuregard.dl.metrics.Metrics
-import com.example.seizuregard.ui.theme.AppTheme
+import com.example.seizureguard.dl.metrics.Metrics
+import com.example.seizureguard.ui.theme.AppTheme
 
 @Composable
 fun InferenceHomePage(

@@ -1,9 +1,8 @@
-package com.example.seizuregard
+package com.example.seizureguard
 
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
-import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -27,15 +26,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.Info
-import androidx.compose.material3.Button
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MaterialTheme.colorScheme
-import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -44,24 +38,20 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.TileMode
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.colorResource
-import androidx.compose.ui.semantics.Role.Companion.Button
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.core.content.ContextCompat
-import com.example.seizuregard.ui.theme.AppTheme
+import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
+import com.example.seizureguard.ui.theme.AppTheme
+import kotlinx.coroutines.Job
 
 @Composable
-fun HomeScreen() {
+fun HomeScreen(  homeScreenViewModel: HomeScreenViewModel) {
     val context = LocalContext.current
     Box(
         modifier = Modifier
@@ -90,7 +80,7 @@ fun HomeScreen() {
             Spacer(modifier = Modifier.height(24.dp))
 
             // Quick Actions
-            QuickActionsSection(context)
+            QuickActionsSection(context, homeScreenViewModel)
         }
     }
 }
@@ -165,9 +155,9 @@ fun MetricCard(title: String, value: String, unit: String) {
 }
 
 @Composable
-fun QuickActionsSection(context: Context) {
+fun QuickActionsSection(context: Context, homeScreenViewModel: HomeScreenViewModel) {
     var showLogEventModal by remember { mutableStateOf(false) }
-    var showGuidelines by remember { mutableStateOf(false) }
+    var showGuidelines by remember { mutableStateOf(false)}
 
     Column(
         modifier = Modifier.fillMaxWidth(),
@@ -210,10 +200,7 @@ fun QuickActionsSection(context: Context) {
             if (showLogEventModal) {
                 LogSeizureEventModal(
                     onDismiss = { showLogEventModal = false },
-                    onSave = { event ->
-                        // next would be to save the event into local db using Room
-                        Log.d("SeizureEvent", "Logged Event: $event")
-                    }
+                    homeScreenViewModel = homeScreenViewModel
                 )
             }
         }
@@ -352,7 +339,7 @@ fun SeizureTrendGraph(dataPoints: List<Int>, labels: List<String>) {
 @Composable
 fun HomeScreenPreview() {
     AppTheme {
-        HomeScreen()
+        //HomeScreen({})
     }
 }
 
