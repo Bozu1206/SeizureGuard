@@ -1,4 +1,4 @@
-package com.example.seizuregard.ui.theme
+package com.example.seizureguard.ui.theme
 
 import androidx.compose.ui.graphics.Color
 

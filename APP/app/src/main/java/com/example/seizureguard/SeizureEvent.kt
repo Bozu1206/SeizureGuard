@@ -1,4 +1,4 @@
-package com.example.seizuregard
+package com.example.seizureguard
 
 import android.util.Log
 import androidx.compose.foundation.background
@@ -31,11 +31,12 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.google.accompanist.flowlayout.FlowRow
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun LogSeizureEventModal(onDismiss: () -> Unit, onSave: (SeizureEvent) -> Unit) {
+fun LogSeizureEventModal(onDismiss: () -> Unit, seizureEventViewModel: SeizureEventViewModel = viewModel()) {
     var selectedOption by remember { mutableStateOf("Focal") }
     val options = listOf("Focal", "Generalized", "Unknown")
 
@@ -105,7 +106,8 @@ fun LogSeizureEventModal(onDismiss: () -> Unit, onSave: (SeizureEvent) -> Unit) 
                         triggers = selectedTriggers,
                         timestamp = System.currentTimeMillis()
                     )
-                    onSave(seizureEvent)
+                    seizureEventViewModel.saveNewSeizure(seizureEvent)
+                    seizureEventViewModel.logAllPastSeizures()
                     onDismiss()
                 },
                 modifier = Modifier.fillMaxWidth()

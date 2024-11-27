@@ -1,11 +1,11 @@
-package com.example.seizuregard.dl.utils
+package com.example.seizureguard.dl.utils
 
 import android.content.Context
 import android.util.Log
-import com.example.seizuregard.dl.DataSample
-import com.example.seizuregard.dl.InferenceProcessor
-import com.example.seizuregard.dl.metrics.ComputeMetrics
-import com.example.seizuregard.dl.metrics.Metrics
+import com.example.seizureguard.dl.DataSample
+import com.example.seizureguard.dl.InferenceProcessor
+import com.example.seizureguard.dl.metrics.ComputeMetrics
+import com.example.seizureguard.dl.metrics.Metrics
 
 object utils {
     fun flattenArray(arr: Array<FloatArray>): FloatArray {

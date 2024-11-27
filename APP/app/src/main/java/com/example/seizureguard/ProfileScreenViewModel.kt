@@ -1,4 +1,4 @@
-package com.example.seizureguard.ui.theme
+package com.example.seizureguard
 
 import androidx.lifecycle.ViewModel
 

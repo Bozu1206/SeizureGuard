@@ -1,4 +1,4 @@
-package com.example.seizuregard
+package com.example.seizureguard
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column

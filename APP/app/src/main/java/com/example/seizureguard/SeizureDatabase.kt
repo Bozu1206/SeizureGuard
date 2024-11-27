@@ -1,4 +1,4 @@
-package com.example.seizuregard
+package com.example.seizureguard
 
 import android.content.Context
 import androidx.room.Database

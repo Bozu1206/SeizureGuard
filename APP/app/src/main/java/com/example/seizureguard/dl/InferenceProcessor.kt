@@ -1,15 +1,15 @@
-package com.example.seizuregard.dl
+package com.example.seizureguard.dl
 
 import ai.onnxruntime.OnnxTensor
 import ai.onnxruntime.OrtEnvironment
 import ai.onnxruntime.OrtSession
 import android.content.Context
 import android.util.Log
-import com.example.seizuregard.R
-import com.example.seizuregard.dl.metrics.Metrics
-import com.example.seizuregard.dl.utils.utils.flattenArray
-import com.example.seizuregard.dl.utils.utils.flattenBatchData
-import com.example.seizuregard.dl.utils.utils.validate
+import com.example.seizureguard.R
+import com.example.seizureguard.dl.metrics.Metrics
+import com.example.seizureguard.dl.utils.utils.flattenArray
+import com.example.seizureguard.dl.utils.utils.flattenBatchData
+import com.example.seizureguard.dl.utils.utils.validate
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch

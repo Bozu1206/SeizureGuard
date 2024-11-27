@@ -1,4 +1,4 @@
-package com.example.seizuregard.dl
+package com.example.seizureguard.dl
 
 import org.jetbrains.kotlinx.dl.dataset.DataBatch
 import org.jetbrains.kotlinx.dl.dataset.Dataset

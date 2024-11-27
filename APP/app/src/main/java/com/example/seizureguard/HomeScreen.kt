@@ -45,13 +45,12 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.seizureguard.ui.theme.AppTheme
-import kotlinx.coroutines.Job
 
 @Composable
-fun HomeScreen(  homeScreenViewModel: HomeScreenViewModel) {
+fun HomeScreen(  homeScreenViewModel: HomeScreenViewModel = viewModel()) {
     val context = LocalContext.current
     Box(
         modifier = Modifier
@@ -80,7 +79,7 @@ fun HomeScreen(  homeScreenViewModel: HomeScreenViewModel) {
             Spacer(modifier = Modifier.height(24.dp))
 
             // Quick Actions
-            QuickActionsSection(context, homeScreenViewModel)
+            QuickActionsSection(context)
         }
     }
 }
@@ -155,7 +154,7 @@ fun MetricCard(title: String, value: String, unit: String) {
 }
 
 @Composable
-fun QuickActionsSection(context: Context, homeScreenViewModel: HomeScreenViewModel) {
+fun QuickActionsSection(context: Context) {
     var showLogEventModal by remember { mutableStateOf(false) }
     var showGuidelines by remember { mutableStateOf(false)}
 
@@ -199,8 +198,7 @@ fun QuickActionsSection(context: Context, homeScreenViewModel: HomeScreenViewMod
 
             if (showLogEventModal) {
                 LogSeizureEventModal(
-                    onDismiss = { showLogEventModal = false },
-                    homeScreenViewModel = homeScreenViewModel
+                    onDismiss = { showLogEventModal = false }
                 )
             }
         }

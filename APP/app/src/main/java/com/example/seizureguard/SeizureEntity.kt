@@ -1,4 +1,4 @@
-package com.example.seizuregard
+package com.example.seizureguard
 
 import androidx.room.ColumnInfo
 import androidx.room.Entity

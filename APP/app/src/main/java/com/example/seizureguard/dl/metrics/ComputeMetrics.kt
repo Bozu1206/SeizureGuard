@@ -1,4 +1,4 @@
-package com.example.seizuregard.dl.metrics
+package com.example.seizureguard.dl.metrics
 
 object ComputeMetrics {
     fun computeMetrics(trueLabels: IntArray, predLabels: IntArray): Metrics {

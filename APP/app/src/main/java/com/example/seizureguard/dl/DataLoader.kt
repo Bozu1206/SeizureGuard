@@ -1,4 +1,4 @@
-package com.example.seizuregard.dl
+package com.example.seizureguard.dl
 
 import android.content.Context
 import android.util.Log

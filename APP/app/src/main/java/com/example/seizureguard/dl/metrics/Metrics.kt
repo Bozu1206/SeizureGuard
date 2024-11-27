@@ -1,4 +1,4 @@
-package com.example.seizuregard.dl.metrics
+package com.example.seizureguard.dl.metrics
 
 data class Metrics(
     val precision: Double,

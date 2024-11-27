@@ -1,6 +1,6 @@
 import android.content.Context
 import android.content.res.Resources
-import com.example.seizuregard.R
+import com.example.seizureguard.R
 import org.jetbrains.kotlinx.dl.onnx.inference.OnnxInferenceModel
 import java.io.File
 

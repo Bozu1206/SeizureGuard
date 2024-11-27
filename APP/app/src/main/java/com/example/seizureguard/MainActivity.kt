@@ -1,12 +1,12 @@
-package com.example.seizuregard
+package com.example.seizureguard
 
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Refresh
@@ -23,32 +23,30 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import com.example.seizuregard.dl.DataLoader
-import com.example.seizuregard.dl.InferenceProcessor
-import com.example.seizuregard.dl.OnnxHelper
-import com.example.seizuregard.dl.metrics.Metrics
-import com.example.seizuregard.ui.theme.AppTheme
+import com.example.seizureguard.dl.DataLoader
+import com.example.seizureguard.dl.InferenceProcessor
+import com.example.seizureguard.dl.OnnxHelper
+import com.example.seizureguard.dl.metrics.Metrics
+import com.example.seizureguard.ui.theme.AppTheme
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     // Metrics for model validation
     private var metrics by mutableStateOf(Metrics(-1.0, -1.0, -1.0, -1.0))
     lateinit var databaseRoom: SeizureDao
-    private lateinit var seizureViewModel: SeizureViewModel
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val application = requireNotNull(this).application
         val dataSource = SeizureDatabase.getInstance(application).seizureDao
-        seizureViewModel = ViewModelProvider(this).get(SeizureViewModel::class.java)
 
         databaseRoom = dataSource
 
@@ -104,6 +102,9 @@ fun AppContent(
             composable("profile") {
                 ProfileScreen()
             }
+            composable("history") {
+               HistoryScreen()
+            }
         }
     }
 }
@@ -113,7 +114,8 @@ fun BottomNavigationBar(navController: NavController) {
     val items = listOf(
         BottomNavItem("Home", Icons.Default.Home, "home"),
         BottomNavItem("Inference", Icons.Default.Refresh, "inference"),
-        BottomNavItem("Profile", Icons.Default.Person, "profile")
+        BottomNavItem("Profile", Icons.Default.Person, "profile"),
+        BottomNavItem("History", Icons.Default.DateRange, "history")
     )
 
     NavigationBar {
