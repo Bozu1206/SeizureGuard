@@ -12,6 +12,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
@@ -36,15 +37,7 @@ fun GuidelinesModal(onDismiss: () -> Unit) {
             )
 
             Text(
-                text = """
-                    1. Stay calm and ensure the person is safe.
-                    2. Time the seizure if possible.
-                    3. Do not restrain the person or put anything in their mouth.
-                    4. Place them on their side to keep their airway clear.
-                    5. Remove dangerous objects nearby.
-                    6. Stay with the person until they are fully recovered.
-                    7. Call for emergency help if the seizure lasts more than 5 minutes or repeats.
-                """.trimIndent(),
+                text = stringResource(id = R.string.guidelines),
                 style = MaterialTheme.typography.bodyMedium
             )
 

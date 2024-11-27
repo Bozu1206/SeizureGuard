@@ -2,6 +2,7 @@ package com.example.seizureguard
 
 import android.os.Bundle
 import android.util.Log
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.padding
@@ -10,7 +11,6 @@ import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -23,7 +23,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
-import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -40,8 +39,10 @@ import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     // Metrics for model validation
-    private var metrics by mutableStateOf(Metrics(-1.0, -1.0, -1.0, -1.0))
-    lateinit var databaseRoom: SeizureDao
+    private var metrics by mutableStateOf(Metrics(-1.0, -1.0, -1.0, -1.0, -1.0))
+    private var isSeizureDetected by mutableStateOf(false)
+
+    private lateinit var databaseRoom: SeizureDao
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -54,28 +55,39 @@ class MainActivity : ComponentActivity() {
             val context = LocalContext.current
             val dataLoader = DataLoader()
             val onnxHelper = OnnxHelper()
-            val inferenceProcessor = InferenceProcessor(context, dataLoader, onnxHelper)
+            val inferenceProcessor =
+                InferenceProcessor(context, dataLoader, onnxHelper, onSeizureDetected = {
+                    runOnUiThread {
+                        isSeizureDetected = true
+                    }
+                })
 
             AppTheme {
-                AppContent(
-                    metrics = metrics,
-                    onRunInference = {
-                        inferenceProcessor.runInference { newMetrics ->
-                            metrics = newMetrics
-                            Log.d(
-                                "ValidationMetrics",
-                                "F1 Score: ${metrics.f1}, Precision: ${metrics.precision}, " +
-                                        "Recall: ${metrics.recall}, FPR: ${metrics.fpr}"
-                            )
+                if (isSeizureDetected) {
+                    SeizureDetectedScreen(
+                        onDismiss = { isSeizureDetected = false },
+                        onEmergencyCall = { onEmergencyCall(context = context) }
+                    )
+                } else {
+                    AppContent(
+                        metrics = metrics,
+                        onRunInference = {
+                            inferenceProcessor.runInference { newMetrics ->
+                                metrics = newMetrics
+                                Log.d(
+                                    "ValidationMetrics",
+                                    "F1 Score: ${metrics.f1}, Precision: ${metrics.precision}, " +
+                                            "Recall: ${metrics.recall}, FPR: ${metrics.fpr}"
+                                )
+                            }
                         }
-                    }
-                )
+                    )
+                }
             }
         }
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AppContent(
     metrics: Metrics,
@@ -103,7 +115,7 @@ fun AppContent(
                 ProfileScreen()
             }
             composable("history") {
-               HistoryScreen()
+                HistoryScreen()
             }
         }
     }
@@ -121,7 +133,7 @@ fun BottomNavigationBar(navController: NavController) {
     NavigationBar {
         val currentRoute = currentRoute(navController)
         items.forEach { item ->
-            NavigationBarItem (
+            NavigationBarItem(
                 icon = { Icon(item.icon, contentDescription = item.label) },
                 label = { Text(item.label) },
                 selected = currentRoute == item.route,

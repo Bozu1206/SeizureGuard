@@ -173,15 +173,7 @@ fun QuickActionsSection(context: Context) {
             modifier = Modifier.fillMaxWidth()
         ) {
             QuickActionButton(icon = Icons.Default.Call, label = "Emergency") {
-                val emergencyNumber = "112"
-                val intent = Intent(Intent.ACTION_DIAL).apply {
-                    data = Uri.parse("tel:$emergencyNumber")
-                }
-                try {
-                    context.startActivity(intent)
-                } catch (e: Exception) {
-                    Toast.makeText(context, "Unable to start emergency call", Toast.LENGTH_SHORT).show()
-                }
+                onEmergencyCall(context)
             }
             QuickActionButton(icon = Icons.Default.Add, label = "Log Event") {
                 showLogEventModal = true

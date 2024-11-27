@@ -1,3 +1,12 @@
 <resources>
     <string name="app_name">seizuregard</string>
+    <string name="guidelines">
+        1. Stay calm and ensure the person is safe.\n
+        2. Time the seizure if possible.\n
+        3. Do not restrain the person or put anything in their mouth.\n
+        4. Place them on their side to keep their airway clear.\n
+        5. Remove dangerous objects nearby.\n
+        6. Stay with the person until they are fully recovered.\n
+        7. Call for emergency help if the seizure lasts more than 5 minutes or repeats.\n
+    </string>
 </resources>

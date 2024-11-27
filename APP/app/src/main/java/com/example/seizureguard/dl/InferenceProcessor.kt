@@ -15,14 +15,17 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.nio.FloatBuffer
+import kotlin.math.exp
 
 class InferenceProcessor(
     private val context: Context,
     private val dataLoader: DataLoader,
-    private val onnxHelper: OnnxHelper
+    private val onnxHelper: OnnxHelper,
+    private val onSeizureDetected: () -> Unit
 ) {
 
     private val coroutineScope = CoroutineScope(Dispatchers.IO)
+    private val predictedLabels = mutableListOf<Int>()
 
     fun runInference(callback: (Metrics) -> Unit) {
         coroutineScope.launch {
@@ -33,7 +36,35 @@ class InferenceProcessor(
                 // Load pre-trained model
                 val (session, env, inputName) = onnxHelper.loadModel(context, R.raw.base_pat_02)
 
-                // Perfom inference
+                // Perform inference on a single sample starting from samples number 740
+                for (i in 740 until 780) {
+                    runInferenceForSample(dataSamples[i]) { predictions ->
+                        // Compute softmax of predictions to get probabilities
+                        val softmax = softmax(predictions)
+                        Log.d(
+                            "InferenceProcessor",
+                            "Predictions: ${predictions.joinToString()} | ($i) Softmax: ${softmax.joinToString()} | True label: ${dataSamples[i].label}"
+                        )
+
+                        // Return biggest number in predictions
+                        val predictedLabel = predictions.withIndex().maxByOrNull { it.value }?.index
+                        predictedLabels.add(predictedLabel ?: -1) // -1 is a placeholder for error
+
+                        // If seizure is detected (label = 1), invoke the callback
+                        if (predictedLabel == 1) {
+                            coroutineScope.launch {
+                                onSeizureDetected() // Pass the sample index or any other context
+                            }
+                        }
+                    }
+
+                    // sleep for 4 seconds
+                    withContext(Dispatchers.IO) {
+                        Thread.sleep(4000)
+                    }
+                }
+
+                // Perform inference on entire dataset
                 val predictions = performInference(dataSamples, session, env, inputName)
 
                 // Evaluate results
@@ -47,6 +78,12 @@ class InferenceProcessor(
         }
     }
 
+    private fun softmax(predictions: FloatArray): List<Double> {
+        val probabilities = predictions.map { exp(it.toDouble()) }
+        val sum = probabilities.sum()
+        return probabilities.map { it / sum }
+    }
+
     fun runInferenceForSample(
         dataSample: DataSample,
         onResult: (FloatArray) -> Unit
@@ -56,7 +93,8 @@ class InferenceProcessor(
                 val (session, env, inputName) = onnxHelper.loadModel(context, R.raw.base_pat_02)
                 val inputTensorData = flattenBatchData(arrayOf(dataSample.data))
                 val tensorShape = longArrayOf(1, 18, 1024)
-                val tensor = OnnxTensor.createTensor(env, FloatBuffer.wrap(inputTensorData), tensorShape)
+                val tensor =
+                    OnnxTensor.createTensor(env, FloatBuffer.wrap(inputTensorData), tensorShape)
 
                 val predictions = session.run(mapOf(inputName to tensor)).use { results ->
                     val outputTensor = results[0].value as Array<FloatArray>

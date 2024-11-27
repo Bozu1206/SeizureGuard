@@ -57,6 +57,7 @@ fun InferenceHomePage(
                     end.linkTo(parent.end)
                 }
             ) {
+                Text(text = "Accuracy: ${"%.4f".format(metrics.accuracy)}")
                 Text(text = "F1 Score: ${"%.4f".format(metrics.f1)}")
                 Text(text = "Precision: ${"%.4f".format(metrics.precision)}")
                 Text(text = "Recall: ${"%.4f".format(metrics.recall)}")
@@ -79,6 +80,6 @@ fun InferenceHomePage(
 @Composable
 fun InferenceHomePagePreview() {
     AppTheme {
-        InferenceHomePage( Metrics(0.0,0.0,0.0,0.0), {})
+        InferenceHomePage( Metrics(0.0,0.0,0.0,0.0, 0.0), {})
     }
 }

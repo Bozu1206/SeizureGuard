@@ -21,6 +21,7 @@ object ComputeMetrics {
         val f1 = if (precision + recall > 0) 2 * precision * recall / (precision + recall) else 0.0
         val fpr = if (fp + tn > 0) fp.toDouble() / (fp + tn) else 0.0
         return Metrics(
+            accuracy = (tp + tn).toDouble() / (tp + tn + fp + fn),
             precision = precision,
             recall = recall,
             f1 = f1,

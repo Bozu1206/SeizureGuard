@@ -80,25 +80,4 @@ object utils {
         val metrics = ComputeMetrics.computeMetrics(trueLabels, predLabels)
         return metrics
     }
-
-    fun generateRandomSample(inputShape: LongArray): FloatArray {
-        val size = inputShape.fold(1L) { acc, dim -> acc * dim }.toInt()
-        return FloatArray(size) { (0..100).random() / 100f }
-    }
-
-    fun generateRandomInputAndRunInference(
-        context: Context,
-        inferenceProcessor: InferenceProcessor,
-        inputShape: LongArray = longArrayOf(1, 18, 1024),
-        threshold: Float = 0.5f,
-        callback: (Int) -> Unit
-    ) {
-        val randomInputData = generateRandomSample(inputShape)
-        val randomDataSample = DataSample(data = randomInputData, label = -1)
-
-        inferenceProcessor.runInferenceForSample(randomDataSample) { predictions ->
-            val outputLabel = if (predictions[0] > threshold) 1 else 0
-            callback(outputLabel)
-        }
-    }
 }
