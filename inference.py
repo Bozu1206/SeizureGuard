@@ -15,7 +15,7 @@ def main():
     device = "cpu"
     checkpoint_dir = "models/"
 
-    data_file = "data/data.bin"
+    data_file = "data/data_20.bin"
     data, labels = load_arrays_and_labels_from_bin(data_file)
 
     # Instantiate the dataset
@@ -35,7 +35,7 @@ def main():
 
     print(f"Testing the model")
 
-    loss, f1_score, metrics = validate(
+    f1_score, metrics = validate(
         seizure_dataloader,
         model,
         device=device,
