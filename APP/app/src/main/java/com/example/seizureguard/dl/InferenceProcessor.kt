@@ -12,6 +12,7 @@ import com.example.seizureguard.dl.utils.utils.flattenBatchData
 import com.example.seizureguard.dl.utils.utils.validate
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.nio.FloatBuffer
@@ -152,6 +153,10 @@ class InferenceProcessor(
         trueLabels: IntArray
     ): Metrics = withContext(Dispatchers.Default) {
         validate(predictions, trueLabels)
+    }
+
+    fun cancelCoroutine() {
+        coroutineScope.cancel() // Cancel all coroutines running in the processor
     }
 }
 

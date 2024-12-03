@@ -56,7 +56,7 @@ fun ProfileScreen(profileScreenViewModel: ProfileScreenViewModel = viewModel(), 
             Spacer(modifier = Modifier.height(24.dp))
 
             // Emergency Contacts Section
-            EmergencyContactsSection()
+           // EmergencyContactsSection()
 
             Spacer(modifier = Modifier.height(24.dp))
 

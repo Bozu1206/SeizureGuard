@@ -10,4 +10,6 @@
         7. Call for emergency help if the seizure lasts more than 5 minutes or repeats.\n
     </string>
     <string name="add_google_wallet_success">Nice\n</string>
+    <string name="fixed_foregroung_notification_channel_id">foreground service fixed notification</string>
+    <string name="seizure_notification_id">"seizure found "</string>
 </resources>
