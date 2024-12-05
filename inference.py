@@ -15,7 +15,7 @@ def main():
     device = "cpu"
     checkpoint_dir = "models/"
 
-    data_file = "data/data.bin"
+    data_file = "data/data_20.bin"
     data, labels = load_arrays_and_labels_from_bin(data_file)
 
     # Instantiate the dataset
@@ -26,7 +26,7 @@ def main():
         seizure_dataset, batch_size=32, shuffle=False
     )
 
-    model_path = os.path.join(checkpoint_dir, "base_pat_02.pth") # just joins the path string to "models/base_pat_02.pth"
+    model_path = os.path.join(checkpoint_dir, "base_pat_02.pth")
     model = Net(in_channels=18)
     model.to(device)
     model.load_state_dict(
@@ -56,7 +56,6 @@ def main():
     print(f"Testing the model")
     
 
-    #loss, 
     f1_score, metrics = validate(
         seizure_dataloader,
         model,

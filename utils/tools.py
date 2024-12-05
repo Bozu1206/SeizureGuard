@@ -35,6 +35,80 @@ def compute_metrics(true_labels, pred_labels):
     }
 
 
+def train(train_loader, val_loader, model, device, epochs, patience=5):
+    """
+    Train the model on the training dataset.
+
+    Args:
+        train_loader (DataLoader): DataLoader for the training dataset.
+        model (torch.nn.Module): Model to be trained.
+        device: Device to train on (e.g. 'cpu' or 'cuda').
+
+    Returns:
+        torch.nn.Module: Trained model.
+    """
+    criterion = torch.nn.CrossEntropyLoss()
+    optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
+    prev_f1 = 0.0
+    for i in range(epochs):
+        train_loss = train_one_epoch(
+            train_loader, model, criterion, optimizer, device
+        )
+        val_f1, metrics = validate(val_loader, model, device)
+        print(
+            f"Epoch {i+1}, Train Loss = {train_loss:.6f}, "
+            f"Validation F1 = {val_f1:.4f}, "
+            f"Precision = {metrics['precision']:.4f}, "
+            f"Recall = {metrics['recall']:.4f}, FPR = {metrics['fpr']:.4f}"
+        )
+        if prev_f1 < val_f1:
+            prev_f1 = val_f1
+            patience = 5
+            print(f"reset: {patience}")
+        patience -= 1
+        if prev_f1 == val_f1:
+            torch.save(
+                {
+                    "state_dict": model.state_dict(),
+                    "optimizer": optimizer.state_dict(),
+                },
+                f"models/best_model.pth",
+            )
+            print(f"saving,  {patience}")
+
+        if patience == 0:
+            break
+
+
+def train_one_epoch(train_loader, model, criterion, optimizer, device):
+    """
+    Train the model for one epoch on the training dataset.
+
+    Args:
+        train_loader (DataLoader): DataLoader for the training dataset.
+        model (torch.nn.Module): Model to be trained.
+        criterion: Loss function.
+        optimizer: Optimizer for the model.
+        device: Device to train on (e.g. 'cpu' or 'cuda').
+
+    Returns:
+        float: Average loss for the epoch.
+    """
+    model.train()
+    train_loss = 0.0
+
+    for data, target in train_loader:
+        data, target = data.to(device), target.to(device)
+        optimizer.zero_grad()
+        output = model(data)
+        loss = criterion(output, target)
+        loss.backward()
+        optimizer.step()
+        train_loss += loss.item()
+
+    return train_loss / len(train_loader)
+
+
 def validate(val_loader, model, device):
     """
     Validate the model on the validation dataset, returning F1 score and additional metrics.
