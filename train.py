@@ -1,6 +1,6 @@
 # %%
-%load_ext autoreload
-%autoreload 2
+# %load_ext autoreload
+# %autoreload 2
 # %%
 import torch
 import os
@@ -40,10 +40,10 @@ def main():
         torch.load(model_path, map_location=torch.device("cpu"))["state_dict"]
     )
 
-    # Training the model
-    train(
-        train_loader, val_loader, model, device=device, epochs=20, patience=7
-    )
+    # # Training the model
+    # train(
+    #     train_loader, val_loader, model, device=device, epochs=20, patience=7
+    # )
 
     print(f"Testing the model")
     test_file = "data/data_21.bin"

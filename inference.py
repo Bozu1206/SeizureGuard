@@ -33,12 +33,12 @@ def main():
         torch.load(model_path, map_location=torch.device("cpu"))["state_dict"]
     )
 
-
+    model.train()
     # **Export the model to ONNX**
     # Create a dummy input tensor with batch size 1
     dummy_input = torch.randn(1, 18, 1024, device=device)
     # Define the path where you want to save the ONNX model
-    onnx_model_path = "models/base_pat_02.onnx"
+    onnx_model_path = "models/base_pat_02-new.onnx"
     # Export the model
     torch.onnx.export(
         model,                       # The model being exported
@@ -50,8 +50,10 @@ def main():
             "input": {0: "batch_size"},    # Variable batch size for input
             "output": {0: "batch_size"}    # Variable batch size for output
         },
-        opset_version=11             # ONNX opset version (adjust if necessary)
+        opset_version=11,             # ONNX opset version (adjust if necessary)
     )
+
+    print("onnx model exported.")
 
     print(f"Testing the model")
     
