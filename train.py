@@ -41,9 +41,9 @@ def main():
     )
 
     # # Training the model
-    # train(
-    #     train_loader, val_loader, model, device=device, epochs=20, patience=7
-    # )
+    train(
+        train_loader, val_loader, model, device=device, epochs=20, patience=7
+    )
 
     print(f"Testing the model")
     test_file = "data/data_21.bin"

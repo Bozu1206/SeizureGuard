@@ -1,6 +1,8 @@
 package com.example.seizureguard.dl
 
 import android.content.Context
+import android.os.Parcel
+import android.os.Parcelable
 import android.util.Log
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
@@ -8,12 +10,34 @@ import java.nio.ByteOrder
 data class DataSample(
     val data: FloatArray,
     val label: Int
-)
+) : Parcelable {
+    constructor(parcel: Parcel) : this(
+        parcel.createFloatArray()!!,
+        parcel.readInt()
+    )
+
+    override fun writeToParcel(parcel: Parcel, flags: Int) {
+        parcel.writeFloatArray(data)
+        parcel.writeInt(label)
+    }
+
+    override fun describeContents(): Int = 0
+
+    companion object CREATOR : Parcelable.Creator<DataSample> {
+        override fun createFromParcel(parcel: Parcel): DataSample {
+            return DataSample(parcel)
+        }
+
+        override fun newArray(size: Int): Array<DataSample?> {
+            return arrayOfNulls(size)
+        }
+    }
+}
 
 class DataLoader {
-    fun loadDataAndLabels(context: Context): Array<DataSample> {
+    fun loadDataAndLabels(context: Context, name: String): Array<DataSample> {
         val assetManager = context.assets
-        val inputStream = assetManager.open("data.bin")
+        val inputStream = assetManager.open(name)
 
         // Read header (4 integers)
         val headerSize = 4 * 4  // 4 integers * 4 bytes per int32

@@ -31,7 +31,7 @@ def main():
     optimizer = orttraining.Optimizer("training_artifacts/optimizer_model.onnx", model)
 
     print(f"Fine-tuning on {data_file}")
-    for epoch in range(20):
+    for epoch in range(0):
         model.train()
         loss = 0
         for data, target in train_loader:

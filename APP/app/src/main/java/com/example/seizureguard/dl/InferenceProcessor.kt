@@ -24,7 +24,6 @@ class InferenceProcessor(
     private val onnxHelper: OnnxHelper,
     private val onSeizureDetected: () -> Unit
 ) {
-
     private val coroutineScope = CoroutineScope(Dispatchers.IO)
     private val predictedLabels = mutableListOf<Int>()
 
@@ -116,7 +115,7 @@ class InferenceProcessor(
     }
 
     private suspend fun loadData(): Array<DataSample> = withContext(Dispatchers.IO) {
-        dataLoader.loadDataAndLabels(context)
+        dataLoader.loadDataAndLabels(context, "data.bin")
     }
 
     private suspend fun performInference(

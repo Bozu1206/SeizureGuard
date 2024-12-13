@@ -6,6 +6,7 @@ plugins {
 }
 
 def kotlindl_version = "0.5.2"
+def work_version = "2.9.1"
 def room_version = "2.6.1"
 
 def localProperties = new Properties()
@@ -65,10 +66,21 @@ android {
 }
 
 dependencies {
+    // work
+    implementation("androidx.work:work-runtime:$work_version")
+    implementation("androidx.work:work-runtime-ktx:$work_version")
+    implementation("androidx.work:work-rxjava2:$work_version")
+    implementation("androidx.work:work-gcm:$work_version")
+    androidTestImplementation("androidx.work:work-testing:$work_version")
+    implementation("androidx.work:work-multiprocess:$work_version")
+
     // Kotlin DL dependencies (choose appropriate modules for your use case)
     implementation "org.jetbrains.kotlinx:kotlin-deeplearning-visualization:$kotlindl_version"
     implementation "org.jetbrains.kotlinx:kotlin-deeplearning-tensorflow:$kotlindl_version"
-    implementation "org.jetbrains.kotlinx:kotlin-deeplearning-onnx:$kotlindl_version"
+    // implementation "org.jetbrains.kotlinx:kotlin-deeplearning-onnx:$kotlindl_version"
+
+    // Onnx
+    implementation 'com.microsoft.onnxruntime:onnxruntime-training-android:latest.release'  // full package
 
     // Android Core Libraries
     implementation 'androidx.core:core-ktx:1.9.0'
@@ -132,8 +144,6 @@ dependencies {
     implementation("com.squareup.retrofit2:retrofit:2.9.0")
     implementation("com.squareup.retrofit2:converter-gson:2.9.0")
     implementation("com.squareup.okhttp3:okhttp:4.9.3")
-
-
 }
 
 downloadKotlinDLModels {

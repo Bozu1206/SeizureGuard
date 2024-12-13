@@ -45,7 +45,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.seizureguard.guidelines.GuidelinesModal
 import com.example.seizureguard.seizure_event.LogSeizureEventModal
-import com.example.seizureguard.onEmergencyCall
+import com.example.seizureguard.tools.onEmergencyCall
 import com.example.seizureguard.ui.theme.AppTheme
 
 @Composable

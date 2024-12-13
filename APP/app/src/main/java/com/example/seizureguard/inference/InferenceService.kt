@@ -1,72 +1,155 @@
 package com.example.seizureguard.inference
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.app.PendingIntent
 import android.app.Service
+import android.content.BroadcastReceiver
+import android.content.ComponentName
+import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
+import android.content.ServiceConnection
 import android.content.pm.PackageManager
+import android.os.Build
+import android.os.Handler
 import android.os.IBinder
 import android.util.Log
+import androidx.annotation.RequiresApi
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
-import com.example.seizureguard.R
-import com.example.seizureguard.dl.InferenceProcessor
-import com.example.seizureguard.dl.OnnxHelper
-import com.example.seizureguard.dl.DataLoader
 import com.example.seizureguard.MainActivity
+import com.example.seizureguard.dl.ModelService
+import com.example.seizureguard.R
 import com.example.seizureguard.RunningApp
+import com.example.seizureguard.dl.DataSample
 
-class InferenceService : Service() { // foreground service for launching inference in background
+// Foreground service for launching inference in background
+class InferenceService : Service() {
+    private var modelService: ModelService? = null
+    private val samples = mutableListOf<DataSample>()
+    private var isPaused = false
 
-    private lateinit var inferenceProcessor: InferenceProcessor
+    private val serviceConnection = object : ServiceConnection {
+        override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
+            modelService = (service as ModelService.LocalBinder).getService()
+        }
+
+        override fun onServiceDisconnected(name: ComponentName?) {
+            modelService = null
+        }
+    }
+
+    private val trainingCompleteReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            if (intent.action == "com.example.seizureguard.TRAINING_COMPLETE") {
+                Log.d("InferenceService", "Training complete. Resuming inference.")
+                isPaused = false
+            }
+        }
+    }
+
+    private val sampleReceiver = object : BroadcastReceiver() {
+        @RequiresApi(Build.VERSION_CODES.TIRAMISU)
+        override fun onReceive(context: Context, intent: Intent) {
+            val sample = intent.getParcelableExtra("EXTRA_SAMPLE", DataSample::class.java)
+            if (sample != null) {
+                if (isPaused) {
+                    Log.d("InferenceService", "Inference paused, training in progress")
+                    return
+                }
+
+                samples.add(sample)
+
+                if (samples.size >= 100) {
+                    Log.d("InferenceService", "Training triggered")
+                    isPaused = true
+                    Thread {
+                        samples.shuffle()
+                        modelService?.getModelManager().let { modelManager ->
+                            for (i in 0..20) {
+                                modelManager?.performTrainingEpoch(samples.toTypedArray())
+                            }
+
+                            samples.clear()
+                            modelManager?.validate(context = applicationContext)
+                            modelManager?.saveModel(context =  applicationContext)
+                            modelManager?.validate(context = applicationContext)
+                        }
+
+                        isPaused = false
+                    }.start()
+                }
+
+                modelService?.getModelManager()?.let { modelManager ->
+                    val prediction = modelManager.performInference(sample)
+                    Log.d("InferenceService", "Predictions: $prediction")
+
+                    if (prediction == 1) {
+                        val app = context.applicationContext as RunningApp
+                        if (app.appLifecycleObserver.isAppInForeground == true) {
+                            val intent = Intent(context, MainActivity::class.java).apply {
+                                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                                putExtra("EXTRA_SEIZURE_DETECTED", true)
+                            }
+                            context.startActivity(intent)
+                        } else {
+                            Log.d("InferenceService", "app is in background, sending notification")
+                            sendSeizureDetectedNotification()
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private fun triggerTrainingService(context: Context) {
+
+    }
+
+
+    @SuppressLint("UnspecifiedRegisterReceiverFlag")
     override fun onCreate() {
         super.onCreate()
         Log.d("InferenceService", "onCreate called")
+        var filter = IntentFilter("com.example.seizureguard.TRAINING_COMPLETE")
+        registerReceiver(trainingCompleteReceiver, filter)
+
+        bindService(Intent(this, ModelService::class.java), serviceConnection, BIND_AUTO_CREATE)
+        filter = IntentFilter("com.example.seizureguard.NEW_SAMPLE")
+        registerReceiver(sampleReceiver, filter)
+        Log.d("InferenceService", "SampleReceiver registered")
     }
 
-    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int { // triggered when MainActivity sends the intent
+    // Triggered when MainActivity sends the intent
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         Log.d("InferenceService", "onStartCommand called")
-        when(intent?.action){
+        when (intent?.action) {
             Actions.START.toString() -> start()
             Actions.STOP.toString() -> stopSelf()
         }
+
         return super.onStartCommand(intent, flags, startId)
     }
-    private fun start(){
+
+    private fun start() {
         sendOngoingInferenceNotification()
-        inferenceProcessor = InferenceProcessor(
-            context = this,
-            dataLoader = DataLoader(),
-            onnxHelper = OnnxHelper(),
-            onSeizureDetected = {
-                val app = applicationContext as RunningApp
-                if (app.appLifecycleObserver.isAppInForeground) { // App is open; navigate using NavController
-                    val intent = Intent(this, MainActivity::class.java).apply {
-                        flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                        putExtra("EXTRA_SEIZURE_DETECTED", true)
-                    }
-                    startActivity(intent)
-                } else {  // App is not open; send a notification
-                    sendSeizureDetectedNotification()
-                }
-                inferenceProcessor.cancelCoroutine()
-            }
-        )
-        inferenceProcessor.runInference {newMetrics ->
-            var metrics = newMetrics
-            Log.d(
-                "ValidationMetrics",
-                "F1 Score: ${metrics.f1}, Precision: ${metrics.precision}, " +
-                        "Recall: ${metrics.recall}, FPR: ${metrics.fpr}"
-            )
+        val modelManager = modelService?.getModelManager()
+
+        if (modelManager == null) {
+            Handler(mainLooper).postDelayed({ start() }, 1000)
+            return
         }
     }
 
     override fun onDestroy() {
-        super.onDestroy()
-        inferenceProcessor.cancelCoroutine()
         Log.d("InferenceService", "onDestroy called")
+        super.onDestroy()
+        unbindService(serviceConnection)
+        unregisterReceiver(sampleReceiver)
+        unregisterReceiver(trainingCompleteReceiver)
+        Log.d("InferenceService", "SampleReceiver unregistered")
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
@@ -82,16 +165,22 @@ class InferenceService : Service() { // foreground service for launching inferen
             contentIntent,
             PendingIntent.FLAG_IMMUTABLE
         )
-        val notificationBuilder = NotificationCompat.Builder(this, getString(R.string.seizure_notification_id))
-            .setContentTitle("SEIZURE DETECTED!")
-            .setContentText("Click to open")
-            .setContentIntent(pendingIntent)
-            .setSmallIcon(R.drawable.ic_launcher_background)
-            .setPriority(NotificationCompat.PRIORITY_MAX)
-            .setCategory(NotificationCompat.CATEGORY_ALARM)
-            .setAutoCancel(true)
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) {
-            NotificationManagerCompat.from(this).notify(SEIZURE_NOTIFICATION_ID, notificationBuilder.build())
+        val notificationBuilder =
+            NotificationCompat.Builder(this, getString(R.string.seizure_notification_id))
+                .setContentTitle("SEIZURE DETECTED!")
+                .setContentText("Click to open")
+                .setContentIntent(pendingIntent)
+                .setSmallIcon(R.drawable.ic_launcher_background)
+                .setPriority(NotificationCompat.PRIORITY_MAX)
+                .setCategory(NotificationCompat.CATEGORY_ALARM)
+                .setAutoCancel(true)
+        if (ActivityCompat.checkSelfPermission(
+                this,
+                Manifest.permission.POST_NOTIFICATIONS
+            ) == PackageManager.PERMISSION_GRANTED
+        ) {
+            NotificationManagerCompat.from(this)
+                .notify(SEIZURE_NOTIFICATION_ID, notificationBuilder.build())
         }
     }
 
@@ -105,7 +194,10 @@ class InferenceService : Service() { // foreground service for launching inferen
             stopServiceIntent,
             PendingIntent.FLAG_IMMUTABLE
         )
-        val notification = NotificationCompat.Builder(this, getString(R.string.fixed_foregroung_notification_channel_id) )
+        val notification = NotificationCompat.Builder(
+            this,
+            getString(R.string.fixed_foregroung_notification_channel_id)
+        )
             .setContentTitle("Inference Running")
             .setContentText("Performing inference in the background")
             .setSmallIcon(R.drawable.ic_launcher_foreground)
@@ -121,7 +213,7 @@ class InferenceService : Service() { // foreground service for launching inferen
         startForeground(FIXED_NOTIFICATION_ID, notification)
     }
 
-    enum class Actions{
+    enum class Actions {
         START, STOP
     }
 

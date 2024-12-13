@@ -33,6 +33,8 @@ def main():
             "input": {0: "batch_size"},
             "output": {0: "batch_size"},
         },
+        export_params=True,
+        do_constant_folding=True,
         verbose=True,
         verify=True
     )
@@ -40,7 +42,7 @@ def main():
     onnx_model = onnx.load(f"training_artifacts/base_pat_02.onnx")
     for param in onnx_model.graph.initializer:
         print(param.name)
-
+    
     requires_grad = [
         "classifier.0.weight",
         "classifier.0.bias",
@@ -59,6 +61,8 @@ def main():
         for param in onnx_model.graph.initializer
         if param.name not in requires_grad
     ]
+
+    print(frozen_params)
 
     artifacts.generate_artifacts(
         onnx_model,

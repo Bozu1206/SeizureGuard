@@ -48,7 +48,7 @@ fun HistoryScreen(modifier: Modifier = Modifier, historyViewModel: HistoryViewMo
 @Composable
 fun SeizureItemRow(seizureEvent: SeizureEvent, modifier: Modifier = Modifier) {
     Card(
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
         modifier = modifier.fillMaxWidth(),
     ) {
         Column(modifier.padding(8.dp)) {

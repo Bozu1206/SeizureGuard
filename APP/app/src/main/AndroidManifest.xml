@@ -8,6 +8,7 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_HEALTH" />
     <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION" />
     <uses-permission android:name="android.permission.BODY_SENSORS" />
+
     <application
         android:name="com.example.seizureguard.RunningApp"
         android:networkSecurityConfig="@xml/network_security_config"
@@ -36,6 +37,12 @@
         <service
             android:name="com.example.seizureguard.inference.InferenceService"
             android:foregroundServiceType="health"/>
+        <service
+            android:name=".dl.ModelService"
+            android:exported="false" />
+        <service
+            android:name=".dl.utils.SampleBroadcastService"
+            android:exported="false" />
     </application>
 
 </manifest>

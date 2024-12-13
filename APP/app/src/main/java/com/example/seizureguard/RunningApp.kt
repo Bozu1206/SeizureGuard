@@ -17,7 +17,7 @@ class RunningApp : Application() { // Application class
 
     lateinit var appLifecycleObserver: AppLifecycleObserver
 
-    override fun onCreate(){
+    override fun onCreate() {
         super.onCreate()
         appLifecycleObserver = AppLifecycleObserver()
         ProcessLifecycleOwner.get().lifecycle.addObserver(appLifecycleObserver)
@@ -34,7 +34,8 @@ class RunningApp : Application() { // Application class
             notificationManager.createNotificationChannel(channel)
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val soundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM) // Use alarm sound
+            val soundUri =
+                RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM) // Use alarm sound
             val audioAttributes = AudioAttributes.Builder()
                 .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
                 .setUsage(AudioAttributes.USAGE_ALARM)
@@ -52,20 +53,25 @@ class RunningApp : Application() { // Application class
                 enableVibration(true)
                 vibrationPattern = longArrayOf(0, 500, 500, 500, 500, 500)
             }
+
             // Register the channel with the system
-            val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            val notificationManager =
+                getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             notificationManager.createNotificationChannel(channel)
         }
     }
 }
 
-class AppLifecycleObserver : DefaultLifecycleObserver { // used to allow the foreground service to be aware of the app's lifecycle state
+class AppLifecycleObserver :
+    DefaultLifecycleObserver { // used to allow the foreground service to be aware of the app's lifecycle state
     var isAppInForeground = false
         private set
+
     override fun onStart(owner: LifecycleOwner) {
         super.onStart(owner)
         isAppInForeground = true
     }
+
     override fun onStop(owner: LifecycleOwner) {
         super.onStop(owner)
         isAppInForeground = false
