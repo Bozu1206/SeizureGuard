@@ -94,7 +94,8 @@ class MainActivity : ComponentActivity() {
 
             // Fetch app states
             val showOnboarding = viewModel.showOnboarding.collectAsState()
-            val isLoggedIn = remember { mutableStateOf(false) } // Replace with your actual login state logic
+            val isLoggedIn =
+                remember { mutableStateOf(false) } // Replace with your actual login state logic
 
             if (showOnboarding.value) {
                 // Show OnboardingScreen
@@ -222,28 +223,6 @@ class MainActivity : ComponentActivity() {
             val token = generateToken(request)
             walletViewModel.savePassesJwt(token, this@MainActivity, addToGoogleWalletRequestCode)
         }
-    }
-
-    private fun makeOrtTrainerAndCopyAssets(): ModelManager {
-        val trainingModelPath = copyFileOrDir("training_artifacts/training_model.onnx")
-        val evalModelPath = copyFileOrDir("training_artifacts/eval_model.onnx")
-        val checkpointPath = copyFileOrDir("training_artifacts/checkpoint")
-        val optimizerModelPath = copyFileOrDir("training_artifacts/optimizer_model.onnx")
-        val inferenceModelPath = copyFileOrDir("inference_artifacts/inference.onnx")
-
-        return ModelManager(
-            checkpointPath,
-            trainingModelPath,
-            evalModelPath,
-            optimizerModelPath,
-            inferenceModelPath
-        )
-    }
-
-    private fun copyFileOrDir(path: String): String {
-        val dst = java.io.File("$cacheDir/$path")
-        copyAssetFileOrDir(assets, path, dst)
-        return dst.path
     }
 }
 
