@@ -1,5 +1,6 @@
 package com.example.seizureguard.navigation
 
+import ProfileViewModel
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DateRange
@@ -35,13 +36,14 @@ fun AppContent(
     onRunInference: () -> Unit,
     payState: WalletUiState,
     requestSavePass: (GoogleWalletToken.PassRequest) -> Unit,
+    profileViewModel: ProfileViewModel
 ) {
     val navController = rememberNavController()
 
     Scaffold(bottomBar = { BottomNavigationBar(navController) }) { innerPadding ->
         NavHost(
             navController = navController,
-            startDestination = "home",
+            startDestination = "profile",
             Modifier.padding(innerPadding)
         ) {
             composable("inference") {
@@ -51,7 +53,7 @@ fun AppContent(
                 HomeScreen()
             }
             composable("profile") {
-                ProfileScreen(navController = navController)
+                ProfileScreen(profileScreenViewModel = profileViewModel, navController = navController)
             }
             composable("history") {
                 HistoryScreen()

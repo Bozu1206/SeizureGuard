@@ -66,18 +66,20 @@ android {
 }
 
 dependencies {
-    // work
-    implementation("androidx.work:work-runtime:$work_version")
-    implementation("androidx.work:work-runtime-ktx:$work_version")
-    implementation("androidx.work:work-rxjava2:$work_version")
-    implementation("androidx.work:work-gcm:$work_version")
-    androidTestImplementation("androidx.work:work-testing:$work_version")
-    implementation("androidx.work:work-multiprocess:$work_version")
+    // biometrics
+    implementation "androidx.biometric:biometric:1.4.0-alpha02"
+    implementation("androidx.security:security-state:1.0.0-alpha04")
+    implementation("androidx.security:security-crypto-ktx:1.1.0-alpha03")
+
+    // coil
+    implementation "io.coil-kt:coil-compose:2.4.0"
+
+    // Datastore (onboarding)
+    implementation "androidx.datastore:datastore-preferences:1.1.1"
 
     // Kotlin DL dependencies (choose appropriate modules for your use case)
     implementation "org.jetbrains.kotlinx:kotlin-deeplearning-visualization:$kotlindl_version"
     implementation "org.jetbrains.kotlinx:kotlin-deeplearning-tensorflow:$kotlindl_version"
-    // implementation "org.jetbrains.kotlinx:kotlin-deeplearning-onnx:$kotlindl_version"
 
     // Onnx
     implementation 'com.microsoft.onnxruntime:onnxruntime-training-android:latest.release'  // full package
@@ -90,19 +92,21 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-process:2.6.2")
 
     // Jetpack Compose
-    implementation platform('androidx.compose:compose-bom:2023.03.00')
+    implementation platform('androidx.compose:compose-bom:2024.02.00')
     implementation 'androidx.compose.ui:ui'
     implementation 'androidx.compose.ui:ui-graphics'
     implementation 'androidx.compose.ui:ui-tooling-preview'
-    implementation("androidx.constraintlayout:constraintlayout-compose:1.0.1")
-    implementation "androidx.navigation:navigation-compose:2.7.2"
-    implementation "androidx.compose.ui:ui:1.5.0"
-    implementation "androidx.compose.material3:material3:1.3.1" // Material 3
-    implementation "androidx.compose.ui:ui-tooling-preview:1.5.0"
-    implementation "androidx.activity:activity-compose:1.7.2"
-    implementation "com.google.accompanist:accompanist-flowlayout:0.30.1"
-    implementation "androidx.compose.material:material-icons-extended:1.6.8"
-    implementation("androidx.compose.material3:material3:1.4.0-alpha04")
+    implementation 'androidx.activity:activity-compose:1.9.3'
+    implementation 'androidx.navigation:navigation-compose:2.8.5'
+    implementation 'androidx.compose.material3:material3:1.2.1'
+    implementation 'androidx.compose.material3:material3-window-size-class:1.2.1'
+    implementation 'com.google.accompanist:accompanist-flowlayout:0.30.1'
+    implementation 'androidx.lifecycle:lifecycle-runtime-compose:2.8.7'
+    implementation 'androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7'
+    implementation("androidx.constraintlayout:constraintlayout:2.2.0")
+    implementation("androidx.constraintlayout:constraintlayout-compose:1.1.0")
+    implementation "androidx.compose.material:material-icons-extended:1.7.6"
+
 
     // Room database
     implementation("androidx.room:room-runtime:$room_version")

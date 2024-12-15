@@ -1,5 +1,6 @@
 package com.example.seizureguard
 
+import ProfileViewModel
 import androidx.compose.runtime.Composable
 import com.example.seizureguard.alert.SeizureDetectedScreen
 import com.example.seizureguard.wallet_manager.GoogleWalletToken
@@ -16,6 +17,7 @@ fun MainScreen(
     onRunInference: () -> Unit,
     metrics: Metrics,
     payState: WalletUiState,
+    profileViewModel: ProfileViewModel,
     requestSavePass: (GoogleWalletToken.PassRequest) -> Unit
 ) {
     AppTheme {
@@ -26,7 +28,8 @@ fun MainScreen(
                 metrics = metrics,
                 onRunInference = onRunInference,
                 payState = payState,
-                requestSavePass = requestSavePass
+                requestSavePass = requestSavePass,
+                profileViewModel = profileViewModel
             )
         }
     }
