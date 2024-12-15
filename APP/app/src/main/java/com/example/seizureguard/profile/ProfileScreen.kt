@@ -1,9 +1,12 @@
 package com.example.seizureguard.profile
 
 import ProfileViewModel
+import android.content.Intent
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -37,6 +40,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -47,13 +51,19 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
+import coil.compose.AsyncImagePainter.State.Empty.painter
 import coil.request.ImageRequest
 import com.example.seizureguard.ui.theme.AppTheme
+import com.example.seizureguard.wallet_manager.GoogleWalletToken
+import com.google.android.gms.samples.wallet.viewmodel.WalletViewModel
+import com.google.wallet.button.ButtonType
+import com.google.wallet.button.WalletButton
 
 @Composable
 fun ProfileScreen(
     profileScreenViewModel: ProfileViewModel = viewModel(),
-    navController: NavController
+    navController: NavController,
+    requestSavePass: (GoogleWalletToken.PassRequest) -> Unit
 ) {
     Box(
         modifier = Modifier
@@ -67,7 +77,7 @@ fun ProfileScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             // User Profile Section
-            UserProfileSection(profileScreenViewModel)
+            UserProfileSection(profileScreenViewModel, requestSavePass)
 
             Spacer(modifier = Modifier.height(24.dp))
 
@@ -83,7 +93,7 @@ fun ProfileScreen(
 }
 
 @Composable
-fun UserProfileSection(profileScreenViewModel: ProfileViewModel) {
+fun UserProfileSection(profileScreenViewModel: ProfileViewModel, onWalletButtonClick: (GoogleWalletToken.PassRequest) -> Unit) {
     val userName by profileScreenViewModel.userName.collectAsState()
     val userEmail by profileScreenViewModel.userEmail.collectAsState()
     val birthdate by profileScreenViewModel.birthdate.collectAsState()
@@ -91,26 +101,37 @@ fun UserProfileSection(profileScreenViewModel: ProfileViewModel) {
     val epi_type by profileScreenViewModel.epi_type.collectAsState()
 
     var showProfileSettings by remember { mutableStateOf(false) }
-
+    val photoPickerLauncher = getPhotoPicker(LocalContext.current, profileScreenViewModel)
 
     Card(
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = Color.White,
+            contentColor = Color.Black
+        ),
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
+            .shadow(elevation = 8.dp, shape = RoundedCornerShape(24.dp))
+            .clip(RoundedCornerShape(24.dp))
     ) {
-        Row(modifier = Modifier.background(Color.Transparent)) {
+        Row(
+            horizontalArrangement = Arrangement.SpaceEvenly,
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.background(Color.Transparent)
+        ) {
             // User Avatar
             if (profilePictureUri != null) {
                 AsyncImage(
-                    model = ImageRequest.Builder(LocalContext.current)
-                        .data(profilePictureUri)
-                        .crossfade(true)
-                        .build(),
+                    model = profilePictureUri,
                     contentDescription = "Profile Picture",
                     modifier = Modifier
-                        .size(140.dp)
-                        .padding(12.dp)
+                        .size(150.dp)
+                        .padding(16.dp)
+                        .clickable {
+                            val intent = Intent(Intent.ACTION_GET_CONTENT).apply {
+                                type = "image/*"
+                            }
+                            photoPickerLauncher.launch(intent)
+                        }
                         .clip(CircleShape),
                     contentScale = ContentScale.Crop,
                 )
@@ -132,7 +153,7 @@ fun UserProfileSection(profileScreenViewModel: ProfileViewModel) {
                         text = userName,
                         style = MaterialTheme.typography.bodyLarge,
                         fontWeight = FontWeight.SemiBold,
-                        maxLines = 1,
+                        maxLines = 2,
                     )
 
                     Spacer(modifier = Modifier.width(8.dp))
@@ -151,13 +172,11 @@ fun UserProfileSection(profileScreenViewModel: ProfileViewModel) {
                 Text(
                     text = userEmail,
                     style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.primary
                 )
 
                 Text(
                     text = birthdate,
                     style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.primary
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
@@ -166,7 +185,14 @@ fun UserProfileSection(profileScreenViewModel: ProfileViewModel) {
                     text = "Epilepsy Type: $epi_type",
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Text(
+                    text = "Medication: None",
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.Bold,
                 )
 
                 if (showProfileSettings) {
@@ -177,6 +203,26 @@ fun UserProfileSection(profileScreenViewModel: ProfileViewModel) {
                 }
             }
         }
+
+        WalletButton(
+            type = ButtonType.Add,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 16.dp, end = 16.dp)
+                .padding(vertical = 10.dp)
+                .height(60.dp),
+            onClick = {
+                val request = GoogleWalletToken.PassRequest(
+                    uid = profileScreenViewModel.userId.value,
+                    patientName = profileScreenViewModel.userName.value,
+                    emergencyContact = "emergencyContact",
+                    seizureType = profileScreenViewModel.epi_type.value,
+                    medication = "",
+                    birthdate = profileScreenViewModel.birthdate.value
+                )
+                onWalletButtonClick(request)
+            }
+        )
     }
 }
 
@@ -319,6 +365,6 @@ fun EditProfile(onDismissRequest: () -> Unit, profileScreenViewModel: ProfileVie
 @Composable
 fun ProfileScreenPreview() {
     AppTheme {
-        ProfileScreen(viewModel(), navController = NavController(context = LocalContext.current))
+        ProfileScreen(viewModel(), navController = NavController(context = LocalContext.current), {})
     }
 }

@@ -6,7 +6,9 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.util.Log
+import androidx.activity.compose.ManagedActivityResultLauncher
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.ActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -32,12 +34,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import java.io.File
+import java.util.UUID
 
 @Composable
-fun ProfilePicturePicker(profileViewModel: ProfileViewModel) {
-    val profilePictureUri by profileViewModel.profilePictureUri.collectAsState()
-    val context = LocalContext.current
-    val photoPickerLauncher = rememberLauncherForActivityResult(
+fun getPhotoPicker(context: Context, profileViewModel: ProfileViewModel): ManagedActivityResultLauncher<Intent, ActivityResult> {
+    return rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult(),
         onResult = { result ->
             if (result.resultCode == Activity.RESULT_OK) {
@@ -45,7 +46,7 @@ fun ProfilePicturePicker(profileViewModel: ProfileViewModel) {
                 if (uri != null) {
                     Log.d("PhotoPicker", "Selected URI: $uri")
 
-                    val localUri = copyImageToInternalStorage(context, uri, "profile_picture.jpg")
+                    val localUri = copyImageToInternalStorage(context, uri, "profile_picture_${UUID.randomUUID()}.jpg")
                     if (localUri != null) {
                         profileViewModel.saveProfile(
                             name = profileViewModel.userName.value,
@@ -62,7 +63,14 @@ fun ProfilePicturePicker(profileViewModel: ProfileViewModel) {
             }
         }
     )
+}
 
+
+@Composable
+fun ProfilePicturePicker(profileViewModel: ProfileViewModel) {
+    val profilePictureUri by profileViewModel.profilePictureUri.collectAsState()
+    val context = LocalContext.current
+    val photoPickerLauncher = getPhotoPicker(context = context, profileViewModel = profileViewModel)
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,

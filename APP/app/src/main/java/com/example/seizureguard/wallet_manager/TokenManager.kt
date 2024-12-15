@@ -26,7 +26,7 @@ fun generateToken(
 ): String {
     val issuerId = "3388000000022811098"
     val classSuffix = "1-szg_medical_card"
-    val objectSuffix = "1-szg_medical_card_${UUID.randomUUID()}"
+    val objectSuffix = "1-szg_medical_card_${request.uid}"
     val objectId = "$issuerId.$objectSuffix"
 
     val genericObject = mapOf(
@@ -70,16 +70,8 @@ fun generateToken(
             "value" to "ISSUER_ID.OBJECT_ID",
             "alternateText" to ""
         ),
-        "hexBackgroundColor" to "#b30505"
+        "hexBackgroundColor" to "#05b3b4",
     )
-
-    val claims = mapOf(
-        "iss" to "seizureguard-wallet@seizureguard.iam.gserviceaccount.com",
-        "aud" to "google",
-        "typ" to "savetowallet",
-        "payload" to mapOf("genericObjects" to listOf(genericObject))
-    )
-
 
     val privateKey = BuildConfig.PRIVATE_KEY
     val rsaPrivateKey = loadRSAPrivateKey(privateKey)

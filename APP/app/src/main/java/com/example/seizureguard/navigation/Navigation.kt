@@ -53,7 +53,7 @@ fun AppContent(
                 HomeScreen()
             }
             composable("profile") {
-                ProfileScreen(profileScreenViewModel = profileViewModel, navController = navController)
+                ProfileScreen(profileScreenViewModel = profileViewModel, navController = navController, requestSavePass = requestSavePass)
             }
             composable("history") {
                 HistoryScreen()

@@ -170,6 +170,7 @@ fun MedicalCardForm(onWalletButtonClick: (GoogleWalletToken.PassRequest) -> Unit
                 modifier = Modifier.fillMaxWidth(),
                 onClick = {
                     val request = GoogleWalletToken.PassRequest(
+                        uid = "1234",
                         patientName = name,
                         emergencyContact = emergencyContact,
                         seizureType = selectedEpilepsy,

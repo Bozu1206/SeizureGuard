@@ -12,9 +12,11 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import java.util.UUID
 
 private val Context.dataStore by preferencesDataStore(name = "user_profile")
 
+private val USER_ID_KEY = stringPreferencesKey("user_id")
 private val USER_NAME_KEY = stringPreferencesKey("user_name")
 private val USER_EMAIL_KEY = stringPreferencesKey("user_email")
 private val USER_DOB = stringPreferencesKey("user_dob")
@@ -24,6 +26,9 @@ private val USER_EPI_TYPE = stringPreferencesKey("user_epi_type")
 
 @SuppressLint("StaticFieldLeak")
 class ProfileViewModel(private val context: Context) : ViewModel() {
+    private val _userId = MutableStateFlow("")
+    val userId: StateFlow<String> = _userId
+
     private val _userName = MutableStateFlow("")
     val userName: StateFlow<String> = _userName
 
@@ -49,14 +54,16 @@ class ProfileViewModel(private val context: Context) : ViewModel() {
     private fun loadProfile() {
         viewModelScope.launch {
             context.dataStore.data.map { preferences ->
+                val userId = preferences[USER_ID_KEY] ?: UUID.randomUUID().toString()
                 val name = preferences[USER_NAME_KEY] ?: ""
                 val email = preferences[USER_EMAIL_KEY] ?: ""
                 val birthdate = preferences[USER_DOB] ?: ""
                 val uri = preferences[USER_PP] ?: ""
                 val pwd = preferences[USER_PWD] ?: ""
                 val epi_type = preferences[USER_EPI_TYPE] ?: ""
-                Profile(name, email, birthdate, uri, pwd, epi_type)
+                Profile(userId, name, email, birthdate, uri, pwd, epi_type)
             }.collect { profile ->
+                _userId.value = profile.uid
                 _userName.value = profile.name
                 _userEmail.value = profile.email
                 _birthdate.value = profile.birthdate
@@ -70,10 +77,13 @@ class ProfileViewModel(private val context: Context) : ViewModel() {
         }
     }
 
+
     fun saveProfile(name: String, email: String, birthdate: String, uri: Uri? = null, pwd: String, epi_type: String) {
         viewModelScope.launch {
             try {
                 context.dataStore.edit { preferences ->
+                    val userId = preferences[USER_ID_KEY] ?: UUID.randomUUID().toString()
+                    preferences[USER_ID_KEY] = userId
                     preferences[USER_NAME_KEY] = name
                     preferences[USER_EMAIL_KEY] = email
                     preferences[USER_DOB] = birthdate
@@ -81,19 +91,18 @@ class ProfileViewModel(private val context: Context) : ViewModel() {
                     preferences[USER_PWD] = pwd
                     preferences[USER_EPI_TYPE] = epi_type
                 }
-
                 _userName.value = name
                 _userEmail.value = email
                 _birthdate.value = birthdate
                 _profilePictureUri.value = uri
                 _pwd.value = pwd
                 _epi_type.value = epi_type
-                Log.d("ProfileViewModel", "Saved profile: $name, $email, $birthdate, $uri, $pwd, $epi_type")
             } catch (e: Exception) {
                 Log.e("ProfileViewModel", "Error saving profile: ${e.message}")
             }
         }
     }
+
 
     fun updateUserName(name: String) {
         _userName.value = name
@@ -110,6 +119,7 @@ class ProfileViewModel(private val context: Context) : ViewModel() {
     fun persistProfile() {
         viewModelScope.launch {
             context.dataStore.edit { preferences ->
+                preferences[USER_ID_KEY] = UUID.randomUUID().toString()
                 preferences[USER_NAME_KEY] = userName.value
                 preferences[USER_EMAIL_KEY] = userEmail.value
                 preferences[USER_DOB] = birthdate.value
@@ -123,6 +133,7 @@ class ProfileViewModel(private val context: Context) : ViewModel() {
     fun resetProfile() {
         viewModelScope.launch {
             context.dataStore.edit { preferences ->
+                preferences.remove(USER_ID_KEY)
                 preferences.remove(USER_NAME_KEY)
                 preferences.remove(USER_EMAIL_KEY)
                 preferences.remove(USER_DOB)
@@ -145,6 +156,7 @@ class ProfileViewModelFactory(private val context: Context) : ViewModelProvider.
 }
 
 data class Profile(
+    val uid: String,
     val name: String,
     val email: String,
     val birthdate: String,
