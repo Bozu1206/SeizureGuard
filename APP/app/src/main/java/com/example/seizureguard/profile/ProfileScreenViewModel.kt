@@ -2,6 +2,7 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.net.Uri
 import android.util.Log
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
@@ -23,6 +24,10 @@ private val USER_DOB = stringPreferencesKey("user_dob")
 private val USER_PP = stringPreferencesKey("user_pp")
 private val USER_PWD = stringPreferencesKey("user_pwd")
 private val USER_EPI_TYPE = stringPreferencesKey("user_epi_type")
+private val EMERGENCY_CONTACTS_KEY = stringPreferencesKey("emergency_contacts")
+private val AUTH_MODE_KEY = stringPreferencesKey("auth_mode")
+private val IS_BIOMETRIC_ENABLED_KEY = booleanPreferencesKey("is_biometric_enabled")
+
 
 @SuppressLint("StaticFieldLeak")
 class ProfileViewModel(private val context: Context) : ViewModel() {
@@ -47,8 +52,18 @@ class ProfileViewModel(private val context: Context) : ViewModel() {
     private val _epi_type = MutableStateFlow("")
     val epi_type: StateFlow<String> = _epi_type
 
+    private val _emergencyContacts = MutableStateFlow<List<EmergencyContact>>(emptyList())
+    val emergencyContacts: StateFlow<List<EmergencyContact>> = _emergencyContacts
+
+    private val _auth_mode = MutableStateFlow("")
+    val auth_mode: StateFlow<String> = _auth_mode
+
+    private val _isBiometricEnabled = MutableStateFlow(false)
+    val isBiometricEnabled: StateFlow<Boolean> = _isBiometricEnabled
+
     init {
         loadProfile()
+        loadEmergencyContacts()
     }
 
     private fun loadProfile() {
@@ -61,7 +76,9 @@ class ProfileViewModel(private val context: Context) : ViewModel() {
                 val uri = preferences[USER_PP] ?: ""
                 val pwd = preferences[USER_PWD] ?: ""
                 val epi_type = preferences[USER_EPI_TYPE] ?: ""
-                Profile(userId, name, email, birthdate, uri, pwd, epi_type)
+                val auth_mode = preferences[AUTH_MODE_KEY] ?: ""
+                val isBiometricEnabled = preferences[IS_BIOMETRIC_ENABLED_KEY] ?: false
+                Profile(userId, name, email, birthdate, uri, pwd, epi_type, auth_mode, isBiometricEnabled)
             }.collect { profile ->
                 _userId.value = profile.uid
                 _userName.value = profile.name
@@ -71,14 +88,84 @@ class ProfileViewModel(private val context: Context) : ViewModel() {
                     if (profile.uri.isNotEmpty()) Uri.parse(profile.uri) else null
                 _pwd.value = profile.pwd
                 _epi_type.value = profile.epi_type
-
+                _auth_mode.value = profile.auth_mode
+                _isBiometricEnabled.value = profile.isBiometricEnabled
                 Log.d("ProfileViewModel", "Loaded profile: $profile")
             }
         }
     }
 
+    private fun loadEmergencyContacts() {
+        viewModelScope.launch {
+            context.dataStore.data.map { preferences ->
+                preferences[EMERGENCY_CONTACTS_KEY]?.let { json ->
+                    val contacts = try {
+                        val type = object :
+                            com.google.gson.reflect.TypeToken<List<EmergencyContact>>() {}.type
+                        com.google.gson.Gson().fromJson(json, type)
+                    } catch (e: Exception) {
+                        emptyList<EmergencyContact>()
+                    }
+                    contacts
+                } ?: emptyList()
+            }.collect { contacts ->
+                _emergencyContacts.value = contacts
+            }
+        }
+    }
 
-    fun saveProfile(name: String, email: String, birthdate: String, uri: Uri? = null, pwd: String, epi_type: String) {
+    fun saveEmergencyContact(contact: EmergencyContact) {
+        viewModelScope.launch {
+            try {
+                val updatedContacts = _emergencyContacts.value.toMutableList()
+                if (updatedContacts.size < 5) {
+                    updatedContacts.add(contact)
+                    val json = com.google.gson.Gson().toJson(updatedContacts)
+                    context.dataStore.edit { preferences ->
+                        preferences[EMERGENCY_CONTACTS_KEY] = json
+                    }
+                    _emergencyContacts.value = updatedContacts
+
+                } else {
+                    Log.e("ProfileViewModel", "Cannot add more than 5 emergency contacts")
+                }
+            } catch (e: Exception) {
+                Log.e("ProfileViewModel", "Error saving emergency contact: ${e.message}")
+            }
+        }
+    }
+
+
+    fun removeEmergencyContact(phone: String) {
+        viewModelScope.launch {
+            try {
+                val updatedContacts = _emergencyContacts.value.filter { it.phone != phone }
+
+                val json = com.google.gson.Gson().toJson(updatedContacts)
+
+                context.dataStore.edit { preferences ->
+                    preferences[EMERGENCY_CONTACTS_KEY] = json
+                }
+
+                _emergencyContacts.value = updatedContacts
+            } catch (e: Exception) {
+                Log.e("ProfileViewModel", "Error removing emergency contact: ${e.message}")
+            }
+        }
+    }
+
+    fun isEmpty(): Boolean =
+        _userName.value.isEmpty() || _userEmail.value.isEmpty() || _birthdate.value.isEmpty() || _profilePictureUri.value == null
+
+
+    fun saveProfile(
+        name: String,
+        email: String,
+        birthdate: String,
+        uri: Uri? = null,
+        pwd: String,
+        epi_type: String
+    ) {
         viewModelScope.launch {
             try {
                 context.dataStore.edit { preferences ->
@@ -130,6 +217,16 @@ class ProfileViewModel(private val context: Context) : ViewModel() {
         }
     }
 
+    private fun resetEmergencyContacts() {
+        viewModelScope.launch {
+            context.dataStore.edit { preferences ->
+                preferences.remove(EMERGENCY_CONTACTS_KEY)
+            }
+            _emergencyContacts.value = emptyList()
+        }
+    }
+
+
     fun resetProfile() {
         viewModelScope.launch {
             context.dataStore.edit { preferences ->
@@ -140,6 +237,28 @@ class ProfileViewModel(private val context: Context) : ViewModel() {
                 preferences.remove(USER_PP)
                 preferences.remove(USER_PWD)
                 preferences.remove(USER_EPI_TYPE)
+            }
+        }
+
+        resetEmergencyContacts()
+    }
+
+    fun saveAuthPreference(mode: String) {
+        if (mode == "biometric") {
+            viewModelScope.launch {
+                _isBiometricEnabled.value = true
+                context.dataStore.edit { preferences ->
+                    preferences[AUTH_MODE_KEY] = "biometric"
+                    preferences[IS_BIOMETRIC_ENABLED_KEY] = true
+                }
+            }
+        } else {
+            viewModelScope.launch {
+                _isBiometricEnabled.value = false
+                context.dataStore.edit { preferences ->
+                    preferences[AUTH_MODE_KEY] = "password"
+                    preferences[IS_BIOMETRIC_ENABLED_KEY] = false
+                }
             }
         }
     }
@@ -162,5 +281,13 @@ data class Profile(
     val birthdate: String,
     val uri: String,
     val pwd: String,
-    val epi_type: String
+    val epi_type: String,
+    val auth_mode: String,
+    val isBiometricEnabled: Boolean
+)
+
+data class EmergencyContact(
+    val name: String,
+    val phone: String,
+    val photoUri: String? = null
 )

@@ -66,6 +66,7 @@ fun getPhotoPicker(context: Context, profileViewModel: ProfileViewModel): Manage
 }
 
 
+
 @Composable
 fun ProfilePicturePicker(profileViewModel: ProfileViewModel) {
     val profilePictureUri by profileViewModel.profilePictureUri.collectAsState()
@@ -88,7 +89,7 @@ fun ProfilePicturePicker(profileViewModel: ProfileViewModel) {
                         .copy(0.6f)
                 )
                 .clickable {
-                    val intent = Intent(Intent.ACTION_GET_CONTENT).apply {
+                    val intent = Intent(Intent.ACTION_PICK).apply {
                         type = "image/*"
                     }
                     photoPickerLauncher.launch(intent)

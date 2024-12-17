@@ -1,5 +1,6 @@
 package com.example.seizureguard.alert
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -12,6 +13,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Call
@@ -29,19 +31,24 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.seizureguard.R
 import com.example.seizureguard.seizure_event.LogSeizureEventModal
+import com.example.seizureguard.seizure_event.SeizureEventViewModel
 
 @Composable
 fun SeizureDetectedScreen(
     onDismiss: () -> Unit,
-    onEmergencyCall: () -> Unit
+    onEmergencyCall: () -> Unit,
+    seizureEventViewModel: SeizureEventViewModel
 ) {
     var isLogging by remember { mutableStateOf(false) }
     var hasLogged by remember { mutableStateOf(false) }
@@ -50,6 +57,7 @@ fun SeizureDetectedScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.errorContainer)
+
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -73,12 +81,25 @@ fun SeizureDetectedScreen(
                 color = MaterialTheme.colorScheme.onErrorContainer,
                 textAlign = TextAlign.Center
             )
+
+            Image(
+                painter = painterResource(R.drawable.seizure_alert),
+                contentDescription = null,
+                modifier = Modifier
+                    .clip(RoundedCornerShape(16.dp))
+                    .fillMaxWidth()
+                    .size(240.dp)
+            )
+
+            Spacer(modifier = Modifier.height(128.dp))
         }
 
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(top = 250.dp)
         ) {
 
             Text(
@@ -100,7 +121,12 @@ fun SeizureDetectedScreen(
         )
 
         if (isLogging) {
-            LogSeizureEventModal(onDismiss = { isLogging = false })
+            LogSeizureEventModal(onDismiss = { isLogging = false }, onClick = { seizureEvent ->
+                hasLogged = true
+                seizureEventViewModel.saveNewSeizure(seizureEvent)
+                seizureEventViewModel.logAllPastSeizures()
+                onDismiss()
+            })
         }
     }
 }
@@ -190,5 +216,5 @@ fun AlertButton(
 @Preview
 @Composable
 fun SeizureDetectedScreenPreview() {
-    SeizureDetectedScreen(onDismiss = {}, onEmergencyCall = {})
+    SeizureDetectedScreen(onDismiss = {}, onEmergencyCall = {}, viewModel())
 }

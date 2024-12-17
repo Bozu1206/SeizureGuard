@@ -88,7 +88,7 @@ class InferenceService : Service() {
 
                     if (prediction == 1) {
                         val app = context.applicationContext as RunningApp
-                        if (app.appLifecycleObserver.isAppInForeground == true) {
+                        if (app.appLifecycleObserver.isAppInForeground) {
                             val intent = Intent(context, MainActivity::class.java).apply {
                                 flags = Intent.FLAG_ACTIVITY_NEW_TASK
                                 putExtra("EXTRA_SEIZURE_DETECTED", true)
@@ -103,11 +103,6 @@ class InferenceService : Service() {
             }
         }
     }
-
-    private fun triggerTrainingService(context: Context) {
-
-    }
-
 
     @SuppressLint("UnspecifiedRegisterReceiverFlag")
     override fun onCreate() {

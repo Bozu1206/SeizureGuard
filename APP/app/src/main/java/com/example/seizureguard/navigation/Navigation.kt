@@ -7,6 +7,7 @@ import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -28,6 +29,8 @@ import com.example.seizureguard.profile.ProfileScreen
 import com.example.seizureguard.wallet_manager.GoogleWalletToken
 import com.example.seizureguard.dl.metrics.Metrics
 import com.example.seizureguard.medical_card.MedicalCardScreen
+import com.example.seizureguard.seizure_event.SeizureEventViewModel
+import com.example.seizureguard.settings.SettingsScreen
 import com.google.android.gms.samples.wallet.viewmodel.WalletUiState
 
 @Composable
@@ -36,7 +39,8 @@ fun AppContent(
     onRunInference: () -> Unit,
     payState: WalletUiState,
     requestSavePass: (GoogleWalletToken.PassRequest) -> Unit,
-    profileViewModel: ProfileViewModel
+    profileViewModel: ProfileViewModel,
+    seizureEventViewModel: SeizureEventViewModel
 ) {
     val navController = rememberNavController()
 
@@ -50,7 +54,7 @@ fun AppContent(
                 InferenceScreen(metrics = metrics, onRunInference = onRunInference)
             }
             composable("home") {
-                HomeScreen()
+                HomeScreen(seizureEventViewModel =  seizureEventViewModel)
             }
             composable("profile") {
                 ProfileScreen(profileScreenViewModel = profileViewModel, navController = navController, requestSavePass = requestSavePass)
@@ -60,6 +64,9 @@ fun AppContent(
             }
             composable("medicalCardForm") {
                 MedicalCardScreen(payState, requestSavePass)
+            }
+            composable("settings") {
+                SettingsScreen(profileViewModel)
             }
         }
     }
@@ -71,7 +78,8 @@ fun BottomNavigationBar(navController: NavController) {
         BottomNavItem("Home", Icons.Default.Home, "home"),
         BottomNavItem("Inference", Icons.Default.Refresh, "inference"),
         BottomNavItem("Profile", Icons.Default.Person, "profile"),
-        BottomNavItem("History", Icons.Default.DateRange, "history")
+        BottomNavItem("History", Icons.Default.DateRange, "history"),
+        BottomNavItem("Settings", Icons.Default.Settings, "settings")
     )
 
     NavigationBar {

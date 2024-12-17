@@ -1,6 +1,8 @@
 package com.example.seizureguard.onboarding
 
 import ProfileViewModel
+import android.hardware.biometrics.BiometricPrompt
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -39,6 +41,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.seizureguard.R
+import com.example.seizureguard.biometrics.authenticateWithBiometrics
 import com.example.seizureguard.biometrics.saveBiometricPreference
 import com.example.seizureguard.profile.ProfileCreationForm
 
@@ -169,7 +172,12 @@ fun OnboardingScreen(onFinish: () -> Unit, profileViewModel: ProfileViewModel) {
             } else {
                 Button(
                     onClick = {
-                        showBiometricDialog = true // Trigger biometric dialog
+                        if (profileViewModel.isEmpty()) {
+                            // Show error message
+                            Toast.makeText(context, "Please fill in all fields", Toast.LENGTH_SHORT).show()
+                        } else {
+                            showBiometricDialog = true // Trigger biometric dialog
+                        }
                     },
                     modifier = Modifier.weight(1f),
                     shape = RoundedCornerShape(16.dp)
@@ -186,14 +194,16 @@ fun OnboardingScreen(onFinish: () -> Unit, profileViewModel: ProfileViewModel) {
         }
     }
 
-    // Biometric Opt-In Dialog
+// Biometric Opt-In Dialog
     if (showBiometricDialog) {
         BiometricOptInDialog(
             onConfirm = {
-                saveBiometricPreference(context = context, enabled = true)
+                // saveBiometricPreference(context = context, enabled = true)
+                profileViewModel.saveAuthPreference(mode = "biometric")
                 onFinish() // Complete onboarding
             },
             onCancel = {
+                profileViewModel.saveAuthPreference(mode = "password")
                 showBiometricDialog = false // Dismiss dialog
                 onFinish() // Complete onboarding
             }
@@ -222,7 +232,6 @@ fun BiometricOptInDialog(
         }
     )
 }
-
 
 
 @Composable

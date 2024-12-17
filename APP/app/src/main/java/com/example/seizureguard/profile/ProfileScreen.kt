@@ -1,14 +1,19 @@
 package com.example.seizureguard.profile
 
 import ProfileViewModel
+import android.app.Activity
+import android.content.Context
 import android.content.Intent
-import androidx.compose.foundation.BorderStroke
+import android.net.Uri
+import android.provider.ContactsContract
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -17,20 +22,31 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.layout.wrapContentSize
+import androidx.compose.foundation.layout.wrapContentWidth
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Phone
+import androidx.compose.material.icons.filled.Remove
+import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
+import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -40,10 +56,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.paint
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -51,11 +69,10 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
-import coil.compose.AsyncImagePainter.State.Empty.painter
-import coil.request.ImageRequest
+import com.example.seizureguard.R
+import com.example.seizureguard.tools.onEmergencyCall
 import com.example.seizureguard.ui.theme.AppTheme
 import com.example.seizureguard.wallet_manager.GoogleWalletToken
-import com.google.android.gms.samples.wallet.viewmodel.WalletViewModel
 import com.google.wallet.button.ButtonType
 import com.google.wallet.button.WalletButton
 
@@ -65,6 +82,7 @@ fun ProfileScreen(
     navController: NavController,
     requestSavePass: (GoogleWalletToken.PassRequest) -> Unit
 ) {
+    val context = LocalContext.current
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -76,13 +94,12 @@ fun ProfileScreen(
             modifier = Modifier.fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // User Profile Section
             UserProfileSection(profileScreenViewModel, requestSavePass)
 
             Spacer(modifier = Modifier.height(24.dp))
 
             // Emergency Contacts Section
-            // EmergencyContactsSection()
+            EmergencyContactsSection(context, profileScreenViewModel)
 
             // Spacer(modifier = Modifier.height(24.dp))
 
@@ -93,7 +110,10 @@ fun ProfileScreen(
 }
 
 @Composable
-fun UserProfileSection(profileScreenViewModel: ProfileViewModel, onWalletButtonClick: (GoogleWalletToken.PassRequest) -> Unit) {
+fun UserProfileSection(
+    profileScreenViewModel: ProfileViewModel,
+    onWalletButtonClick: (GoogleWalletToken.PassRequest) -> Unit
+) {
     val userName by profileScreenViewModel.userName.collectAsState()
     val userEmail by profileScreenViewModel.userEmail.collectAsState()
     val birthdate by profileScreenViewModel.birthdate.collectAsState()
@@ -110,8 +130,10 @@ fun UserProfileSection(profileScreenViewModel: ProfileViewModel, onWalletButtonC
         ),
         modifier = Modifier
             .fillMaxWidth()
+            .padding(8.dp)
             .shadow(elevation = 8.dp, shape = RoundedCornerShape(24.dp))
             .clip(RoundedCornerShape(24.dp))
+
     ) {
         Row(
             horizontalArrangement = Arrangement.SpaceEvenly,
@@ -124,10 +146,10 @@ fun UserProfileSection(profileScreenViewModel: ProfileViewModel, onWalletButtonC
                     model = profilePictureUri,
                     contentDescription = "Profile Picture",
                     modifier = Modifier
-                        .size(150.dp)
-                        .padding(16.dp)
+                        .size(140.dp)
+                        .padding(18.dp)
                         .clickable {
-                            val intent = Intent(Intent.ACTION_GET_CONTENT).apply {
+                            val intent = Intent(Intent.ACTION_PICK).apply {
                                 type = "image/*"
                             }
                             photoPickerLauncher.launch(intent)
@@ -143,10 +165,12 @@ fun UserProfileSection(profileScreenViewModel: ProfileViewModel, onWalletButtonC
                     modifier = Modifier.size(65.dp)
                 )
             }
+
+
             Column(
                 modifier = Modifier
                     .background(Color.Transparent)
-                    .padding(20.dp)
+                    .padding(12.dp)
             ) {
                 Row {
                     Text(
@@ -187,8 +211,6 @@ fun UserProfileSection(profileScreenViewModel: ProfileViewModel, onWalletButtonC
                     fontWeight = FontWeight.Bold,
                 )
 
-                Spacer(modifier = Modifier.height(8.dp))
-
                 Text(
                     text = "Medication: None",
                     style = MaterialTheme.typography.labelMedium,
@@ -215,7 +237,8 @@ fun UserProfileSection(profileScreenViewModel: ProfileViewModel, onWalletButtonC
                 val request = GoogleWalletToken.PassRequest(
                     uid = profileScreenViewModel.userId.value,
                     patientName = profileScreenViewModel.userName.value,
-                    emergencyContact = "emergencyContact",
+                    emergencyContact = profileScreenViewModel.emergencyContacts.value.firstOrNull()?.phone
+                        ?: "",
                     seizureType = profileScreenViewModel.epi_type.value,
                     medication = "",
                     birthdate = profileScreenViewModel.birthdate.value
@@ -227,59 +250,167 @@ fun UserProfileSection(profileScreenViewModel: ProfileViewModel, onWalletButtonC
 }
 
 @Composable
-fun EmergencyContactsSection() {
+fun EmergencyContactsSection(context: Context, profileViewModel: ProfileViewModel) {
+    val emergencyContacts by profileViewModel.emergencyContacts.collectAsState()
+    val activity = LocalContext.current as Activity
+    val contactPicker = getContactPicker(context, profileViewModel)
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp)
+            .padding(horizontal = 8.dp)
     ) {
         Text(
             text = "Emergency Contacts",
-            style = MaterialTheme.typography.labelLarge,
+            style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold,
             modifier = Modifier.padding(bottom = 4.dp)
         )
 
-        EmergencyContactCard(name = "Wife", phone = "+41 78 235 98 76")
-        EmergencyContactCard(name = "Sister", phone = "+41 78 235 98 78")
-        EmergencyContactCard(name = "Doctor Smith", phone = "+41 78 235 98 79")
+        Spacer(modifier = Modifier.height(16.dp))
+
+        LazyColumn(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            items(emergencyContacts) { contact ->
+                val uri = if (contact.photoUri != null) Uri.parse(contact.photoUri) else null
+                EmergencyContactCard(
+                    name = contact.name,
+                    phone = contact.phone,
+                    picture = uri,
+                    profileViewModel = profileViewModel
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        if (emergencyContacts.size < 5) {
+            Button(
+                onClick = {
+                    if (hasContactPermission(context)) {
+                        val intent = Intent(Intent.ACTION_PICK).apply {
+                            type = ContactsContract.CommonDataKinds.Phone.CONTENT_TYPE
+                        }
+                        contactPicker.launch(intent)
+                    } else {
+                        requestContactPermission(context, activity)
+                    }
+                },
+                modifier = Modifier.fillMaxWidth()
+
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.Add,
+                    contentDescription = "Add Another Contact (${5 - emergencyContacts.size} remaining)",
+                    modifier = Modifier.size(24.dp)
+                )
+                Text(text = "Add Emergency Contact")
+            }
+
+            Text(
+                text = "Add up to 5 emergency contacts",
+                style = MaterialTheme.typography.labelSmall,
+                color = Color.Gray,
+                modifier = Modifier
+                    .padding(top = 8.dp)
+                    .fillMaxWidth()
+                    .wrapContentHeight(align = Alignment.CenterVertically)
+                    .wrapContentWidth(align = Alignment.CenterHorizontally)
+            )
+        }
 
         Spacer(modifier = Modifier.height(30.dp))
     }
 }
 
 @Composable
-fun EmergencyContactCard(name: String, phone: String) {
+fun EmergencyContactCard(
+    name: String,
+    phone: String,
+    picture: Uri?,
+    profileViewModel: ProfileViewModel,
+    onClick: () -> Unit = {}
+) {
+    val context = LocalContext.current
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .fillMaxWidth()
-            .padding(8.dp)
-            .background(MaterialTheme.colorScheme.surface, shape = RoundedCornerShape(10.dp))
-            .border(0.3.dp, MaterialTheme.colorScheme.primary, shape = RoundedCornerShape(10.dp))
-            .padding(16.dp)
-    ) {
-        Icon(
-            imageVector = Icons.Default.Person,
-            contentDescription = null,
-            modifier = Modifier
-                .size(32.dp)
-                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.2f), CircleShape)
-                .padding(8.dp)
-        )
+            .background(
+                MaterialTheme.colorScheme.secondaryContainer
+                    .copy(0.3f), shape = RoundedCornerShape(16.dp)
+            )
+            .padding(12.dp)
 
+            .clickable {
+                onClick()
+            }
+
+    ) {
+        if (picture != null) {
+            AsyncImage(
+                model = picture,
+                contentDescription = "Profile Picture",
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape),
+            )
+        } else {
+            Icon(
+                imageVector = Icons.Default.Person,
+                contentDescription = null,
+                modifier = Modifier
+                    .size(40.dp)
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.2f), CircleShape)
+                    .padding(8.dp)
+            )
+        }
         Spacer(modifier = Modifier.width(12.dp))
 
         Column {
             Text(
                 text = name,
-                style = MaterialTheme.typography.bodyMedium,
+                style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.Bold
             )
             Text(
                 text = phone,
-                style = MaterialTheme.typography.bodySmall,
+                style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.secondary
+            )
+        }
+
+        Spacer(modifier = Modifier.weight(1f))
+
+        Icon(
+            imageVector = Icons.Filled.Phone,
+            contentDescription = "Call",
+            tint = MaterialTheme.colorScheme.onPrimaryContainer,
+            modifier = Modifier
+                .size(24.dp)
+                .clickable {
+                    onEmergencyCall(
+                        context = context,
+                        phone = phone
+                    )
+                }
+        )
+
+        Spacer(modifier = Modifier.width(16.dp))
+
+        if (profileViewModel.emergencyContacts.value.size > 1) {
+            Icon(
+                imageVector = Icons.Filled.Delete,
+                contentDescription = "Edit",
+                tint = MaterialTheme.colorScheme.error,
+                modifier = Modifier
+                    .size(24.dp)
+                    .clickable {
+                        profileViewModel.removeEmergencyContact(phone)
+                    }
             )
         }
     }
@@ -365,6 +496,9 @@ fun EditProfile(onDismissRequest: () -> Unit, profileScreenViewModel: ProfileVie
 @Composable
 fun ProfileScreenPreview() {
     AppTheme {
-        ProfileScreen(viewModel(), navController = NavController(context = LocalContext.current), {})
+        ProfileScreen(
+            viewModel(),
+            navController = NavController(context = LocalContext.current),
+            {})
     }
 }

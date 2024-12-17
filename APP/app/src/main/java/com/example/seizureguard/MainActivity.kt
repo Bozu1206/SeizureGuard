@@ -24,11 +24,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
 import androidx.core.app.ActivityCompat
+import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
-import com.example.seizureguard.dl.ModelManager
+import com.example.seizureguard.biometrics.BiometricAuthenticator
 import com.example.seizureguard.dl.metrics.Metrics
 import com.example.seizureguard.dl.utils.SampleBroadcastService
 import com.example.seizureguard.inference.InferenceService
@@ -36,8 +38,9 @@ import com.example.seizureguard.login.LoginScreen
 import com.example.seizureguard.onboarding.OnboardingScreen
 import com.example.seizureguard.seizure_event.SeizureDao
 import com.example.seizureguard.seizure_event.SeizureDatabase
-import com.example.seizureguard.tools.copyAssetFileOrDir
+import com.example.seizureguard.seizure_event.SeizureEventViewModel
 import com.example.seizureguard.tools.onEmergencyCall
+import com.example.seizureguard.ui.theme.AppTheme
 import com.example.seizureguard.wallet_manager.GoogleWalletToken
 import com.example.seizureguard.wallet_manager.generateToken
 import com.google.android.gms.samples.wallet.viewmodel.WalletViewModel
@@ -45,11 +48,13 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
-class MainActivity : ComponentActivity() {
+class MainActivity : FragmentActivity() {
     private lateinit var viewModel: OnboardingViewModel
     val profileViewModel: ProfileViewModel by viewModels {
         ProfileViewModelFactory(applicationContext)
     }
+
+    private val seizureEventViewModel: SeizureEventViewModel by viewModels()
 
     private var metrics by mutableStateOf(Metrics(-1.0, -1.0, -1.0, -1.0, -1.0))
     private var isSeizureDetected by mutableStateOf(false)
@@ -67,7 +72,6 @@ class MainActivity : ComponentActivity() {
             isSeizureDetected = true
         }
     }
-
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -87,48 +91,61 @@ class MainActivity : ComponentActivity() {
         }
 
         databaseRoom = initializeDatabase()
-
         setContent {
-            // DEBUG
-            // viewModel.resetOnboarding(profileViewModel)
+            val activity = LocalContext.current as FragmentActivity
+            val biometricAuthenticator = BiometricAuthenticator(this)
 
-            // Fetch app states
-            val showOnboarding = viewModel.showOnboarding.collectAsState()
-            val isLoggedIn =
-                remember { mutableStateOf(false) } // Replace with your actual login state logic
+            AppTheme {
+                // DEBUG
+                // viewModel.resetOnboarding(profileViewModel)
 
-            if (showOnboarding.value) {
-                // Show OnboardingScreen
-                OnboardingScreen(
-                    onFinish = {
-                        viewModel.completeOnboarding()
-                    },
-                    profileViewModel = profileViewModel
-                )
-            } else {
-                // Show main app content
-                MainScreen(
-                    isSeizureDetected = isSeizureDetected,
-                    onDismissSeizure = { isSeizureDetected = false },
-                    onEmergencyCall = { onEmergencyCall(context = this) },
-                    onRunInference = {
-                        Log.d("MainActivity", "Starting SampleBroadcastService")
-                        Intent(applicationContext, SampleBroadcastService::class.java).also {
-                            startService(it)
-                        }
+                // Fetch app states
+                val showOnboarding = viewModel.showOnboarding.collectAsState()
+                val isLoggedIn = remember { mutableStateOf(false) }
 
-                        Log.d("MainActivity", "Starting InferenceService")
-                        Intent(applicationContext, InferenceService::class.java).also {
-                            Log.d("MainActivity", "starting intent")
-                            it.action = InferenceService.Actions.START.toString()
-                            startForegroundService(it)
-                        }
-                    },
-                    metrics = metrics,
-                    payState = walletViewModel.walletUiState.collectAsStateWithLifecycle().value,
-                    requestSavePass = ::requestSavePass,
-                    profileViewModel = profileViewModel
-                )
+                if (showOnboarding.value) {
+                    // Show OnboardingScreen
+                    OnboardingScreen(
+                        onFinish = {
+                            isLoggedIn.value = true
+                            viewModel.completeOnboarding()
+                        },
+                        profileViewModel = profileViewModel
+                    )
+                } else if (!isLoggedIn.value) {
+                    LoginScreen(
+                        onLoginSuccess = { isLoggedIn.value = true },
+                        context = this,
+                        activity = activity,
+                        biometricAuthenticator = biometricAuthenticator,
+                        profileViewModel = profileViewModel
+                    )
+                } else {
+                    // Show main app content
+                    MainScreen(
+                        isSeizureDetected = isSeizureDetected,
+                        onDismissSeizure = { isSeizureDetected = false },
+                        onEmergencyCall = { onEmergencyCall(context = this) },
+                        onRunInference = {
+                            Log.d("MainActivity", "Starting SampleBroadcastService")
+                            Intent(applicationContext, SampleBroadcastService::class.java).also {
+                                startService(it)
+                            }
+
+                            Log.d("MainActivity", "Starting InferenceService")
+                            Intent(applicationContext, InferenceService::class.java).also {
+                                Log.d("MainActivity", "starting intent")
+                                it.action = InferenceService.Actions.START.toString()
+                                startForegroundService(it)
+                            }
+                        },
+                        metrics = metrics,
+                        payState = walletViewModel.walletUiState.collectAsStateWithLifecycle().value,
+                        requestSavePass = ::requestSavePass,
+                        profileViewModel = profileViewModel,
+                        seizureEventViewModel = seizureEventViewModel
+                    )
+                }
             }
         }
 

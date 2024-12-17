@@ -11,6 +11,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.DateRange
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -19,6 +20,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -115,6 +117,10 @@ fun ProfileCreationForm(profileViewModel: ProfileViewModel) {
             )
         })
 
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Emergency Contact
+        ContactPicker(context = LocalContext.current, profileViewModel = profileViewModel)
     }
 }
 
@@ -234,7 +240,11 @@ fun PasswordTextField(password: String, onValueChange: (String) -> Unit) {
 }
 
 @Composable
-fun EpilepsyTypeField(value: String, onValueChange: (String) -> Unit, label: String = "Epilepsy Type") {
+fun EpilepsyTypeField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    label: String = "Epilepsy Type"
+) {
     var expanded by remember { mutableStateOf(false) }
     val suggestions = listOf("Focal", "Generalized", "Focal + Generalized", "Unknown")
     var selectedText by remember { mutableStateOf(value) }
@@ -262,11 +272,15 @@ fun EpilepsyTypeField(value: String, onValueChange: (String) -> Unit, label: Str
         DropdownMenu(
             expanded = expanded,
             onDismissRequest = { expanded = false },
-            modifier = Modifier.width(with(LocalDensity.current) { dropDownWidth.toDp() }).background(Color.White),
+            modifier = Modifier
+                .width(with(LocalDensity.current) { dropDownWidth.toDp() })
+                .background(Color.White),
         ) {
             suggestions.forEach { label ->
                 DropdownMenuItem(
-                    onClick = { selectedText = label; onValueChange(selectedText); expanded = false },
+                    onClick = {
+                        selectedText = label; onValueChange(selectedText); expanded = false
+                    },
                     text = { Text(label) })
             }
         }
