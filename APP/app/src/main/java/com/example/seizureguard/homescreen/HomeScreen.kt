@@ -45,11 +45,12 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.seizureguard.guidelines.GuidelinesModal
 import com.example.seizureguard.seizure_event.LogSeizureEventModal
+import com.example.seizureguard.seizure_event.SeizureEventViewModel
 import com.example.seizureguard.tools.onEmergencyCall
 import com.example.seizureguard.ui.theme.AppTheme
 
 @Composable
-fun HomeScreen(  homeScreenViewModel: HomeScreenViewModel = viewModel()) {
+fun HomeScreen(homeScreenViewModel: HomeScreenViewModel = viewModel(), seizureEventViewModel: SeizureEventViewModel) {
     val context = LocalContext.current
     Box(
         modifier = Modifier
@@ -78,7 +79,7 @@ fun HomeScreen(  homeScreenViewModel: HomeScreenViewModel = viewModel()) {
             Spacer(modifier = Modifier.height(24.dp))
 
             // Quick Actions
-            QuickActionsSection(context)
+            QuickActionsSection(context, seizureEventViewModel = seizureEventViewModel)
         }
     }
 }
@@ -153,7 +154,7 @@ fun MetricCard(title: String, value: String, unit: String) {
 }
 
 @Composable
-fun QuickActionsSection(context: Context) {
+fun QuickActionsSection(context: Context, seizureEventViewModel: SeizureEventViewModel) {
     var showLogEventModal by remember { mutableStateOf(false) }
     var showGuidelines by remember { mutableStateOf(false)}
 
@@ -189,7 +190,12 @@ fun QuickActionsSection(context: Context) {
 
             if (showLogEventModal) {
                 LogSeizureEventModal(
-                    onDismiss = { showLogEventModal = false }
+                    onDismiss = { showLogEventModal = false },
+                    onClick = { seizureEvent ->
+                        showLogEventModal = false
+                        seizureEventViewModel.saveNewSeizure(seizureEvent)
+                        seizureEventViewModel.logAllPastSeizures()
+                    }
                 )
             }
         }

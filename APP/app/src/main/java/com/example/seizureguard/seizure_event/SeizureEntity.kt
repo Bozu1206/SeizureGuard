@@ -19,5 +19,5 @@ data class SeizureEntity(
     val triggers: List<String>,
     @ColumnInfo(name = "seizure_timestamps")
     val timestamp: Long,
-    )
+)
 

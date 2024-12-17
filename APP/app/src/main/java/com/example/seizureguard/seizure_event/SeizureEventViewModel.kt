@@ -1,13 +1,15 @@
 package com.example.seizureguard.seizure_event
 
 import android.app.Application
+import android.content.Context
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.launch
 
-class SeizureEventViewModel (application: Application) : AndroidViewModel(application) {
-
+class SeizureEventViewModel(application: Application) : AndroidViewModel(application) {
     private val database: SeizureDao = SeizureDatabase.getInstance(application).seizureDao
 
     // Function to save a new seizure
@@ -31,4 +33,5 @@ class SeizureEventViewModel (application: Application) : AndroidViewModel(applic
             }
         }
     }
+
 }

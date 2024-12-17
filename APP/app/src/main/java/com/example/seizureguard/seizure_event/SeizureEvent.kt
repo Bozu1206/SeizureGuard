@@ -26,6 +26,7 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
@@ -34,11 +35,31 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.google.accompanist.flowlayout.FlowRow
 
+data class DefaultState(
+    val type: String = "Focal",
+    val duration: Int = 0,
+    val severity: Int = 2,
+    val triggers: List<String> = emptyList(),
+    val timestamp: Long = -1
+)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun LogSeizureEventModal(onDismiss: () -> Unit, seizureEventViewModel: SeizureEventViewModel = viewModel()) {
-    var selectedOption by remember { mutableStateOf("Focal") }
+fun LogSeizureEventModal(
+    onDismiss: () -> Unit,
+    onClick: (SeizureEvent) -> Unit,
+    label: String = "Log A Seizure",
+    default: DefaultState = DefaultState()
+) {
+    var selectedOption by remember { mutableStateOf(default.type) }
+    var duration by remember { mutableStateOf(default.duration.toString()) }
+    var severity by remember { mutableStateOf(default.severity.toFloat()) }
+    var selectedTriggers = remember { mutableStateListOf(*default.triggers.toTypedArray()) }
+
+
     val options = listOf("Focal", "Generalized", "Unknown")
+    val triggerOptions = listOf("Stress", "Lack of Sleep", "Flashing Lights", "Other")
+
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -51,7 +72,7 @@ fun LogSeizureEventModal(onDismiss: () -> Unit, seizureEventViewModel: SeizureEv
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Text(
-                text = "Log A Seizure",
+                text = label,
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold
             )
@@ -63,7 +84,6 @@ fun LogSeizureEventModal(onDismiss: () -> Unit, seizureEventViewModel: SeizureEv
                 onOptionSelected = { selectedOption = it }
             )
 
-            var duration by remember { mutableStateOf("") }
             OutlinedTextField(
                 value = duration,
                 onValueChange = { duration = it },
@@ -72,7 +92,7 @@ fun LogSeizureEventModal(onDismiss: () -> Unit, seizureEventViewModel: SeizureEv
                 modifier = Modifier.fillMaxWidth()
             )
 
-            var severity by remember { mutableStateOf(2f) }
+
             Column {
                 Text("Severity")
                 Slider(
@@ -82,11 +102,12 @@ fun LogSeizureEventModal(onDismiss: () -> Unit, seizureEventViewModel: SeizureEv
                     steps = 3,
                     modifier = Modifier.fillMaxWidth()
                 )
-                Text(text = "Selected Severity: ${severity.toInt()}", style = MaterialTheme.typography.bodySmall)
+                Text(
+                    text = "Selected Severity: ${severity.toInt()}",
+                    style = MaterialTheme.typography.bodySmall
+                )
             }
 
-            val triggerOptions = listOf("Stress", "Lack of Sleep", "Flashing Lights", "Other")
-            val selectedTriggers = remember { mutableStateListOf<String>() }
             MultiSelectChips(
                 options = triggerOptions,
                 selectedOptions = selectedTriggers,
@@ -96,20 +117,16 @@ fun LogSeizureEventModal(onDismiss: () -> Unit, seizureEventViewModel: SeizureEv
             )
 
             val seizureType = selectedOption
+            val seizureEvent = SeizureEvent(
+                type = seizureType,
+                duration = duration.toIntOrNull() ?: 0,
+                severity = severity.toInt(),
+                triggers = selectedTriggers,
+                timestamp = System.currentTimeMillis()
+            )
+
             Button(
-                onClick = {
-                    Log.d("Saving seizure","Saving seizure")
-                    val seizureEvent = SeizureEvent(
-                        type = seizureType,
-                        duration = duration.toIntOrNull() ?: 0,
-                        severity = severity.toInt(),
-                        triggers = selectedTriggers,
-                        timestamp = System.currentTimeMillis()
-                    )
-                    seizureEventViewModel.saveNewSeizure(seizureEvent)
-                    seizureEventViewModel.logAllPastSeizures()
-                    onDismiss()
-                },
+                onClick = { onClick(seizureEvent) },
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text("Save Event")
@@ -160,8 +177,6 @@ fun DropdownField(
 }
 
 
-
-
 @Composable
 fun MultiSelectChips(
     options: List<String>,
@@ -203,5 +218,5 @@ data class SeizureEvent(
     val duration: Int,
     val severity: Int,
     val triggers: List<String>,
-    val timestamp: Long
+    var timestamp: Long
 )
