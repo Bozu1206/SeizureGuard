@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "854920411385",
+    "project_id": "seizureguard-1e3d9",
+    "storage_bucket": "seizureguard-1e3d9.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:854920411385:android:7160a8adabf10c086dca28",
+        "android_client_info": {
+          "package_name": "com.epfl.ch.seizureguard"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCYYJhqegO-H7L8DpVmWoKjBZFUK0rUn4g"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
