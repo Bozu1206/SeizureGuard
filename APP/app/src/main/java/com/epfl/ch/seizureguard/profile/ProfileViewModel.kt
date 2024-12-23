@@ -68,7 +68,7 @@ class ProfileViewModel(private val repository: ProfileRepository) : ViewModel() 
                     isBiometricEnabled = isBiometric
                 )
             }
-            saveProfile() // Persiste les changements
+            saveProfile()
             Log.d("ProfileViewModel", "Saved auth preference: isBiometric=$isBiometric")
         }
     }
@@ -84,7 +84,7 @@ class ProfileViewModel(private val repository: ProfileRepository) : ViewModel() 
     fun updateProfileField(key: String, value: String) {
         viewModelScope.launch {
             Log.d("ProfileViewModel", "Updating profile field: $key with value: $value")
-            repository.updateProfileField(key, value) // Met à jour dans DataStore
+            repository.updateProfileField(key, value)
 
             // Met à jour l'état local
             _profileState.update { currentProfile ->
@@ -100,7 +100,7 @@ class ProfileViewModel(private val repository: ProfileRepository) : ViewModel() 
                 }
             }
             Log.d("ProfileViewModel", "Updated _profileState: ${_profileState.value}")
-            saveProfile() // Persiste les changements
+            saveProfile()
         }
     }
 
@@ -129,7 +129,7 @@ class ProfileViewModel(private val repository: ProfileRepository) : ViewModel() 
             _profileState.update { currentProfile ->
                 currentProfile.copy(isTrainingEnabled = isEnabled)
             }
-            saveProfile() // Persiste les changements
+            saveProfile()
             Log.d("ProfileViewModel", "Saved training preference: isEnabled=$isEnabled")
         }
     }
@@ -144,7 +144,7 @@ class ProfileViewModel(private val repository: ProfileRepository) : ViewModel() 
             currentProfile.copy(emergencyContacts = updatedContacts)
         }
         Log.d("ProfileViewModel", "Updated emergencyContacts: $updatedContacts")
-        saveProfile() // Persiste les changements
+        saveProfile()
     }
 }
 
