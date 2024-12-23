@@ -1,5 +1,6 @@
 package com.epfl.ch.seizureguard.onboarding
 
+import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
@@ -17,6 +18,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ArrowBackIosNew
 import androidx.compose.material.icons.rounded.ArrowForwardIos
+import androidx.compose.material.icons.rounded.Login
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
@@ -31,19 +33,26 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.paint
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.core.text.htmlEncode
+import androidx.navigation.NavController
 import com.epfl.ch.seizureguard.R
+import com.epfl.ch.seizureguard.profile.Profile
 import com.epfl.ch.seizureguard.profile.ProfileCreationForm
 import com.epfl.ch.seizureguard.profile.ProfileViewModel
+import java.util.UUID
 
 @Composable
-fun OnboardingScreen(onFinish: () -> Unit, profileViewModel: ProfileViewModel) {
+fun OnboardingScreen(onFinish: () -> Unit, profileViewModel: ProfileViewModel, onboardingViewModel: OnboardingViewModel) {
     var currentPage by remember { mutableStateOf(0) }
     var showBiometricDialog by remember { mutableStateOf(false) }
+    val profile: Profile = Profile.empty()
     val context = LocalContext.current
 
     val pages = listOf(
@@ -66,7 +75,7 @@ fun OnboardingScreen(onFinish: () -> Unit, profileViewModel: ProfileViewModel) {
         R.drawable.ob4
     )
 
-    var modifier: Modifier
+    val modifier: Modifier
     if (currentPage == pages.lastIndex) {
         modifier = Modifier
             .fillMaxSize()
@@ -84,7 +93,6 @@ fun OnboardingScreen(onFinish: () -> Unit, profileViewModel: ProfileViewModel) {
     Box(
         modifier = modifier
     ) {
-        // Main Content
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -118,87 +126,132 @@ fun OnboardingScreen(onFinish: () -> Unit, profileViewModel: ProfileViewModel) {
                 )
             } else {
                 // Profile Creation Screen (last page)
-                CreateHealthProfileScreen(profileViewModel = profileViewModel)
+                CreateHealthProfileScreen(profileViewModel = profileViewModel, profile = profile)
             }
         }
 
-        // Navigation Buttons at the bottom
-        Row(
-            horizontalArrangement = Arrangement.SpaceBetween,
+        Box(
             modifier = Modifier
-                .fillMaxWidth()
-                .align(Alignment.BottomCenter)
-                .padding(16.dp)
+                .fillMaxSize()
         ) {
-            if (currentPage > 0) {
-                Button(
-                    onClick = { currentPage-- },
-                    modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(16.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Rounded.ArrowBackIosNew,
-                        contentDescription = "Back",
-                        modifier = Modifier.size(16.dp)
+            Column(
+                verticalArrangement = Arrangement.SpaceBetween,
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+            ) {
+
+                if (currentPage == pages.lastIndex) {
+                    Text(
+                        text = "Already have an account?",
+                        color = Color.Gray,
+                        fontWeight = FontWeight.Light,
+                        textAlign = TextAlign.Center
                     )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Back")
+
+                    Button(
+                        onClick = {
+                            onboardingViewModel.wantsToLogin()
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp)
+                    ) {
+                        Text("Login")
+                        Icon(
+                            imageVector = Icons.Rounded.Login,
+                            contentDescription = "Login",
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
                 }
-            }
 
-            Spacer(modifier = Modifier.width(8.dp))
-
-            if (currentPage < pages.lastIndex) {
-                Button(
-                    onClick = { currentPage++ },
+                // Navigation (Back/Next/Finish)
+                Row(
+                    horizontalArrangement = Arrangement.SpaceBetween,
                     modifier = Modifier
-                        .weight(1f)
-                        .fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp)
+                        .fillMaxWidth()
+                        .padding(bottom = 16.dp)
                 ) {
-                    Text("Next")
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Icon(
-                        imageVector = Icons.Rounded.ArrowForwardIos,
-                        contentDescription = "Next",
-                        modifier = Modifier.size(16.dp)
-                    )
-                }
-            } else {
-                Button(
-                    onClick = {
-                        if (profileViewModel.isEmpty()) {
-                            // Show error message
-                            Toast.makeText(context, "Please fill in all fields", Toast.LENGTH_SHORT).show()
-                        } else {
-                            showBiometricDialog = true // Trigger biometric dialog
+                    if (currentPage > 0) {
+                        Button(
+                            onClick = { currentPage-- },
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(16.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Rounded.ArrowBackIosNew,
+                                contentDescription = "Back",
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Back")
                         }
-                    },
-                    modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(16.dp)
-                ) {
-                    Text("Finish")
+                    }
+
                     Spacer(modifier = Modifier.width(8.dp))
-                    Icon(
-                        imageVector = Icons.Rounded.ArrowForwardIos,
-                        contentDescription = "Finish",
-                        modifier = Modifier.size(16.dp)
-                    )
+
+                    if (currentPage < pages.lastIndex) {
+                        Button(
+                            onClick = { currentPage++ },
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(16.dp)
+                        ) {
+                            Text("Next")
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Icon(
+                                imageVector = Icons.Rounded.ArrowForwardIos,
+                                contentDescription = "Next",
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                    } else {
+                        Button(
+                            onClick = {
+                                if (!Profile.isComplete(profile = profile)) {
+                                    // Show error message
+                                    Log.d("OnboardingScreen", "Profile is incomplete: $profile")
+                                    Toast.makeText(
+                                        context,
+                                        "Please fill in all fields",
+                                        Toast.LENGTH_SHORT
+                                    )
+                                        .show()
+                                } else {
+                                    profile.uid =
+                                        (profile.email + profile.name + profile.name).hashCode()
+                                            .toString()
+                                    profileViewModel.saveProfile()
+                                    showBiometricDialog = true // Trigger biometric dialog
+                                }
+                            },
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(16.dp)
+                        ) {
+                            Text("Finish")
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Icon(
+                                imageVector = Icons.Rounded.ArrowForwardIos,
+                                contentDescription = "Finish",
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                    }
                 }
             }
         }
+
     }
 
 // Biometric Opt-In Dialog
     if (showBiometricDialog) {
         BiometricOptInDialog(
             onConfirm = {
-                // saveBiometricPreference(context = context, enabled = true)
-                profileViewModel.saveAuthPreference(mode = "biometric")
+                profileViewModel.saveAuthPreference(isBiometric = true)
                 onFinish() // Complete onboarding
             },
             onCancel = {
-                profileViewModel.saveAuthPreference(mode = "password")
+                profileViewModel.saveAuthPreference(isBiometric = false)
                 showBiometricDialog = false // Dismiss dialog
                 onFinish() // Complete onboarding
             }
@@ -230,12 +283,15 @@ fun BiometricOptInDialog(
 
 
 @Composable
-fun CreateHealthProfileScreen(profileViewModel: ProfileViewModel) {
+fun CreateHealthProfileScreen(profileViewModel: ProfileViewModel, profile: Profile) {
     Box(
         modifier = Modifier
             .fillMaxSize()
     ) {
-        ProfileCreationForm(profileViewModel = profileViewModel)
+        ProfileCreationForm(
+            profileViewModel = profileViewModel,
+            profile = profile
+        )
     }
 }
 

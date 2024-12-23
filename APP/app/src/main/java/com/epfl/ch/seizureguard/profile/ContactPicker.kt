@@ -93,7 +93,7 @@ fun getContactPicker(context: Context, profileViewModel: ProfileViewModel): Mana
                                 photoUri = localUri?.toString()
                             )
 
-                            profileViewModel.saveEmergencyContact(contact = contact)
+                            profileViewModel.updateEmergencyContacts(contact, isAdding = true)
                         }
                     }
                 }
@@ -107,10 +107,10 @@ fun ContactPicker(context: Context, profileViewModel: ProfileViewModel) {
     val activity = LocalContext.current as Activity
     val contactPicker = getContactPicker(context, profileViewModel)
 
-    val contactList = profileViewModel.emergencyContacts.collectAsState()
-    val contactName = contactList.value.firstOrNull()?.name
-    val contactPhone = contactList.value.firstOrNull()?.phone
-    val contactPicture = contactList.value.firstOrNull()?.photoUri
+    val contactList = profileViewModel.profileState.value.emergencyContacts
+    val contactName = contactList.firstOrNull()?.name
+    val contactPhone = contactList.firstOrNull()?.phone
+    val contactPicture = contactList.firstOrNull()?.photoUri
 
     if (contactName != null && contactPhone != null) {
         Text(

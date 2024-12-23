@@ -26,8 +26,9 @@ import com.epfl.ch.seizureguard.history.HistoryScreen
 import com.epfl.ch.seizureguard.homescreen.HomeScreen
 import com.epfl.ch.seizureguard.inference.InferenceScreen
 import com.epfl.ch.seizureguard.profile.ProfileScreen
-import com.example.seizureguard.wallet_manager.GoogleWalletToken
+import com.epfl.ch.seizureguard.wallet_manager.GoogleWalletToken
 import com.epfl.ch.seizureguard.dl.metrics.Metrics
+import com.epfl.ch.seizureguard.firebase.FirebaseLoginScreen
 import com.epfl.ch.seizureguard.history.HistoryViewModel
 import com.epfl.ch.seizureguard.medical_card.MedicalCardScreen
 import com.epfl.ch.seizureguard.seizure_event.SeizureEventViewModel
@@ -41,6 +42,7 @@ fun AppContent(
     onRunInference: () -> Unit,
     payState: WalletUiState,
     requestSavePass: (GoogleWalletToken.PassRequest) -> Unit,
+    onLogoutClicked: () -> Unit,
     profileViewModel: ProfileViewModel,
     seizureEventViewModel: SeizureEventViewModel,
     historyViewModel: HistoryViewModel,
@@ -83,7 +85,7 @@ fun AppContent(
                 MedicalCardScreen(payState, requestSavePass)
             }
             composable("settings") {
-                SettingsScreen(profileViewModel)
+                SettingsScreen(profileViewModel, onLogoutClicked = onLogoutClicked)
             }
         }
     }

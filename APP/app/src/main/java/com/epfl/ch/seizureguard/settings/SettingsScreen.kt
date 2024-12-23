@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.ModelTraining
+import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
@@ -29,9 +30,8 @@ import androidx.compose.ui.unit.sp
 import com.epfl.ch.seizureguard.profile.ProfileViewModel
 
 @Composable
-fun SettingsScreen(profileViewModel: ProfileViewModel) {
-    val checked by profileViewModel.isBiometricEnabled.collectAsState()
-    val training by profileViewModel.isTrainingEnabled.collectAsState()
+fun SettingsScreen(profileViewModel: ProfileViewModel, onLogoutClicked: () -> Unit = {}) {
+    val profile by profileViewModel.profileState.collectAsState()
 
     Column(
         modifier = Modifier
@@ -49,19 +49,20 @@ fun SettingsScreen(profileViewModel: ProfileViewModel) {
         Row(
             horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically
-        ){
-            Text("Biometric Login",
+        ) {
+            Text(
+                "Biometric Login",
                 style = MaterialTheme.typography.bodyLarge,
                 fontSize = 18.sp,
             )
             Spacer(modifier = Modifier.weight(1f))
             Switch(
-                checked = checked,
+                checked = profile.isBiometricEnabled,
                 onCheckedChange = {
-                    if (it) profileViewModel.saveAuthPreference("biometric")
-                    else profileViewModel.saveAuthPreference("password")
+                    if (it) profileViewModel.saveAuthPreference(true)
+                    else profileViewModel.saveAuthPreference(false)
                 },
-                thumbContent = if (checked) {
+                thumbContent = if (profile.isBiometricEnabled) {
                     {
                         Icon(
                             imageVector = Icons.Filled.Lock,
@@ -78,18 +79,19 @@ fun SettingsScreen(profileViewModel: ProfileViewModel) {
         Row(
             horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically
-        ){
-            Text("Enable Training",
+        ) {
+            Text(
+                "Enable Training",
                 style = MaterialTheme.typography.bodyLarge,
                 fontSize = 18.sp,
             )
             Spacer(modifier = Modifier.weight(1f))
             Switch(
-                checked = training,
+                checked = profile.isTrainingEnabled,
                 onCheckedChange = {
                     profileViewModel.saveTrainingPreference(it)
                 },
-                thumbContent = if (training) {
+                thumbContent = if (profile.isTrainingEnabled) {
                     {
                         Icon(
                             imageVector = Icons.Filled.ModelTraining,
@@ -102,11 +104,11 @@ fun SettingsScreen(profileViewModel: ProfileViewModel) {
                 }
             )
         }
+
+        Button(onClick = { onLogoutClicked() }, modifier = Modifier.fillMaxWidth().padding(top = 8.dp) // Add padding
+        ) {
+            Text("Logout")
+        }
     }
 }
 
-@Preview
-@Composable
-fun PreviewSettingsScreen() {
-    SettingsScreen(profileViewModel = ProfileViewModel(context = LocalContext.current))
-}

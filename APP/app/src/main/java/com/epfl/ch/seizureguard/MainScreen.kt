@@ -6,7 +6,7 @@ import com.epfl.ch.seizureguard.dl.metrics.Metrics
 import com.epfl.ch.seizureguard.history.HistoryViewModel
 import com.epfl.ch.seizureguard.navigation.AppContent
 import com.epfl.ch.seizureguard.seizure_event.SeizureEventViewModel
-import com.example.seizureguard.wallet_manager.GoogleWalletToken
+import com.epfl.ch.seizureguard.wallet_manager.GoogleWalletToken
 import com.epfl.ch.seizureguard.medical_card.WalletUiState
 import com.epfl.ch.seizureguard.profile.ProfileViewModel
 
@@ -19,7 +19,8 @@ fun MainScreen(
     historyViewModel: HistoryViewModel,
     seizureEventViewModel: SeizureEventViewModel,
     requestSavePass: (GoogleWalletToken.PassRequest) -> Unit,
-    metricsViewModel: MetricsViewModel
+    metricsViewModel: MetricsViewModel,
+    onLogoutClicked: () -> Unit
 ) {
     AppContent(
         metrics = metrics,
@@ -29,6 +30,7 @@ fun MainScreen(
         profileViewModel = profileViewModel,
         seizureEventViewModel = seizureEventViewModel,
         historyViewModel = historyViewModel,
-        metricsViewModel = metricsViewModel
+        metricsViewModel = metricsViewModel,
+        onLogoutClicked = onLogoutClicked
     )
 }

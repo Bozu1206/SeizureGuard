@@ -1,4 +1,4 @@
-package com.example.seizureguard.wallet_manager
+package com.epfl.ch.seizureguard.wallet_manager
 
 interface GoogleWalletToken {
     data class PassRequest(

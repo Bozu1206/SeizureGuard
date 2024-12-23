@@ -115,6 +115,7 @@ dependencies {
     implementation 'com.google.android.gms:play-services-wallet:19.4.0'
     implementation 'androidx.appcompat:appcompat:1.7.0'
     implementation 'com.google.firebase:firebase-database:21.0.0'
+    implementation 'com.google.firebase:firebase-firestore-ktx:25.1.1'
     annotationProcessor("androidx.room:room-compiler:$room_version")
     kapt("androidx.room:room-compiler:$room_version")
     implementation "com.google.code.gson:gson:2.11.0"

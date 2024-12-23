@@ -32,7 +32,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.epfl.ch.seizureguard.seizure_event.DropdownField
-import com.example.seizureguard.wallet_manager.GoogleWalletToken
+import com.epfl.ch.seizureguard.wallet_manager.GoogleWalletToken
 
 import com.google.wallet.button.WalletButton
 import java.text.SimpleDateFormat

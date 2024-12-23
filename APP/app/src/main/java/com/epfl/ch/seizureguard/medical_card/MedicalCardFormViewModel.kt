@@ -72,6 +72,11 @@ class WalletViewModel(application: Application) : AndroidViewModel(application) 
      * Exposes the `savePassesJwt` method in the wallet client
      */
     val savePassesJwt: (String, Activity, Int) -> Unit = walletClient::savePassesJwt
+
+    /**
+     * Exposes the `savePasses` method in the wallet client
+     */
+    val savePasses: (String, Activity, Int) -> Unit = walletClient::savePasses
 }
 
 

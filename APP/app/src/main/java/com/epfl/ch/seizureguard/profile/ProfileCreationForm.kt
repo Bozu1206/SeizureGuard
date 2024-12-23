@@ -29,13 +29,12 @@ import java.text.SimpleDateFormat
 import java.util.*
 
 @Composable
-fun ProfileCreationForm(profileViewModel: ProfileViewModel) {
-    val userName by profileViewModel.userName.collectAsState()
-    val userEmail by profileViewModel.userEmail.collectAsState()
-    val birthDate by profileViewModel.birthdate.collectAsState()
-    val uri by profileViewModel.profilePictureUri.collectAsState()
-    val password by profileViewModel.pwd.collectAsState()
-    val epi_type by profileViewModel.epi_type.collectAsState()
+fun ProfileCreationForm(profileViewModel: ProfileViewModel, profile: Profile) {
+    var userName by remember { mutableStateOf("") }
+    var email by remember { mutableStateOf("") }
+    var birthDate by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
+    var epi_type by remember { mutableStateOf("") }
 
     var showDatePicker by remember { mutableStateOf(false) }
 
@@ -46,79 +45,66 @@ fun ProfileCreationForm(profileViewModel: ProfileViewModel) {
             .fillMaxHeight()
             .padding(16.dp)
     ) {
-
         Text(
             text = "Create Your Profile",
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold,
         )
 
-        ProfilePicturePicker(profileViewModel = profileViewModel)
+        ProfilePicturePicker(profile = profile)
 
         Spacer(modifier = Modifier.height(8.dp))
 
         ProfileTextField(
-            value = userName, onValueChange = {
-                profileViewModel.saveProfile(
-                    it, userEmail, birthDate, uri, password, epi_type
-                )
-            }, label = "Name"
+            value = userName,
+            onValueChange = { userName = it; profile.name = it },
+            label = "Name"
         )
 
         Spacer(modifier = Modifier.height(8.dp))
 
         ProfileTextField(
-            value = userEmail, onValueChange = {
-                profileViewModel.saveProfile(
-                    userName, it, birthDate, uri, password, epi_type
-                )
-            }, label = "Email"
+            value = email,
+            onValueChange = { email = it; profile.email = it },
+            label = "Email"
         )
 
         Spacer(modifier = Modifier.height(8.dp))
 
         // Date of Birth field
-        BirthDateField(birthDate = birthDate, onClick = { showDatePicker = !showDatePicker })
+        BirthDateField(
+            birthDate = birthDate,
+            onClick = { showDatePicker = !showDatePicker }
+        )
 
         // Date Picker Modal
         if (showDatePicker) {
             DatePickerModal(onDateSelected = { selectedDateMillis ->
-                profileViewModel.saveProfile(userName,
-                    userEmail,
-                    selectedDateMillis?.let { convertMillisToDate(it) } ?: "",
-                    uri,
-                    password,
-                    epi_type
-                )
+                birthDate = selectedDateMillis?.let { convertMillisToDate(it) } ?: ""
+                profile.birthdate = birthDate
                 showDatePicker = false
             }, onDismiss = { showDatePicker = false })
         }
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        // Epilespy Type field
+        // Epilepsy Type field
         EpilepsyTypeField(
             value = epi_type,
-            onValueChange = {
-                Log.d("ProfileCreationForm", "Epilepsy Type: $it")
-                profileViewModel.saveProfile(
-                    userName, userEmail, birthDate, uri, password, it,
-                )
-            }
+            onValueChange = { epi_type = it; profile.epi_type = it }
         )
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        PasswordTextField(password = password, onValueChange = {
-            profileViewModel.saveProfile(
-                userName, userEmail, birthDate, uri, it, epi_type
-            )
-        })
+        PasswordTextField(
+            password = password,
+            onValueChange = { password = it; profile.pwd = it }
+        )
 
         Spacer(modifier = Modifier.height(16.dp))
 
         // Emergency Contact
-        ContactPicker(context = LocalContext.current, profileViewModel = profileViewModel)
+        // ContactPicker(context = LocalContext.current, profileViewModel = profileViewModel)
     }
 }
 
@@ -142,9 +128,9 @@ fun BirthDateField(
 ) {
     OutlinedTextField(
         value = birthDate,
-        onValueChange = {}, // Read-only field
+        onValueChange = {},
         label = { Text("Date of Birth") },
-        readOnly = true, // Prevent manual input
+        readOnly = true,
         trailingIcon = {
             IconButton(onClick = { onClick() }) {
                 Icon(

@@ -27,6 +27,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
@@ -101,12 +102,14 @@ fun HomeScreen(
 
 @Composable
 fun WelcomeSection(profileViewModel: ProfileViewModel) {
+    val profile = profileViewModel.profileState.collectAsState()
+
     Column(
         modifier = Modifier.fillMaxWidth()
     ) {
         Row {
             Text(
-                text = "Welcome, ${profileViewModel.userName.value.split(" ")[0]}!",
+                text = "Welcome, ${profile.value.name.split(" ")[0]}!",
                 style = MaterialTheme.typography.headlineLarge,
                 fontWeight = FontWeight.Bold
             )

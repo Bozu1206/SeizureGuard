@@ -45,11 +45,12 @@ fun LoginScreen(
     biometricAuthenticator: BiometricAuthenticator,
     profileViewModel: ProfileViewModel
 ) {
+    val profile by profileViewModel.profileState.collectAsState()
     var showLoginError by remember { mutableStateOf(false) }
     var password by remember { mutableStateOf("") }
 
-    val correctPassword by profileViewModel.pwd.collectAsState()
-    val authMode by profileViewModel.auth_mode.collectAsState()
+    val correctPassword = profile.pwd
+    val authMode = profile.auth_mode
 
     Box(
         modifier = Modifier
@@ -73,7 +74,7 @@ fun LoginScreen(
                 contentAlignment = Alignment.TopCenter
             ) {
                 Text(
-                    text = "Welcome back ${profileViewModel.userName.value.split(" ")[0]}!",
+                    text = "Welcome back ${profile.name.split(" ")[0]}!",
                     style = MaterialTheme.typography.headlineLarge,
                     fontWeight = FontWeight.Bold,
                     fontSize = 40.sp,
