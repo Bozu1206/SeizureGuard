@@ -19,9 +19,11 @@ private val ONBOARDING_COMPLETED_KEY = booleanPreferencesKey("onboarding_complet
 
 @SuppressLint("StaticFieldLeak")
 class OnboardingViewModel(private val context: Context) : ViewModel() {
-
     private val _showOnboarding = MutableStateFlow(false)
     val showOnboarding: StateFlow<Boolean> = _showOnboarding
+
+    private val _firebaseLogin = MutableStateFlow(false)
+    val firebaseLogin: StateFlow<Boolean> = _firebaseLogin
 
     init {
         checkOnboardingStatus()
@@ -32,6 +34,14 @@ class OnboardingViewModel(private val context: Context) : ViewModel() {
             val preferences = context.dataStore.data.first()
             _showOnboarding.value = preferences[ONBOARDING_COMPLETED_KEY] != true
         }
+    }
+
+    fun wantsToLogin() {
+        _firebaseLogin.value = true
+    }
+
+    fun wantsToRegister() {
+        _firebaseLogin.value = false
     }
 
     fun completeOnboarding() {
@@ -51,10 +61,9 @@ class OnboardingViewModel(private val context: Context) : ViewModel() {
             }
             _showOnboarding.value = true
 
+            wantsToRegister()
             profileViewModel.resetProfile()
         }
-
-
     }
 }
 

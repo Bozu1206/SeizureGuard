@@ -14,7 +14,6 @@ import androidx.lifecycle.ProcessLifecycleOwner
 
 class RunningApp : Application() { // Application class
     // If the notification channel is used in a foreground service, it is better to declare it in the Application class to ensure availability.
-
     lateinit var appLifecycleObserver: AppLifecycleObserver
 
     override fun onCreate() {

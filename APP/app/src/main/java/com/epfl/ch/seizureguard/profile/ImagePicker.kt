@@ -22,8 +22,15 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -36,42 +43,61 @@ import java.io.File
 import java.util.UUID
 
 @Composable
-fun getPhotoPicker(context: Context, profileViewModel: ProfileViewModel): ManagedActivityResultLauncher<Intent, ActivityResult> {
+fun rememberPhotoPickerLauncher(
+    context: Context,
+    onImagePicked: (Uri?) -> Unit
+): ManagedActivityResultLauncher<Intent, ActivityResult> {
     return rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.StartActivityForResult(),
-        onResult = { result ->
-            if (result.resultCode == Activity.RESULT_OK) {
-                val uri = result.data?.data
-                if (uri != null) {
-                    Log.d("PhotoPicker", "Selected URI: $uri")
-
-                    val localUri = copyImageToInternalStorage(context, uri, "profile_picture_${UUID.randomUUID()}.jpg")
-                    if (localUri != null) {
-                        profileViewModel.saveProfile(
-                            name = profileViewModel.userName.value,
-                            email = profileViewModel.userEmail.value,
-                            birthdate = profileViewModel.birthdate.value,
-                            uri = localUri,
-                            pwd = profileViewModel.pwd.value,
-                            epi_type = profileViewModel.epi_type.value
-                        )
-                    } else {
-                        Log.e("PhotoPicker", "Failed to copy image to internal storage.")
-                    }
-                }
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            val selectedUri = result.data?.data
+            if (selectedUri != null) {
+                val localUri = copyImageToInternalStorage(
+                    context,
+                    selectedUri,
+                    "profile_picture_${UUID.randomUUID()}.jpg"
+                )
+                onImagePicked(localUri)
+            } else {
+                onImagePicked(null)
             }
+        } else {
+            onImagePicked(null)
         }
-    )
+    }
 }
 
 
 
 @Composable
-fun ProfilePicturePicker(profileViewModel: ProfileViewModel) {
-    val profilePictureUri by profileViewModel.profilePictureUri.collectAsState()
+fun ProfilePicturePicker(profile: Profile) {
     val context = LocalContext.current
-    val photoPickerLauncher = getPhotoPicker(context = context, profileViewModel = profileViewModel)
+    var uri by remember { mutableStateOf(profile.uri) }
 
+    val photoPickerLauncher = rememberPhotoPickerLauncher(context) { newUri ->
+        if (newUri != null) {
+            uri = newUri.toString()
+            profile.uri = uri
+            Log.d("ProfileScreen", "New URI: $uri")
+        } else {
+            Log.d("ProfileScreen", "No image selected")
+        }
+    }
+
+    ProfilePicturePickerHelper(
+        uri = uri,
+        onImagePick = {
+            val intent = Intent(Intent.ACTION_PICK).apply {
+                type = "image/*"
+            }
+            photoPickerLauncher.launch(intent)
+        }
+    )
+}
+
+@Composable
+fun ProfilePicturePickerHelper(uri: String, onImagePick: () -> Unit) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
@@ -88,16 +114,15 @@ fun ProfilePicturePicker(profileViewModel: ProfileViewModel) {
                         .copy(0.6f)
                 )
                 .clickable {
-                    val intent = Intent(Intent.ACTION_PICK).apply {
-                        type = "image/*"
-                    }
-                    photoPickerLauncher.launch(intent)
+                    onImagePick()
                 },
+
             contentAlignment = Alignment.Center
         ) {
-            if (profilePictureUri != null) {
+            Log.d("ProfilePicturePicker", "URI: ${uri}")
+            if (uri.isNotEmpty()) {
                 AsyncImage(
-                    model = profilePictureUri,
+                    model = Uri.parse(uri),
                     contentDescription = "Profile Picture",
                     modifier = Modifier
                         .fillMaxSize()

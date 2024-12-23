@@ -2,7 +2,6 @@ package com.epfl.ch.seizureguard.wallet_manager
 import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
 import com.epfl.ch.seizureguard.BuildConfig
-import com.example.seizureguard.wallet_manager.GoogleWalletToken
 import java.security.KeyFactory
 import java.security.interfaces.RSAPrivateKey
 import java.security.spec.PKCS8EncodedKeySpec
@@ -63,7 +62,7 @@ fun generateToken(
             mapOf("id" to "emergency_contact", "header" to "Emergency Contact", "body" to request.emergencyContact),
             mapOf("id" to "birthdate", "header" to "Birthdate", "body" to request.birthdate),
             mapOf("id" to "seizure_type", "header" to "Seizure Type", "body" to request.seizureType),
-            mapOf("id" to "medication", "header" to "Medication", "body" to request.medication)
+            mapOf("id" to "medication", "header" to "Medication", "body" to "medication")
         ),
         "barcode" to mapOf(
             "type" to "QR_CODE",
@@ -83,5 +82,4 @@ fun generateToken(
         .withClaim("typ", "savetowallet")
         .withClaim("payload", mapOf("genericObjects" to listOf(genericObject)))
         .sign(algorithm)
-
 }

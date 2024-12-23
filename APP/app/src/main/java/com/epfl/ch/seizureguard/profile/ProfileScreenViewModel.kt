@@ -1,3 +1,4 @@
+/*
 package com.epfl.ch.seizureguard.profile
 
 import android.annotation.SuppressLint
@@ -309,3 +310,4 @@ data class EmergencyContact(
     val phone: String,
     val photoUri: String? = null
 )
+*/

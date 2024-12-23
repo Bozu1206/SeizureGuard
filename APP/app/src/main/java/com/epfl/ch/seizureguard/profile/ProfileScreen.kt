@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.provider.ContactsContract
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -60,9 +61,10 @@ import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.epfl.ch.seizureguard.tools.onEmergencyCall
 import com.epfl.ch.seizureguard.theme.AppTheme
-import com.example.seizureguard.wallet_manager.GoogleWalletToken
+import com.epfl.ch.seizureguard.wallet_manager.GoogleWalletToken
 import com.google.wallet.button.ButtonType
 import com.google.wallet.button.WalletButton
+import kotlinx.coroutines.delay
 
 @Composable
 fun ProfileScreen(
@@ -102,14 +104,18 @@ fun UserProfileSection(
     profileScreenViewModel: ProfileViewModel,
     onWalletButtonClick: (GoogleWalletToken.PassRequest) -> Unit
 ) {
-    val userName by profileScreenViewModel.userName.collectAsState()
-    val userEmail by profileScreenViewModel.userEmail.collectAsState()
-    val birthdate by profileScreenViewModel.birthdate.collectAsState()
-    val profilePictureUri by profileScreenViewModel.profilePictureUri.collectAsState()
-    val epi_type by profileScreenViewModel.epi_type.collectAsState()
 
+    val profile by profileScreenViewModel.profileState.collectAsState()
+    val context: Context = LocalContext.current
     var showProfileSettings by remember { mutableStateOf(false) }
-    val photoPickerLauncher = getPhotoPicker(LocalContext.current, profileScreenViewModel)
+
+    val photoPickerLauncher = rememberPhotoPickerLauncher(context) { newUri ->
+        if (newUri != null) {
+            profileScreenViewModel.updateProfileField("uri", newUri.toString())
+        }
+    }
+
+    Log.d("Current Profile:", profile.toString())
 
     Card(
         colors = CardDefaults.cardColors(
@@ -132,9 +138,9 @@ fun UserProfileSection(
             modifier = Modifier.background(Color.Transparent)
         ) {
             // User Avatar
-            if (profilePictureUri != null) {
+            if (profile.uri != "") {
                 AsyncImage(
-                    model = profilePictureUri,
+                    model = Uri.parse(profile.uri),
                     contentDescription = "Profile Picture",
                     modifier = Modifier
                         .size(140.dp)
@@ -165,7 +171,7 @@ fun UserProfileSection(
             ) {
                 Row {
                     Text(
-                        text = userName,
+                        text = profile.name,
                         style = MaterialTheme.typography.bodyLarge,
                         fontWeight = FontWeight.SemiBold,
                         maxLines = 2,
@@ -185,19 +191,19 @@ fun UserProfileSection(
                 }
 
                 Text(
-                    text = userEmail,
+                    text = profile.email,
                     style = MaterialTheme.typography.labelMedium,
                 )
 
                 Text(
-                    text = birthdate,
+                    text = profile.birthdate,
                     style = MaterialTheme.typography.labelMedium,
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Text(
-                    text = "Epilepsy Type: $epi_type",
+                    text = "Epilepsy Type: ${profile.epi_type}",
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.Bold,
                 )
@@ -211,7 +217,7 @@ fun UserProfileSection(
                 if (showProfileSettings) {
                     EditProfile(onDismissRequest = {
                         showProfileSettings = false
-                        profileScreenViewModel.persistProfile()
+                        profileScreenViewModel.saveProfile()
                     }, profileScreenViewModel)
                 }
             }
@@ -226,14 +232,14 @@ fun UserProfileSection(
                 .height(60.dp),
             onClick = {
                 val request = GoogleWalletToken.PassRequest(
-                    uid = profileScreenViewModel.userId.value,
-                    patientName = profileScreenViewModel.userName.value,
-                    emergencyContact = profileScreenViewModel.emergencyContacts.value.firstOrNull()?.phone
-                        ?: "",
-                    seizureType = profileScreenViewModel.epi_type.value,
+                    uid = profile.uid,
+                    patientName = profile.name,
+                    emergencyContact = profileScreenViewModel.profileState.value.emergencyContacts.first().phone,
+                    seizureType = profile.epi_type,
                     medication = "",
-                    birthdate = profileScreenViewModel.birthdate.value
+                    birthdate = profile.birthdate,
                 )
+                Log.d("ProfileScreen", "Wallet Button Clicked: $request")
                 onWalletButtonClick(request)
             }
         )
@@ -242,7 +248,8 @@ fun UserProfileSection(
 
 @Composable
 fun EmergencyContactsSection(context: Context, profileViewModel: ProfileViewModel) {
-    val emergencyContacts by profileViewModel.emergencyContacts.collectAsState()
+    val profile by profileViewModel.profileState.collectAsState()
+    val emergencyContacts = profile.emergencyContacts
     val activity = LocalContext.current as Activity
     val contactPicker = getContactPicker(context, profileViewModel)
 
@@ -406,7 +413,7 @@ fun EmergencyContactCard(
 
         Spacer(modifier = Modifier.width(16.dp))
 
-        if (profileViewModel.emergencyContacts.value.size > 1) {
+        if (profileViewModel.profileState.value.emergencyContacts.size > 1) {
             Icon(
                 imageVector = Icons.Filled.Delete,
                 contentDescription = "Edit",
@@ -414,7 +421,13 @@ fun EmergencyContactCard(
                 modifier = Modifier
                     .size(24.dp)
                     .clickable {
-                        profileViewModel.removeEmergencyContact(phone)
+                        profileViewModel.updateEmergencyContacts(
+                            EmergencyContact(
+                                name = name,
+                                phone = phone,
+                                photoUri = picture.toString()
+                            ), isAdding = false
+                        )
                     }
             )
         }
@@ -459,12 +472,20 @@ fun EditProfile(
     onDismissRequest: () -> Unit,
     profileScreenViewModel: ProfileViewModel
 ) {
-    val userName by profileScreenViewModel.userName.collectAsState()
-    val userMail by profileScreenViewModel.userEmail.collectAsState()
-    val epi_type by profileScreenViewModel.epi_type.collectAsState()
+    val profile by profileScreenViewModel.profileState.collectAsState()
+    var name by remember { mutableStateOf(profile.name) }
+    var email by remember { mutableStateOf(profile.email) }
+    var type by remember { mutableStateOf(profile.epi_type) }
 
     ModalBottomSheet(
-        onDismissRequest = onDismissRequest,
+        onDismissRequest = {
+            profileScreenViewModel.updateProfileField("name", name)
+            profileScreenViewModel.updateProfileField("email", email)
+            profileScreenViewModel.updateProfileField("epi_type", type)
+
+            profileScreenViewModel.saveProfile()
+            onDismissRequest()
+        },
     ) {
         Column(
             modifier = Modifier
@@ -476,26 +497,37 @@ fun EditProfile(
                 style = MaterialTheme.typography.headlineSmall
             )
             Spacer(modifier = Modifier.height(16.dp))
-            ProfileTextField(value = userName, onValueChange = {
-                profileScreenViewModel.updateUserName(it)
-            }, label = "Name")
+            ProfileTextField(value = name, onValueChange = { name = it }, label = "Name")
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            ProfileTextField(value = userMail, onValueChange = {
-                profileScreenViewModel.updateUserMail(it)
+            ProfileTextField(value = email, onValueChange = {
+                email = it
             }, label = "Email")
 
             Spacer(modifier = Modifier.height(8.dp))
 
             EpilepsyTypeField(
-                value = epi_type, onValueChange =
-                {
-                    profileScreenViewModel.updateEpilepsyType(it)
-                }, label = "Epilepsy Type"
+                value = type, onValueChange = { type = it }, label = "Epilepsy Type"
             )
 
             Spacer(modifier = Modifier.height(16.dp))
+
+            Button(
+                onClick = {
+                    profileScreenViewModel.updateMultipleFieldsAndSave(
+                        mapOf(
+                            "name" to name,
+                            "email" to email,
+                            "epi_type" to type
+                        )
+                    )
+                    onDismissRequest()
+                },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(text = "Save Changes")
+            }
         }
     }
 }
