@@ -2,11 +2,13 @@
 package com.epfl.ch.seizureguard.profile
 
 import android.content.Context
+import android.net.Uri
 import android.util.Log
 import androidx.datastore.preferences.core.*
 import androidx.datastore.preferences.preferencesDataStore
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ktx.toObject
+import com.google.firebase.storage.FirebaseStorage
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.flow.first
@@ -31,7 +33,8 @@ object Keys {
 
 class ProfileRepository(
     val context: Context,
-    private val firestore: FirebaseFirestore = FirebaseFirestore.getInstance()
+    private val firestore: FirebaseFirestore = FirebaseFirestore.getInstance(),
+    private val storage: FirebaseStorage = FirebaseStorage.getInstance(),
 ) {
     private val gson = Gson()
 
@@ -73,7 +76,7 @@ class ProfileRepository(
             auth_mode = preferences[Keys.AUTH_MODE] ?: "",
             isBiometricEnabled = preferences[Keys.IS_BIOMETRIC_ENABLED] ?: false,
             isTrainingEnabled = preferences[Keys.IS_TRAINING_ENABLED] ?: false,
-            emergencyContacts = contacts // Chargement des contacts
+            emergencyContacts = contacts
         )
     }
 
@@ -84,6 +87,10 @@ class ProfileRepository(
         }
 
         try {
+
+            val imageUri = Uri.parse(profile.uri)
+            uploadImageToStorage(profile.uid, imageUri)
+
             Log.d("ProfileRepository", "Saving profile to Firestore: $profile")
             firestore.collection("profiles")
                 .document(profile.uid)
@@ -92,6 +99,16 @@ class ProfileRepository(
             Log.d("ProfileRepository", "Profile successfully saved to Firestore.")
         } catch (e: Exception) {
             Log.e("ProfileRepository", "Failed to save profile to Firestore: ${e.message}", e)
+        }
+    }
+
+    private suspend fun uploadImageToStorage(uid: String, imageUri: Uri) {
+        try {
+            val imageRef = storage.reference.child("profile_images/$uid.jpg")
+            imageRef.putFile(imageUri).await()
+            Log.d("ProfileRepository", "Image uploaded to Firebase Storage: $imageRef")
+        } catch (e: Exception) {
+            Log.e("ProfileRepository", "Failed to upload image to Firebase Storage: ${e.message}", e)
         }
     }
 
@@ -105,9 +122,22 @@ class ProfileRepository(
                 .await()
             val profile = querySnapshot.documents.mapNotNull { it.toObject<Profile>() }.firstOrNull()
             Log.d("ProfileRepository", "Loaded profile from Firestore: $profile")
+            profile?.uri = profile?.uid?.let { loadProfilePicture(it).toString() }.toString()
             return profile
         } catch (e: Exception) {
             Log.e("ProfileRepository", "Failed to load profile from Firestore: ${e.message}", e)
+            return null
+        }
+    }
+
+    private suspend fun loadProfilePicture(uid: String): Uri? {
+        try {
+            val imageRef = storage.reference.child("profile_images/$uid.jpg")
+            val uri = imageRef.downloadUrl.await()
+            Log.d("ProfileRepository", "Loaded profile picture from Firebase Storage: $uri")
+            return uri
+        } catch (e: Exception) {
+            Log.e("ProfileRepository", "Failed to load profile picture from Firebase Storage: ${e.message}", e)
             return null
         }
     }
