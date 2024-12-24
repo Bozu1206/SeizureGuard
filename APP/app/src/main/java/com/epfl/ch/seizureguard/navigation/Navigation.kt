@@ -79,13 +79,13 @@ fun AppContent(
                 )
             }
             composable("history") {
-                HistoryScreen()
+                HistoryScreen(profileViewModel = profileViewModel)
             }
             composable("medicalCardForm") {
                 MedicalCardScreen(payState, requestSavePass)
             }
             composable("settings") {
-                SettingsScreen(profileViewModel, onLogoutClicked = onLogoutClicked)
+                SettingsScreen(profileViewModel = profileViewModel, onLogoutClicked = onLogoutClicked)
             }
         }
     }

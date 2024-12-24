@@ -6,6 +6,8 @@ import android.net.Uri
 import android.util.Log
 import androidx.datastore.preferences.core.*
 import androidx.datastore.preferences.preferencesDataStore
+import com.epfl.ch.seizureguard.seizure_event.SeizureEntity
+import com.epfl.ch.seizureguard.seizure_event.SeizureEvent
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ktx.toObject
 import com.google.firebase.storage.FirebaseStorage
@@ -29,6 +31,7 @@ object Keys {
     val IS_BIOMETRIC_ENABLED = booleanPreferencesKey("is_biometric_enabled")
     val IS_TRAINING_ENABLED = booleanPreferencesKey("is_training_enabled")
     val IS_AUTHENTICATED = booleanPreferencesKey("is_authenticated")
+    val PAST_SEIZURES = stringPreferencesKey("past_seizures")
 }
 
 class ProfileRepository(
@@ -50,7 +53,8 @@ class ProfileRepository(
             preferences[Keys.AUTH_MODE] = profile.auth_mode
             preferences[Keys.IS_BIOMETRIC_ENABLED] = profile.isBiometricEnabled
             preferences[Keys.IS_TRAINING_ENABLED] = profile.isTrainingEnabled
-            preferences[Keys.EMERGENCY_CONTACTS] = gson.toJson(profile.emergencyContacts) // Sérialisation des contacts
+            preferences[Keys.EMERGENCY_CONTACTS] = gson.toJson(profile.emergencyContacts)
+            preferences[Keys.PAST_SEIZURES] = gson.toJson(profile.pastSeizures)
         }
         Log.d("ProfileRepository", "Profile saved to preferences: $profile")
     }
@@ -65,6 +69,14 @@ class ProfileRepository(
             emptyList()
         }
 
+        val pastSeizuresJson = preferences[Keys.PAST_SEIZURES] ?: "[]"
+        val pastSeizures: List<SeizureEvent> = try {
+            gson.fromJson(pastSeizuresJson, object : TypeToken<List<SeizureEvent>>() {}.type) ?: emptyList()
+        } catch (e: Exception) {
+            Log.e("ProfileRepository", "Failed to parse pastSeizures: ${e.message}", e)
+            emptyList()
+        }
+
         return Profile(
             uid = preferences[Keys.USER_ID] ?: "",
             name = preferences[Keys.USER_NAME] ?: "",
@@ -76,7 +88,8 @@ class ProfileRepository(
             auth_mode = preferences[Keys.AUTH_MODE] ?: "",
             isBiometricEnabled = preferences[Keys.IS_BIOMETRIC_ENABLED] ?: false,
             isTrainingEnabled = preferences[Keys.IS_TRAINING_ENABLED] ?: false,
-            emergencyContacts = contacts
+            emergencyContacts = contacts,
+            pastSeizures = pastSeizures
         )
     }
 
@@ -87,7 +100,6 @@ class ProfileRepository(
         }
 
         try {
-
             val imageUri = Uri.parse(profile.uri)
             uploadImageToStorage(profile.uid, imageUri)
 
@@ -142,6 +154,19 @@ class ProfileRepository(
         }
     }
 
+    suspend fun addSeizure(userId: String, seizure: SeizureEvent) {
+        val profile = firestore.collection("profiles").document(userId).get().await().toObject<Profile>()
+        profile?.pastSeizures = profile?.pastSeizures?.plus(seizure) ?: listOf(seizure)
+        firestore.collection("profiles").document(userId).set(profile!!)
+    }
+
+    suspend fun removeSeizure(userId: String, timestamp: Long) {
+        val profile = firestore.collection("profiles").document(userId).get().await().toObject<Profile>()
+        profile?.pastSeizures = profile?.pastSeizures?.filter { it.timestamp != timestamp } ?: emptyList()
+        firestore.collection("profiles").document(userId).set(profile!!)
+    }
+
+
     suspend fun saveAuthPreference(isBiometric: Boolean) {
         context.dataStore.edit { preferences ->
             preferences[Keys.AUTH_MODE] = if (isBiometric) "biometric" else "password"
@@ -177,11 +202,6 @@ class ProfileRepository(
         context.dataStore.edit { preferences ->
             preferences[Keys.IS_AUTHENTICATED] = authenticated
         }
-    }
-
-    suspend fun persistProfile(profile: Profile) {
-        saveProfileToPreferences(profile)
-        Log.d("ProfileRepository", "Persisted profile to DataStore: $profile")
     }
 
     suspend fun saveTrainingPreference(isEnabled: Boolean) {

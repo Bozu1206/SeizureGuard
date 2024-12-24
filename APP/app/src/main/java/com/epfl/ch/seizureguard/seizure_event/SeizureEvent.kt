@@ -30,6 +30,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.epfl.ch.seizureguard.profile.ProfileViewModel
 import com.google.accompanist.flowlayout.FlowRow
 
 data class DefaultState(
@@ -211,9 +212,9 @@ fun MultiSelectChips(
 }
 
 data class SeizureEvent(
-    val type: String,
-    val duration: Int,
-    val severity: Int,
-    val triggers: List<String>,
-    var timestamp: Long
+    val type: String = "",
+    val duration: Int = 0,
+    val severity: Int = 0,
+    val triggers: List<String> = emptyList(),
+    var timestamp: Long = 0
 )

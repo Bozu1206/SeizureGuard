@@ -6,6 +6,8 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.epfl.ch.seizureguard.seizure_event.SeizureEntity
+import com.epfl.ch.seizureguard.seizure_event.SeizureEvent
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
@@ -46,6 +48,7 @@ class ProfileViewModel(private val repository: ProfileRepository) : ViewModel() 
         }
     }
 
+
     fun saveProfile() = viewModelScope.launch {
         val profile = _profileState.value
         Log.d("ProfileViewModel", "Saving profile: $profile")
@@ -70,6 +73,39 @@ class ProfileViewModel(private val repository: ProfileRepository) : ViewModel() 
             }
             saveProfile()
             Log.d("ProfileViewModel", "Saved auth preference: isBiometric=$isBiometric")
+        }
+    }
+
+    fun addSeizure(seizure: SeizureEvent) {
+        viewModelScope.launch {
+            val profile = _profileState.value
+            val updatedProfile = profile.copy(pastSeizures = profile.pastSeizures + seizure)
+            _profileState.value = updatedProfile
+            repository.addSeizure(profile.uid, seizure)
+            saveProfile()
+        }
+    }
+
+    fun removeSeizure(seizure: SeizureEvent) {
+        viewModelScope.launch {
+            val profile = _profileState.value
+            val updatedProfile =
+                profile.copy(pastSeizures = profile.pastSeizures.filter { it.timestamp != seizure.timestamp })
+            _profileState.value = updatedProfile
+            repository.removeSeizure(profile.uid, seizure.timestamp)
+            saveProfile()
+        }
+    }
+
+    fun editSeizure(newSeizure: SeizureEvent, oldSeizure: SeizureEvent) {
+        viewModelScope.launch {
+            val profile = _profileState.value
+            val updatedProfile =
+                profile.copy(pastSeizures = profile.pastSeizures.map { if (it.timestamp == oldSeizure.timestamp) newSeizure else it })
+            _profileState.value = updatedProfile
+            repository.removeSeizure(profile.uid, oldSeizure.timestamp)
+            repository.addSeizure(profile.uid, newSeizure)
+            saveProfile()
         }
     }
 
@@ -134,18 +170,19 @@ class ProfileViewModel(private val repository: ProfileRepository) : ViewModel() 
         }
     }
 
-    fun updateEmergencyContacts(contact: EmergencyContact, isAdding: Boolean) = viewModelScope.launch {
-        val updatedContacts = if (isAdding) {
-            if (_profileState.value.emergencyContacts.size < 5) _profileState.value.emergencyContacts + contact else _profileState.value.emergencyContacts
-        } else {
-            _profileState.value.emergencyContacts.filter { it.phone != contact.phone }
+    fun updateEmergencyContacts(contact: EmergencyContact, isAdding: Boolean) =
+        viewModelScope.launch {
+            val updatedContacts = if (isAdding) {
+                if (_profileState.value.emergencyContacts.size < 5) _profileState.value.emergencyContacts + contact else _profileState.value.emergencyContacts
+            } else {
+                _profileState.value.emergencyContacts.filter { it.phone != contact.phone }
+            }
+            _profileState.update { currentProfile ->
+                currentProfile.copy(emergencyContacts = updatedContacts)
+            }
+            Log.d("ProfileViewModel", "Updated emergencyContacts: $updatedContacts")
+            saveProfile()
         }
-        _profileState.update { currentProfile ->
-            currentProfile.copy(emergencyContacts = updatedContacts)
-        }
-        Log.d("ProfileViewModel", "Updated emergencyContacts: $updatedContacts")
-        saveProfile()
-    }
 }
 
 class ProfileViewModelFactory(private val context: Context) : ViewModelProvider.Factory {
