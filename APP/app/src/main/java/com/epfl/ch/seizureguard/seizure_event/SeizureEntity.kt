@@ -19,5 +19,17 @@ data class SeizureEntity(
     val triggers: List<String>,
     @ColumnInfo(name = "seizure_timestamps")
     val timestamp: Long,
-)
+) {
+    companion object {
+        fun fromSeizureEvent(seizure: SeizureEvent): SeizureEntity {
+            return SeizureEntity(
+                type = seizure.type,
+                duration = seizure.duration,
+                severity = seizure.severity,
+                triggers = seizure.triggers,
+                timestamp = seizure.timestamp
+            )
+        }
+    }
+}
 

@@ -1,6 +1,9 @@
 // Profile.kt
 package com.epfl.ch.seizureguard.profile
 
+import com.epfl.ch.seizureguard.seizure_event.SeizureEntity
+import com.epfl.ch.seizureguard.seizure_event.SeizureEvent
+
 data class Profile(
     var uid: String = "",
     var name: String = "",
@@ -12,24 +15,9 @@ data class Profile(
     var auth_mode: String = "password",
     var isBiometricEnabled: Boolean = false,
     var isTrainingEnabled: Boolean = false,
-    var emergencyContacts: List<EmergencyContact> = emptyList()
+    var emergencyContacts: List<EmergencyContact> = emptyList(),
+    var pastSeizures: List<SeizureEvent> = emptyList(),
 ) {
-    fun toMap(): Map<String, Any?> {
-        return mapOf(
-            "uid" to uid,
-            "name" to name,
-            "email" to email,
-            "birthdate" to birthdate,
-            "uri" to uri,
-            "pwd" to pwd,
-            "epi_type" to epi_type,
-            "auth_mode" to auth_mode,
-            "isBiometricEnabled" to isBiometricEnabled,
-            "isTrainingEnabled" to isTrainingEnabled,
-            "emergencyContacts" to emergencyContacts
-        )
-    }
-
     companion object {
         fun isComplete(profile: Profile): Boolean {
             return with(profile) {

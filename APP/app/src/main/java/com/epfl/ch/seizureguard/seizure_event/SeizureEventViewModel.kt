@@ -4,12 +4,13 @@ import android.app.Application
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.epfl.ch.seizureguard.profile.ProfileRepository
 import kotlinx.coroutines.launch
 
-class SeizureEventViewModel(application: Application) : AndroidViewModel(application) {
+class SeizureEventViewModel(application: Application):
+    AndroidViewModel(application) {
     private val database: SeizureDao = SeizureDatabase.getInstance(application).seizureDao
 
-    // Function to save a new seizure
     fun saveNewSeizure(event: SeizureEvent) = viewModelScope.launch {
         val seizure = SeizureEntity(
             type = event.type,
@@ -18,10 +19,10 @@ class SeizureEventViewModel(application: Application) : AndroidViewModel(applica
             triggers = event.triggers,
             timestamp = event.timestamp
         )
+
         database.insert(seizure)
     }
 
-    // Function to log all past seizures
     fun logAllPastSeizures() {
         viewModelScope.launch {
             val seizures = database.getAllSeizureEvents().value
@@ -30,5 +31,4 @@ class SeizureEventViewModel(application: Application) : AndroidViewModel(applica
             }
         }
     }
-
 }

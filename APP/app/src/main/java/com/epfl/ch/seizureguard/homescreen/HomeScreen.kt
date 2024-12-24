@@ -78,7 +78,6 @@ fun HomeScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Recent com.epfl.ch.seizureguard.dl.metrics.Metrics
             HealthMetricsSection(historyViewModel = historyViewModel)
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -94,7 +93,7 @@ fun HomeScreen(
                 .padding(bottom = 16.dp), // Optional padding
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            QuickActionsSection(context, seizureEventViewModel = seizureEventViewModel)
+            QuickActionsSection(context, profileViewModel = profileViewModel)
         }
     }
 }
@@ -180,7 +179,7 @@ fun MetricCard(title: String, value: String, unit: String) {
 }
 
 @Composable
-fun QuickActionsSection(context: Context, seizureEventViewModel: SeizureEventViewModel) {
+fun QuickActionsSection(context: Context, profileViewModel: ProfileViewModel) {
     var showLogEventModal by remember { mutableStateOf(false) }
     var showGuidelines by remember { mutableStateOf(false) }
 
@@ -213,8 +212,7 @@ fun QuickActionsSection(context: Context, seizureEventViewModel: SeizureEventVie
                     onDismiss = { showLogEventModal = false },
                     onClick = { seizureEvent ->
                         showLogEventModal = false
-                        seizureEventViewModel.saveNewSeizure(seizureEvent)
-                        seizureEventViewModel.logAllPastSeizures()
+                        profileViewModel.addSeizure(seizureEvent)
                     }
                 )
             }
