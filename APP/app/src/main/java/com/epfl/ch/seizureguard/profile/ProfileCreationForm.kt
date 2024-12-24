@@ -25,6 +25,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
+import com.epfl.ch.seizureguard.dl.metrics.Metrics
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -57,7 +58,9 @@ fun ProfileCreationForm(profileViewModel: ProfileViewModel, profile: Profile) {
 
         ProfileTextField(
             value = userName,
-            onValueChange = { userName = it; profile.name = it },
+            onValueChange = {
+                userName = it; profile.name = it;
+            },
             label = "Name"
         )
 

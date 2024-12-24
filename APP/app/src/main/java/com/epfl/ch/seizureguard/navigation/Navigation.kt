@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.MonitorHeart
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
@@ -95,7 +96,7 @@ fun AppContent(
 fun BottomNavigationBar(navController: NavController) {
     val items = listOf(
         BottomNavItem("Home", Icons.Default.Home, "home"),
-        BottomNavItem("Inference", Icons.Default.Refresh, "inference"),
+        BottomNavItem("Monitor", Icons.Default.MonitorHeart, "inference"),
         BottomNavItem("Profile", Icons.Default.Person, "profile"),
         BottomNavItem("History", Icons.Default.DateRange, "history"),
         BottomNavItem("Settings", Icons.Default.Settings, "settings")

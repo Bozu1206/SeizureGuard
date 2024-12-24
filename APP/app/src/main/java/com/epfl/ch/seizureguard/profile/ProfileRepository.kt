@@ -6,6 +6,7 @@ import android.net.Uri
 import android.util.Log
 import androidx.datastore.preferences.core.*
 import androidx.datastore.preferences.preferencesDataStore
+import com.epfl.ch.seizureguard.dl.metrics.Metrics
 import com.epfl.ch.seizureguard.seizure_event.SeizureEntity
 import com.epfl.ch.seizureguard.seizure_event.SeizureEvent
 import com.google.firebase.firestore.FirebaseFirestore
@@ -32,6 +33,7 @@ object Keys {
     val IS_TRAINING_ENABLED = booleanPreferencesKey("is_training_enabled")
     val IS_AUTHENTICATED = booleanPreferencesKey("is_authenticated")
     val PAST_SEIZURES = stringPreferencesKey("past_seizures")
+    val DEF_METRICS = stringPreferencesKey("def_metrics")
 }
 
 class ProfileRepository(
@@ -55,6 +57,7 @@ class ProfileRepository(
             preferences[Keys.IS_TRAINING_ENABLED] = profile.isTrainingEnabled
             preferences[Keys.EMERGENCY_CONTACTS] = gson.toJson(profile.emergencyContacts)
             preferences[Keys.PAST_SEIZURES] = gson.toJson(profile.pastSeizures)
+            preferences[Keys.DEF_METRICS] = gson.toJson(profile.defaultsMetrics)
         }
         Log.d("ProfileRepository", "Profile saved to preferences: $profile")
     }
@@ -93,6 +96,8 @@ class ProfileRepository(
         )
     }
 
+
+
     suspend fun saveProfileToFirestore(profile: Profile) {
         if (profile.uid.isEmpty()) {
             Log.e("ProfileRepository", "Profile UID is empty, skipping Firestore save.")
@@ -116,6 +121,8 @@ class ProfileRepository(
 
     private suspend fun uploadImageToStorage(uid: String, imageUri: Uri) {
         try {
+            Log.d("ProfileRepository", uid)
+            Log.d("ProfileRepository", imageUri.toString())
             val imageRef = storage.reference.child("profile_images/$uid.jpg")
             imageRef.putFile(imageUri).await()
             Log.d("ProfileRepository", "Image uploaded to Firebase Storage: $imageRef")

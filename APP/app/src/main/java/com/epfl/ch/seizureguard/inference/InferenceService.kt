@@ -31,11 +31,11 @@ import com.epfl.ch.seizureguard.dl.metrics.MetricsUtils
 // Foreground service for launching inference in background
 class InferenceService : Service() {
     private var modelService: ModelService? = null
+
     private val samples = mutableListOf<DataSample>()
     private var isPaused = false
     private var isTrainingEnabled = false
     private var counter = 0
-
 
     private val serviceConnection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
@@ -87,13 +87,23 @@ class InferenceService : Service() {
 
                             samples.clear()
 
-                            val metricsBeforeTraining = modelManager?.validate(context = applicationContext) ?: Metrics()
-                            MetricsUtils.saveMetrics(applicationContext, "metrics_before_training", metricsBeforeTraining)
+                            val metricsBeforeTraining =
+                                modelManager?.validate(context = applicationContext) ?: Metrics()
+                            MetricsUtils.saveMetrics(
+                                applicationContext,
+                                "metrics_before_training",
+                                metricsBeforeTraining
+                            )
 
                             modelManager?.saveModel(context = applicationContext)
 
-                            val metricsAfterTraining = modelManager?.validate(context = applicationContext) ?: Metrics()
-                            MetricsUtils.saveMetrics(applicationContext, "metrics_after_training", metricsAfterTraining)
+                            val metricsAfterTraining =
+                                modelManager?.validate(context = applicationContext) ?: Metrics()
+                            MetricsUtils.saveMetrics(
+                                applicationContext,
+                                "metrics_after_training",
+                                metricsAfterTraining
+                            )
                         }
 
                         isPaused = false
