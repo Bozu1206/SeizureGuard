@@ -78,7 +78,7 @@ fun HomeScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            HealthMetricsSection(historyViewModel = historyViewModel)
+            HealthMetricsSection(profileViewModel = profileViewModel)
 
             Spacer(modifier = Modifier.height(24.dp))
 
@@ -122,11 +122,10 @@ fun WelcomeSection(profileViewModel: ProfileViewModel) {
 }
 
 @Composable
-fun HealthMetricsSection(historyViewModel: HistoryViewModel) {
-    val seizures = historyViewModel.seizures.observeAsState()
+fun HealthMetricsSection(profileViewModel: ProfileViewModel) {
+    val profile = profileViewModel.profileState.collectAsState()
     val numbersOfSeizureLastWeek =
-        seizures.value?.filter { it.timestamp > System.currentTimeMillis() - 7 * 24 * 60 * 60 * 1000 }?.size
-            ?: 0
+        profile.value.pastSeizures.count { it.timestamp > System.currentTimeMillis() - 7 * 24 * 60 * 60 * 1000 }
 
     Column(
         modifier = Modifier

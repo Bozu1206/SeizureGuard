@@ -25,9 +25,11 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -46,14 +48,22 @@ import com.epfl.ch.seizureguard.R
 import com.epfl.ch.seizureguard.profile.Profile
 import com.epfl.ch.seizureguard.profile.ProfileCreationForm
 import com.epfl.ch.seizureguard.profile.ProfileViewModel
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 import java.util.UUID
 
 @Composable
-fun OnboardingScreen(onFinish: () -> Unit, profileViewModel: ProfileViewModel, onboardingViewModel: OnboardingViewModel) {
+fun OnboardingScreen(
+    onFinish: () -> Unit,
+    profileViewModel: ProfileViewModel,
+    onboardingViewModel: OnboardingViewModel
+) {
     var currentPage by remember { mutableStateOf(0) }
     var showBiometricDialog by remember { mutableStateOf(false) }
     val profile: Profile = Profile.empty()
+    val p by profileViewModel.profileState.collectAsState()
     val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
 
     val pages = listOf(
         "Welcome to SeizureGuard!",
@@ -218,11 +228,10 @@ fun OnboardingScreen(onFinish: () -> Unit, profileViewModel: ProfileViewModel, o
                                     )
                                         .show()
                                 } else {
-                                    profile.uid =
-                                        (profile.email + profile.name + profile.name).hashCode()
-                                            .toString()
+                                    Log.d("OnboardingScreen", "Profile is complete: $profile")
+                                    profileViewModel.registerUser(profile)
                                     profileViewModel.saveProfile()
-                                    showBiometricDialog = true // Trigger biometric dialog
+                                    showBiometricDialog = true
                                 }
                             },
                             modifier = Modifier.weight(1f),

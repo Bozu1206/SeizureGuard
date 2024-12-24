@@ -109,7 +109,7 @@ fun UserProfileSection(
     val context: Context = LocalContext.current
     var showProfileSettings by remember { mutableStateOf(false) }
 
-    val photoPickerLauncher = rememberPhotoPickerLauncher(context) { newUri ->
+    val photoPickerLauncher = rememberPhotoPickerLauncher(context, profile.uid) { newUri ->
         if (newUri != null) {
             profileScreenViewModel.updateProfileField("uri", newUri.toString())
         }

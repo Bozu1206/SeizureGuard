@@ -6,10 +6,15 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.epfl.ch.seizureguard.seizure_event.SeizureEntity
+import com.epfl.ch.seizureguard.dl.ModelManager
+import com.epfl.ch.seizureguard.dl.metrics.Metrics
 import com.epfl.ch.seizureguard.seizure_event.SeizureEvent
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import java.io.File
+import java.io.FileOutputStream
+import java.io.IOException
+import java.util.UUID
 
 class ProfileViewModel(private val repository: ProfileRepository) : ViewModel() {
     private val _profileState = MutableStateFlow(Profile.empty())
@@ -109,6 +114,22 @@ class ProfileViewModel(private val repository: ProfileRepository) : ViewModel() 
         }
     }
 
+    fun validateDefaultModel(): Metrics {
+        val modelPath = "inference_artifacts/inference.onnx"
+        val inferenceModelPath =
+            copyAssetToInternalStorage(repository.context, modelPath, "defaults.onnx")
+        val modelManager = ModelManager(inferenceModelPath)
+        return modelManager.validate(repository.context)
+    }
+
+    fun registerUser(profile: Profile) {
+        val uuid = UUID.randomUUID().toString()
+        val newProfile = profile.copy(uid = uuid)
+        val metrics = validateDefaultModel()
+        val updatedProfile = newProfile.copy(defaultsMetrics = metrics)
+        _profileState.value = updatedProfile
+    }
+
     fun resetProfile() {
         viewModelScope.launch {
             repository.resetPreferences()
@@ -183,6 +204,28 @@ class ProfileViewModel(private val repository: ProfileRepository) : ViewModel() 
             Log.d("ProfileViewModel", "Updated emergencyContacts: $updatedContacts")
             saveProfile()
         }
+
+
+    @Throws(IOException::class)
+    fun copyAssetToInternalStorage(
+        context: Context,
+        assetPath: String,
+        destinationFileName: String
+    ): String {
+        val assetManager = context.assets
+        val inputStream = assetManager.open(assetPath)
+        val file = File(context.filesDir, destinationFileName)
+        val outputStream = FileOutputStream(file)
+
+        inputStream.use { input ->
+            outputStream.use { output ->
+                input.copyTo(output)
+            }
+        }
+
+        return file.absolutePath
+    }
+
 }
 
 class ProfileViewModelFactory(private val context: Context) : ViewModelProvider.Factory {

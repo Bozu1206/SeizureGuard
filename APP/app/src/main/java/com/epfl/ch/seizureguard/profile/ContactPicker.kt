@@ -79,18 +79,18 @@ fun getContactPicker(context: Context, profileViewModel: ProfileViewModel): Mana
                             contactPhone = it.getString(phoneIndex)
                             contactPicture = it.getString(pictureIndex)
 
-                            var localUri: Uri? = null
-                            if (contactPicture != null) {
-                               localUri = copyImageToInternalStorage(
-                                    context,
-                                    Uri.parse(contactPicture),
-                                    "contact_picture_${UUID.randomUUID()}.jpg"
-                                )
-                            }
+//                            var localUri: Uri? = null
+//                            if (contactPicture != null) {
+//                               localUri = copyImageToInternalStorage(
+//                                    context,
+//                                    Uri.parse(contactPicture),
+//                                    "contact_picture_${UUID.randomUUID()}.jpg"
+//                                )
+//                            }
                             val contact = EmergencyContact(
                                 name = contactName!!,
                                 phone = contactPhone!!,
-                                photoUri = localUri?.toString()
+                                photoUri = null
                             )
 
                             profileViewModel.updateEmergencyContacts(contact, isAdding = true)

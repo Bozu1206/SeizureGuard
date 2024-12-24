@@ -11,12 +11,10 @@ class ModelService : Service() {
     private val binder = LocalBinder()
     private lateinit var modelManager: ModelManager
 
-
     override fun onCreate() {
         super.onCreate()
         modelManager = makeOrtTrainerAndCopyAssets()
         Log.d("ModelService", "modelManager created: $modelManager")
-        Log.d("ModelService", "ModelService created")
     }
 
     inner class LocalBinder : Binder() {
@@ -46,7 +44,7 @@ class ModelService : Service() {
         )
     }
 
-    private fun copyFileOrDir(path: String): String {
+    fun copyFileOrDir(path: String): String {
         val dst = java.io.File("$cacheDir/$path")
         copyAssetFileOrDir(assets, path, dst)
         return dst.path

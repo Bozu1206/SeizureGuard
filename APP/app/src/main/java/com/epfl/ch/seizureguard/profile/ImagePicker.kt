@@ -45,6 +45,7 @@ import java.util.UUID
 @Composable
 fun rememberPhotoPickerLauncher(
     context: Context,
+    uid: String,
     onImagePicked: (Uri?) -> Unit
 ): ManagedActivityResultLauncher<Intent, ActivityResult> {
     return rememberLauncherForActivityResult(
@@ -56,7 +57,7 @@ fun rememberPhotoPickerLauncher(
                 val localUri = copyImageToInternalStorage(
                     context,
                     selectedUri,
-                    "profile_picture_${UUID.randomUUID()}.jpg"
+                    "profile_picture_${uid}.jpg"
                 )
                 onImagePicked(localUri)
             } else {
@@ -75,7 +76,7 @@ fun ProfilePicturePicker(profile: Profile) {
     val context = LocalContext.current
     var uri by remember { mutableStateOf(profile.uri) }
 
-    val photoPickerLauncher = rememberPhotoPickerLauncher(context) { newUri ->
+    val photoPickerLauncher = rememberPhotoPickerLauncher(context, profile.uid) { newUri ->
         if (newUri != null) {
             uri = newUri.toString()
             profile.uri = uri

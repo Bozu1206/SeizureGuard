@@ -1,6 +1,7 @@
 // Profile.kt
 package com.epfl.ch.seizureguard.profile
 
+import com.epfl.ch.seizureguard.dl.metrics.Metrics
 import com.epfl.ch.seizureguard.seizure_event.SeizureEntity
 import com.epfl.ch.seizureguard.seizure_event.SeizureEvent
 
@@ -17,6 +18,7 @@ data class Profile(
     var isTrainingEnabled: Boolean = false,
     var emergencyContacts: List<EmergencyContact> = emptyList(),
     var pastSeizures: List<SeizureEvent> = emptyList(),
+    var defaultsMetrics: Metrics = Metrics()
 ) {
     companion object {
         fun isComplete(profile: Profile): Boolean {

@@ -7,6 +7,7 @@ import com.epfl.ch.seizureguard.dl.metrics.ComputeMetrics.computeMetrics
 import com.epfl.ch.seizureguard.dl.metrics.Metrics
 import com.epfl.ch.seizureguard.dl.utils.utils.floatArrayToFloatBuffer
 import com.epfl.ch.seizureguard.dl.utils.utils.intToLongBuffer
+import com.epfl.ch.seizureguard.profile.ProfileViewModel
 import java.io.File
 import java.nio.file.Path
 import java.util.Collections
@@ -43,6 +44,19 @@ class ModelManager() {
             evalModelPath,
             optimizerModelPath
         )
+    }
+
+    constructor(inferenceModelPath: String): this() {
+        // Create a new instance of ModelManager
+        ortEnv = OrtEnvironment.getEnvironment()
+
+        this.checkpointPath = ""
+        this.trainModelPath = ""
+        this.evalModelPath = ""
+        this.optimizerModelPath = ""
+        this.inferenceModelPath = inferenceModelPath
+
+        ortSession = ortEnv?.createSession(inferenceModelPath)
     }
 
     fun performTrainingEpoch(data: Array<DataSample>) {
@@ -96,9 +110,11 @@ class ModelManager() {
     }
 
     fun validate(context: Context): Metrics {
-        var data = DataLoader().loadDataAndLabels(context = context, "data_21.bin")
+        // Test set
+        val data = DataLoader().loadDataAndLabels(context = context, "data_21.bin")
         val predictions = mutableListOf<Int>()
         val true_labels = mutableListOf<Int>()
+
         ortSession = ortEnv?.createSession(inferenceModelPath)
         ortEnv?.use {
             val shape = longArrayOf(1, 18, 1024)
