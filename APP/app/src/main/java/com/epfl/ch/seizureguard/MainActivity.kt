@@ -44,7 +44,7 @@ import kotlinx.coroutines.launch
 class MainActivity : FragmentActivity() {
     private lateinit var onboardingViewModel: OnboardingViewModel
     val profileViewModel: ProfileViewModel by viewModels {
-        ProfileViewModelFactory(applicationContext)
+        ProfileViewModelFactory(applicationContext, application = this.application)
     }
 
     private val seizureEventViewModel: SeizureEventViewModel by viewModels()
@@ -170,8 +170,8 @@ class MainActivity : FragmentActivity() {
         return when {
             showOnboarding  && !isAuthenticated && !firebaseLogin -> "Onboarding"
             showOnboarding  && !isAuthenticated && firebaseLogin  -> "FirebaseLogin"
+            // isSeizureDetected -> "SeizureDetected"
             isAuthenticated && !isLoggedIn && !isSeizureDetected -> "Login"
-            isSeizureDetected -> "SeizureDetected"
             else -> "MainScreen"
         }
     }

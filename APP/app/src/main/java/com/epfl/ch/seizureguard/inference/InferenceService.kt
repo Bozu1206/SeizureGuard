@@ -26,16 +26,20 @@ import com.epfl.ch.seizureguard.dl.ModelService
 import com.epfl.ch.seizureguard.RunningApp
 import com.epfl.ch.seizureguard.dl.DataSample
 import com.epfl.ch.seizureguard.dl.metrics.Metrics
-import com.epfl.ch.seizureguard.dl.metrics.MetricsUtils
+import com.epfl.ch.seizureguard.profile.ProfileRepository
 
-// Foreground service for launching inference in background
 class InferenceService : Service() {
     private var modelService: ModelService? = null
+
+    private val repository: ProfileRepository by lazy {
+        ProfileRepository.getInstance(
+            context = applicationContext
+        )
+    }
 
     private val samples = mutableListOf<DataSample>()
     private var isPaused = false
     private var isTrainingEnabled = false
-    private var counter = 0
 
     private val serviceConnection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
@@ -61,7 +65,8 @@ class InferenceService : Service() {
         override fun onReceive(context: Context, intent: Intent) {
             val sample = intent.getParcelableExtra("EXTRA_SAMPLE", DataSample::class.java)
             if (sample != null) {
-                counter++
+                repository.incrementSampleCount()
+
                 if (!isTrainingEnabled) {
                     Log.d("InferenceService", "Training is disabled")
                 } else {
@@ -78,41 +83,13 @@ class InferenceService : Service() {
                 if (samples.size >= 100 && isTrainingEnabled) {
                     Log.d("InferenceService", "Training triggered")
                     isPaused = true
-                    Thread {
-                        samples.shuffle()
-                        modelService?.getModelManager().let { modelManager ->
-                            for (i in 0..20) {
-                                modelManager?.performTrainingEpoch(samples.toTypedArray())
-                            }
-
-                            samples.clear()
-
-                            val metricsBeforeTraining =
-                                modelManager?.validate(context = applicationContext) ?: Metrics()
-                            MetricsUtils.saveMetrics(
-                                applicationContext,
-                                "metrics_before_training",
-                                metricsBeforeTraining
-                            )
-
-                            modelManager?.saveModel(context = applicationContext)
-
-                            val metricsAfterTraining =
-                                modelManager?.validate(context = applicationContext) ?: Metrics()
-                            MetricsUtils.saveMetrics(
-                                applicationContext,
-                                "metrics_after_training",
-                                metricsAfterTraining
-                            )
-                        }
-
-                        isPaused = false
-                    }.start()
                 }
 
+
+                // Inference
                 modelService?.getModelManager()?.let { modelManager ->
                     val prediction = modelManager.performInference(sample)
-                    Log.d("InferenceService", "Predictions: $prediction (${counter})")
+                    Log.d("InferenceService", "Predictions: $prediction (${repository.sampleCount})")
 
                     if (prediction == 1) {
                         val app = context.applicationContext as RunningApp
@@ -157,6 +134,30 @@ class InferenceService : Service() {
         Log.d("InferenceService", "SampleReceiver registered")
     }
 
+    private fun doTraining() {
+        Thread {
+            samples.shuffle()
+            modelService?.getModelManager().let { modelManager ->
+                for (i in 0..20) {
+                    modelManager?.performTrainingEpoch(samples.toTypedArray())
+                }
+
+                samples.clear()
+
+                modelManager?.saveModel(context = applicationContext)
+
+                val metrics =
+                    modelManager?.validate(context = applicationContext) ?: Metrics()
+
+                Log.d("InferenceService", "Metrics: $metrics")
+                repository.updateMetrics(metrics)
+                repository.resetSamples()
+            }
+
+            isPaused = false
+        }.start()
+    }
+
     // Triggered when MainActivity sends the intent
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         Log.d("InferenceService", "onStartCommand called")
@@ -166,6 +167,10 @@ class InferenceService : Service() {
         when (intent?.action) {
             Actions.START.toString() -> start()
             Actions.STOP.toString() -> stopSelf()
+            "ACTION_START_TRAINING" -> {
+                Log.d("InferenceService", "User requested training!")
+                doTraining()
+            }
         }
 
         return super.onStartCommand(intent, flags, startId)
