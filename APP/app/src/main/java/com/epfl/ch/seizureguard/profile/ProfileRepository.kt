@@ -1,6 +1,7 @@
 // ProfileRepository.kt
 package com.epfl.ch.seizureguard.profile
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.net.Uri
 import android.util.Log
@@ -14,6 +15,8 @@ import com.google.firebase.firestore.ktx.toObject
 import com.google.firebase.storage.FirebaseStorage
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.tasks.await
 
@@ -34,13 +37,62 @@ object Keys {
     val IS_AUTHENTICATED = booleanPreferencesKey("is_authenticated")
     val PAST_SEIZURES = stringPreferencesKey("past_seizures")
     val DEF_METRICS = stringPreferencesKey("def_metrics")
+    val LATEST_METRICS = stringPreferencesKey("latest_metrics")
 }
 
-class ProfileRepository(
+class ProfileRepository private constructor(
     val context: Context,
-    private val firestore: FirebaseFirestore = FirebaseFirestore.getInstance(),
-    private val storage: FirebaseStorage = FirebaseStorage.getInstance(),
+    private val firestore: FirebaseFirestore,
+    private val storage: FirebaseStorage
 ) {
+    companion object {
+        @SuppressLint("StaticFieldLeak")
+        @Volatile
+        private var INSTANCE: ProfileRepository? = null
+
+        fun getInstance(
+            context: Context,
+            firestore: FirebaseFirestore = FirebaseFirestore.getInstance(),
+            storage: FirebaseStorage = FirebaseStorage.getInstance()
+        ): ProfileRepository {
+            return INSTANCE ?: synchronized(this) {
+                INSTANCE ?: ProfileRepository(
+                    context.applicationContext,
+                    firestore,
+                    storage
+                ).also { INSTANCE = it }
+            }
+        }
+    }
+
+
+    private val _sampleCount = MutableStateFlow(0)
+    val sampleCount: StateFlow<Int> = _sampleCount
+
+    private val _isTrainReady = MutableStateFlow(false)
+    val isTrainReady: StateFlow<Boolean> = _isTrainReady
+
+    fun incrementSampleCount() {
+        val newCount = _sampleCount.value + 1
+        _sampleCount.value = newCount
+        if (newCount >= 100) {
+            _isTrainReady.value = true
+        }
+    }
+
+    fun resetSamples() {
+        _sampleCount.value = 0
+        _isTrainReady.value = false
+    }
+
+    private val _latestMetrics = MutableStateFlow(Metrics())
+    val latestMetrics: StateFlow<Metrics> = _latestMetrics
+
+    fun updateMetrics(newMetrics: Metrics) {
+        _latestMetrics.value = newMetrics
+        Log.d("ProfileRepository", "Updated latestMetrics: $newMetrics")
+    }
+
     private val gson = Gson()
 
     suspend fun saveProfileToPreferences(profile: Profile) {
@@ -58,6 +110,7 @@ class ProfileRepository(
             preferences[Keys.EMERGENCY_CONTACTS] = gson.toJson(profile.emergencyContacts)
             preferences[Keys.PAST_SEIZURES] = gson.toJson(profile.pastSeizures)
             preferences[Keys.DEF_METRICS] = gson.toJson(profile.defaultsMetrics)
+            preferences[Keys.LATEST_METRICS] = gson.toJson(profile.latestMetrics)
         }
         Log.d("ProfileRepository", "Profile saved to preferences: $profile")
     }
@@ -80,6 +133,22 @@ class ProfileRepository(
             emptyList()
         }
 
+        val defMetricsJson = preferences[Keys.DEF_METRICS] ?: "[]"
+        val defMetrics: Metrics = try {
+            gson.fromJson(defMetricsJson, Metrics::class.java) ?: Metrics()
+        } catch (e: Exception) {
+            Log.e("ProfileRepository", "Failed to parse defaultMetrics: ${e.message}", e)
+            Metrics()
+        }
+
+        val latestMetricsJson = preferences[Keys.LATEST_METRICS] ?: "[]"
+        val latestMetrics: Metrics = try {
+            gson.fromJson(latestMetricsJson, Metrics::class.java) ?: Metrics()
+        } catch (e: Exception) {
+            Log.e("ProfileRepository", "Failed to parse latestMetrics: ${e.message}", e)
+            Metrics()
+        }
+
         return Profile(
             uid = preferences[Keys.USER_ID] ?: "",
             name = preferences[Keys.USER_NAME] ?: "",
@@ -92,7 +161,9 @@ class ProfileRepository(
             isBiometricEnabled = preferences[Keys.IS_BIOMETRIC_ENABLED] ?: false,
             isTrainingEnabled = preferences[Keys.IS_TRAINING_ENABLED] ?: false,
             emergencyContacts = contacts,
-            pastSeizures = pastSeizures
+            pastSeizures = pastSeizures,
+            defaultsMetrics = defMetrics,
+            latestMetrics = latestMetrics
         )
     }
 

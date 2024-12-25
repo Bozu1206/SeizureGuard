@@ -18,7 +18,8 @@ data class Profile(
     var isTrainingEnabled: Boolean = false,
     var emergencyContacts: List<EmergencyContact> = emptyList(),
     var pastSeizures: List<SeizureEvent> = emptyList(),
-    var defaultsMetrics: Metrics = Metrics()
+    var defaultsMetrics: Metrics = Metrics(),
+    var latestMetrics: Metrics = defaultsMetrics
 ) {
     companion object {
         fun isComplete(profile: Profile): Boolean {

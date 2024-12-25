@@ -59,7 +59,7 @@ fun AppContent(
         ) {
             composable("inference") {
                 InferenceScreen(
-                    metrics = metrics,
+                    profileViewModel = profileViewModel,
                     onRunInference = onRunInference,
                     metricsViewModel = metricsViewModel
                 )

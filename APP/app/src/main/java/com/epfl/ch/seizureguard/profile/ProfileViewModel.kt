@@ -1,13 +1,17 @@
 // ProfileViewModel.kt
 package com.epfl.ch.seizureguard.profile
 
+import android.app.Application
 import android.content.Context
+import android.content.Intent
 import android.util.Log
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.epfl.ch.seizureguard.dl.ModelManager
 import com.epfl.ch.seizureguard.dl.metrics.Metrics
+import com.epfl.ch.seizureguard.inference.InferenceService
 import com.epfl.ch.seizureguard.seizure_event.SeizureEvent
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -16,7 +20,34 @@ import java.io.FileOutputStream
 import java.io.IOException
 import java.util.UUID
 
-class ProfileViewModel(private val repository: ProfileRepository) : ViewModel() {
+class ProfileViewModel(context: Context, application: Application) : AndroidViewModel(application) {
+    private val repository: ProfileRepository by lazy {
+        ProfileRepository.getInstance(
+            context = context
+        )
+    }
+
+    val sampleCount: StateFlow<Int> = repository.sampleCount
+        .stateIn(viewModelScope, SharingStarted.Eagerly, 0)
+
+    val isTrainReady: StateFlow<Boolean> = repository.isTrainReady
+        .stateIn(viewModelScope, SharingStarted.Eagerly, false)
+
+    val latestMetrics: StateFlow<Metrics> = repository.latestMetrics
+        .stateIn(viewModelScope, SharingStarted.Eagerly, Metrics())
+
+    fun requestTraining() {
+        val intent = Intent(getApplication(), InferenceService::class.java).apply {
+            action = "ACTION_START_TRAINING"
+        }
+
+        getApplication<Application>().startService(intent)
+    }
+
+    fun updateMetricsFromUI(metrics: Metrics) {
+        repository.updateMetrics(metrics)
+    }
+
     private val _profileState = MutableStateFlow(Profile.empty())
     val profileState: StateFlow<Profile> = _profileState
 
@@ -228,12 +259,16 @@ class ProfileViewModel(private val repository: ProfileRepository) : ViewModel() 
 
 }
 
-class ProfileViewModelFactory(private val context: Context) : ViewModelProvider.Factory {
+
+class ProfileViewModelFactory(
+    private val context: Context,
+    private val application: Application
+) : ViewModelProvider.Factory {
+
+    @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(ProfileViewModel::class.java)) {
-            val repository = ProfileRepository(context)
-            @Suppress("UNCHECKED_CAST")
-            return ProfileViewModel(repository) as T
+            return ProfileViewModel(context, application) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }
