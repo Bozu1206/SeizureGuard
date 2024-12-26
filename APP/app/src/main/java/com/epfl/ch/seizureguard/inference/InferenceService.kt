@@ -89,7 +89,7 @@ class InferenceService : Service() {
                 // Inference
                 modelService?.getModelManager()?.let { modelManager ->
                     val prediction = modelManager.performInference(sample)
-                    Log.d("InferenceService", "Predictions: $prediction (${repository.sampleCount})")
+                    Log.d("InferenceService", "Predictions: $prediction (${repository.sampleCount} | Ground Truth: ${sample.label})")
 
                     if (prediction == 1) {
                         val app = context.applicationContext as RunningApp

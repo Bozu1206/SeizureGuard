@@ -85,7 +85,7 @@ class ProfileRepository private constructor(
         _isTrainReady.value = false
     }
 
-    private val _latestMetrics = MutableStateFlow(Metrics())
+    private val _latestMetrics = MutableStateFlow(Metrics.defaultsModelMetrics())
     val latestMetrics: StateFlow<Metrics> = _latestMetrics
 
     fun updateMetrics(newMetrics: Metrics) {

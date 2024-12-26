@@ -6,7 +6,6 @@ import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.MonitorHeart
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
@@ -25,12 +24,11 @@ import androidx.navigation.compose.rememberNavController
 import com.epfl.ch.seizureguard.dl.MetricsViewModel
 import com.epfl.ch.seizureguard.history.HistoryScreen
 import com.epfl.ch.seizureguard.homescreen.HomeScreen
-import com.epfl.ch.seizureguard.inference.InferenceScreen
 import com.epfl.ch.seizureguard.profile.ProfileScreen
 import com.epfl.ch.seizureguard.wallet_manager.GoogleWalletToken
 import com.epfl.ch.seizureguard.dl.metrics.Metrics
-import com.epfl.ch.seizureguard.firebase.FirebaseLoginScreen
 import com.epfl.ch.seizureguard.history.HistoryViewModel
+import com.epfl.ch.seizureguard.inference.InferenceHomePage
 import com.epfl.ch.seizureguard.medical_card.MedicalCardScreen
 import com.epfl.ch.seizureguard.seizure_event.SeizureEventViewModel
 import com.epfl.ch.seizureguard.settings.SettingsScreen
@@ -58,9 +56,9 @@ fun AppContent(
             Modifier.padding(innerPadding)
         ) {
             composable("inference") {
-                InferenceScreen(
+                InferenceHomePage(
                     profileViewModel = profileViewModel,
-                    onRunInference = onRunInference,
+                    onPerformInference = onRunInference,
                     metricsViewModel = metricsViewModel
                 )
             }
