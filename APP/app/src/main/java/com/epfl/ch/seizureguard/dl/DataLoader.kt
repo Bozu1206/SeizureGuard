@@ -21,6 +21,23 @@ data class DataSample(
     }
 
     override fun describeContents(): Int = 0
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as DataSample
+
+        if (!data.contentEquals(other.data)) return false
+        if (label != other.label) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = data.contentHashCode()
+        result = 31 * result + label
+        return result
+    }
 
     companion object CREATOR : Parcelable.Creator<DataSample> {
         override fun createFromParcel(parcel: Parcel): DataSample {

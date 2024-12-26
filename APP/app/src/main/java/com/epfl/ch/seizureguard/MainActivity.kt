@@ -66,7 +66,7 @@ class MainActivity : FragmentActivity() {
         val seizureDetected = intent.getBooleanExtra("EXTRA_SEIZURE_DETECTED", false)
         if (seizureDetected && !isSeizureDetected) {
             Log.d("MainActivity", "Seizure detected (onNewIntent)")
-            isSeizureDetected = true
+            // isSeizureDetected = true
         }
     }
 
