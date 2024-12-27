@@ -14,7 +14,9 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.ModelTraining
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -32,6 +34,28 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.epfl.ch.seizureguard.profile.ProfileViewModel
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.Key
+import androidx.compose.material.icons.filled.Logout
+import androidx.compose.material3.Surface
+import android.content.Intent
+import android.content.Context
+import android.widget.Toast
+import androidx.compose.material.icons.filled.Download
+import androidx.compose.ui.platform.LocalContext
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import com.google.gson.GsonBuilder
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -39,7 +63,105 @@ fun SettingsScreen(
     profileViewModel: ProfileViewModel,
     onLogoutClicked: () -> Unit = {}
 ) {
+    val context = LocalContext.current
     val profile by profileViewModel.profileState.collectAsState()
+    var showPasswordDialog by remember { mutableStateOf(false) }
+    var showExportDialog by remember { mutableStateOf(false) }
+    var newPassword by remember { mutableStateOf("") }
+    var confirmPassword by remember { mutableStateOf("") }
+    var showError by remember { mutableStateOf(false) }
+
+    if (showPasswordDialog) {
+        AlertDialog(
+            onDismissRequest = { 
+                showPasswordDialog = false 
+                newPassword = ""
+                confirmPassword = ""
+                showError = false
+            },
+            title = { Text("Change Password") },
+            text = {
+                Column {
+                    if (showError) {
+                        Text(
+                            text = "Passwords do not match",
+                            color = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.padding(bottom = 8.dp)
+                        )
+                    }
+                    OutlinedTextField(
+                        value = newPassword,
+                        onValueChange = { newPassword = it },
+                        label = { Text("New Password") },
+                        singleLine = true,
+                        visualTransformation = PasswordVisualTransformation(),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = confirmPassword,
+                        onValueChange = { confirmPassword = it },
+                        label = { Text("Confirm Password") },
+                        singleLine = true,
+                        visualTransformation = PasswordVisualTransformation(),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    if (newPassword == confirmPassword && newPassword.isNotEmpty()) {
+                        profileViewModel.updatePassword(newPassword)
+                        showPasswordDialog = false
+                        newPassword = ""
+                        confirmPassword = ""
+                        showError = false
+                    } else {
+                        showError = true
+                    }
+                }) {
+                    Text("Confirm")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { 
+                    showPasswordDialog = false
+                    newPassword = ""
+                    confirmPassword = ""
+                    showError = false
+                }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
+    if (showExportDialog) {
+        AlertDialog(
+            onDismissRequest = { showExportDialog = false },
+            title = { Text("Export Data") },
+            text = { 
+                Text("Do you want to export your seizure history as JSON?")
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        profileViewModel.exportSeizures(context)
+                        showExportDialog = false
+                    }
+                ) {
+                    Text("Export")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { showExportDialog = false }
+                ) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
 
     Scaffold(
         topBar = {
@@ -61,95 +183,176 @@ fun SettingsScreen(
                     .padding(paddingValues)
                     .padding(16.dp)
                     .verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.Top,
+                verticalArrangement = Arrangement.spacedBy(16.dp),
                 horizontalAlignment = Alignment.Start
             ) {
-                // Section "User Settings"
-                Text(
-                    text = "User Settings",
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.SemiBold,
-                    modifier = Modifier.padding(vertical = 8.dp)
-                )
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                // Switch for "Biometric Login"
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "\t Biometric Login",
-                        style = MaterialTheme.typography.bodyLarge,
-                        fontSize = 16.sp,
-                        modifier = Modifier.weight(1f)
+                // Section "Security"
+                SettingsSection(title = "Security") {
+                    SettingsItem(
+                        title = "Biometric Login",
+                        icon = Icons.Default.Lock,
+                        tint = if (profile.isBiometricEnabled) 
+                            MaterialTheme.colorScheme.primary 
+                        else 
+                            MaterialTheme.colorScheme.onSurfaceVariant,
+                        trailing = {
+                            Switch(
+                                checked = profile.isBiometricEnabled,
+                                onCheckedChange = { isChecked ->
+                                    profileViewModel.saveAuthPreference(isChecked)
+                                }
+                            )
+                        }
                     )
-                    Switch(
-                        checked = profile.isBiometricEnabled,
-                        onCheckedChange = { isChecked ->
-                            profileViewModel.saveAuthPreference(isChecked)
-                        },
-                        thumbContent = if (profile.isBiometricEnabled) {
-                            {
-                                Icon(
-                                    imageVector = Icons.Filled.Lock,
-                                    contentDescription = "Biometric Enabled",
-                                    modifier = Modifier.size(SwitchDefaults.IconSize),
-                                )
-                            }
-                        } else {
-                            null
+
+                    SettingsItem(
+                        title = "Change Password",
+                        onClick = { showPasswordDialog = true },
+                        icon = Icons.Default.Key
+                    )
+                }
+
+                // Section "Model Training"
+                SettingsSection(title = "Model Training") {
+                    SettingsItem(
+                        title = "Enable Training",
+                        icon = Icons.Default.ModelTraining,
+                        tint = if (profile.isTrainingEnabled) 
+                            MaterialTheme.colorScheme.primary 
+                        else 
+                            MaterialTheme.colorScheme.onSurfaceVariant,
+                        trailing = {
+                            Switch(
+                                checked = profile.isTrainingEnabled,
+                                onCheckedChange = { isChecked ->
+                                    profileViewModel.saveTrainingPreference(isChecked)
+                                }
+                            )
                         }
                     )
                 }
 
-                // Switch for "Enable Training"
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "\t Enable Training",
-                        style = MaterialTheme.typography.bodyLarge,
-                        fontSize = 16.sp,
-                        modifier = Modifier.weight(1f)
-                    )
-                    Switch(
-                        checked = profile.isTrainingEnabled,
-                        onCheckedChange = { isChecked ->
-                            profileViewModel.saveTrainingPreference(isChecked)
-                        },
-                        thumbContent = if (profile.isTrainingEnabled) {
-                            {
-                                Icon(
-                                    imageVector = Icons.Filled.ModelTraining,
-                                    contentDescription = "Training Enabled",
-                                    modifier = Modifier.size(SwitchDefaults.IconSize),
-                                )
-                            }
-                        } else {
-                            null
-                        }
+                SettingsSection(title = "Data Management") {
+                    SettingsItem(
+                        title = "Export Seizure History",
+                        onClick = { showExportDialog = true },
+                        icon = Icons.Default.Download,
+                        trailing = null
                     )
                 }
 
                 Spacer(modifier = Modifier.weight(1f))
 
                 // Logout Button
-                Button(
-                    onClick = { onLogoutClicked() },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 6.dp)
-                ) {
-                    Text(text = "Logout")
-                }
+                SettingsItem(
+                    title = "Logout",
+                    onClick = onLogoutClicked,
+                    icon = Icons.Default.Logout,
+                    tint = MaterialTheme.colorScheme.error
+                )
             }
         }
     )
+}
+
+@Composable
+private fun SettingsSection(
+    title: String,
+    content: @Composable () -> Unit
+) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.SemiBold
+        )
+        content()
+    }
+}
+
+@Composable
+private fun SettingsSwitch(
+    title: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+    icon: ImageVector? = null
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.bodyLarge,
+            fontSize = 16.sp,
+            modifier = Modifier.weight(1f)
+        )
+        Switch(
+            checked = checked,
+            onCheckedChange = onCheckedChange,
+            thumbContent = if (icon != null) {
+                {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        modifier = Modifier.size(SwitchDefaults.IconSize),
+                    )
+                }
+            } else null
+        )
+    }
+}
+
+@Composable
+private fun SettingsItem(
+    title: String,
+    onClick: () -> Unit = {},
+    icon: ImageVector? = null,
+    tint: Color = MaterialTheme.colorScheme.primary,
+    trailing: @Composable (() -> Unit)? = null
+) {
+    Surface(
+        onClick = onClick,
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(56.dp),
+        color = MaterialTheme.colorScheme.surface,
+        tonalElevation = 2.dp,
+        shape = RoundedCornerShape(12.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                if (icon != null) {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        tint = tint
+                    )
+                }
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.bodyLarge
+                )
+            }
+            trailing?.invoke() ?: Icon(
+                imageVector = Icons.Default.ChevronRight,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
 }
 
 

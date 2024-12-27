@@ -109,6 +109,6 @@ class EEGViewModel : ViewModel() {
         val maxScroll = 0f
         val minScroll = -(totalSamples * sampleWidth) + graphWidth
 
-        _scrollOffset.value = (_scrollOffset.value + delta).coerceIn(minScroll, maxScroll)
+         _scrollOffset.value = (_scrollOffset.value + delta).coerceIn(minScroll, maxScroll)
     }
 }
