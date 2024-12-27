@@ -1,6 +1,7 @@
 package com.epfl.ch.seizureguard
 
 import android.Manifest
+import android.app.Activity
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
@@ -9,6 +10,7 @@ import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
+import androidx.annotation.RequiresApi
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -70,6 +72,7 @@ class MainActivity : FragmentActivity() {
         }
     }
 
+    @RequiresApi(Build.VERSION_CODES.Q)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         onboardingViewModel = ViewModelProvider(
@@ -176,6 +179,7 @@ class MainActivity : FragmentActivity() {
         }
     }
 
+    @RequiresApi(Build.VERSION_CODES.Q)
     private fun requestAllPermissions() {
         val permissions = mutableListOf<String>()
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
@@ -217,6 +221,14 @@ class MainActivity : FragmentActivity() {
             val token = generateToken(request)
             Log.d("MainActivity", "Generated token: $token")
             walletViewModel.savePassesJwt(token, this@MainActivity, addToGoogleWalletRequestCode)
+        }
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        
+        if (requestCode == ProfileViewModel.EXPORT_JSON_REQUEST_CODE && resultCode == Activity.RESULT_OK) {
+            profileViewModel.handleExportResult(this, data?.data)
         }
     }
 }

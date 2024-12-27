@@ -18,7 +18,14 @@ import kotlinx.coroutines.launch
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import java.util.UUID
+import com.google.gson.GsonBuilder
+import android.widget.Toast
+import android.app.Activity
+import android.net.Uri
 
 class ProfileViewModel(context: Context, application: Application) : AndroidViewModel(application) {
     private val repository: ProfileRepository by lazy {
@@ -54,6 +61,8 @@ class ProfileViewModel(context: Context, application: Application) : AndroidView
     val isAuthenticated: StateFlow<Boolean> = repository.context.dataStore.data
         .map { preferences -> preferences[Keys.IS_AUTHENTICATED] ?: false }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+
+    private var pendingJsonExport: String? = null
 
     init {
         loadProfile()
@@ -257,6 +266,72 @@ class ProfileViewModel(context: Context, application: Application) : AndroidView
         return file.absolutePath
     }
 
+    fun updatePassword(newPassword: String) {
+        viewModelScope.launch {
+            _profileState.update { currentProfile ->
+                currentProfile.copy(pwd = newPassword)
+            }
+            repository.updateProfileField("pwd", newPassword)
+            saveProfile() // Sauvegarder dans Firestore aussi
+            Log.d("ProfileViewModel", "Password updated successfully")
+        }
+    }
+
+    fun exportSeizures(context: Context) {
+        viewModelScope.launch {
+            try {
+                val seizures = _profileState.value.pastSeizures
+                val gson = GsonBuilder().setPrettyPrinting().create()
+                pendingJsonExport = gson.toJson(seizures)
+
+                val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault())
+                    .format(Date())
+                val filename = "seizures_$timestamp.json"
+
+                val intent = Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
+                    addCategory(Intent.CATEGORY_OPENABLE)
+                    type = "application/json"
+                    putExtra(Intent.EXTRA_TITLE, filename)
+                }
+
+                (context as? Activity)?.startActivityForResult(intent, EXPORT_JSON_REQUEST_CODE)
+            } catch (e: Exception) {
+                Toast.makeText(
+                    context,
+                    "Failed to export data: ${e.message}",
+                    Toast.LENGTH_LONG
+                ).show()
+            }
+        }
+    }
+
+    fun handleExportResult(context: Context, uri: Uri?) {
+        viewModelScope.launch {
+            if (uri == null || pendingJsonExport == null) {
+                Toast.makeText(context, "Export cancelled", Toast.LENGTH_SHORT).show()
+                return@launch
+            }
+
+            try {
+                context.contentResolver.openOutputStream(uri)?.use { outputStream ->
+                    outputStream.write(pendingJsonExport!!.toByteArray())
+                }
+                Toast.makeText(context, "Export successful", Toast.LENGTH_SHORT).show()
+            } catch (e: Exception) {
+                Toast.makeText(
+                    context,
+                    "Failed to write file: ${e.message}",
+                    Toast.LENGTH_LONG
+                ).show()
+            } finally {
+                pendingJsonExport = null
+            }
+        }
+    }
+
+    companion object {
+        const val EXPORT_JSON_REQUEST_CODE = 123
+    }
 }
 
 
