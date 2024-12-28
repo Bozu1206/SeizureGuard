@@ -51,7 +51,10 @@ import android.content.Intent
 import android.content.Context
 import android.widget.Toast
 import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import com.epfl.ch.seizureguard.R
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -67,14 +70,15 @@ fun SettingsScreen(
     val profile by profileViewModel.profileState.collectAsState()
     var showPasswordDialog by remember { mutableStateOf(false) }
     var showExportDialog by remember { mutableStateOf(false) }
+    var showAboutDialog by remember { mutableStateOf(false) }
     var newPassword by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
     var showError by remember { mutableStateOf(false) }
 
     if (showPasswordDialog) {
         AlertDialog(
-            onDismissRequest = { 
-                showPasswordDialog = false 
+            onDismissRequest = {
+                showPasswordDialog = false
                 newPassword = ""
                 confirmPassword = ""
                 showError = false
@@ -124,7 +128,7 @@ fun SettingsScreen(
                 }
             },
             dismissButton = {
-                TextButton(onClick = { 
+                TextButton(onClick = {
                     showPasswordDialog = false
                     newPassword = ""
                     confirmPassword = ""
@@ -140,7 +144,7 @@ fun SettingsScreen(
         AlertDialog(
             onDismissRequest = { showExportDialog = false },
             title = { Text("Export Data") },
-            text = { 
+            text = {
                 Text("Do you want to export your seizure history as JSON?")
             },
             confirmButton = {
@@ -158,6 +162,64 @@ fun SettingsScreen(
                     onClick = { showExportDialog = false }
                 ) {
                     Text("Cancel")
+                }
+            }
+        )
+    }
+
+    if (showAboutDialog) {
+        AlertDialog(
+            onDismissRequest = { showAboutDialog = false },
+            title = {
+                Text(
+                    text = "About SeizureGuard",
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Column(
+                    modifier = Modifier
+                        .verticalScroll(rememberScrollState())
+                        .padding(vertical = 8.dp)
+                ) {
+                    Text(
+                        text = "Version 1.0.0",
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Medium
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Text(
+                        text = stringResource(R.string.about),
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Text(
+                        text = "Developed by:",
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = stringResource(id = R.string.authors),
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Text(
+                        text = "© 2024 EPFL. All rights reserved.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showAboutDialog = false }) {
+                    Text("Close")
                 }
             }
         )
@@ -191,9 +253,9 @@ fun SettingsScreen(
                     SettingsItem(
                         title = "Biometric Login",
                         icon = Icons.Default.Lock,
-                        tint = if (profile.isBiometricEnabled) 
-                            MaterialTheme.colorScheme.primary 
-                        else 
+                        tint = if (profile.isBiometricEnabled)
+                            MaterialTheme.colorScheme.primary
+                        else
                             MaterialTheme.colorScheme.onSurfaceVariant,
                         trailing = {
                             Switch(
@@ -217,9 +279,9 @@ fun SettingsScreen(
                     SettingsItem(
                         title = "Enable Training",
                         icon = Icons.Default.ModelTraining,
-                        tint = if (profile.isTrainingEnabled) 
-                            MaterialTheme.colorScheme.primary 
-                        else 
+                        tint = if (profile.isTrainingEnabled)
+                            MaterialTheme.colorScheme.primary
+                        else
                             MaterialTheme.colorScheme.onSurfaceVariant,
                         trailing = {
                             Switch(
@@ -243,7 +305,16 @@ fun SettingsScreen(
 
                 Spacer(modifier = Modifier.weight(1f))
 
-                // Logout Button
+                SettingsSection(title = "About") {
+                    SettingsItem(
+                        title = "About SeizureGuard",
+                        onClick = { showAboutDialog = true },
+                        icon = Icons.Default.Info,
+                        trailing = null
+                    )
+                }
+
+
                 SettingsItem(
                     title = "Logout",
                     onClick = onLogoutClicked,

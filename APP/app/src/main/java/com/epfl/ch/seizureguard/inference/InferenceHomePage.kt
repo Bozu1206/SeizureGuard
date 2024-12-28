@@ -21,6 +21,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.*
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -33,6 +34,8 @@ import com.epfl.ch.seizureguard.dl.MetricsViewModel
 import com.epfl.ch.seizureguard.profile.ProfileViewModel
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.tooling.preview.Preview
+import org.tensorflow.op.math.Round
 import kotlin.math.round
 
 private val CardShape = RoundedCornerShape(12.dp)
@@ -49,8 +52,6 @@ fun InferenceHomePage(
     bluetoothViewModel: BluetoothViewModel = viewModel(),
     metricsViewModel: MetricsViewModel,
 ) {
-    val context = LocalContext.current
-
     // Handle Bluetooth setup
     HandleBluetoothSetup(bluetoothViewModel)
 
@@ -58,6 +59,8 @@ fun InferenceHomePage(
     LaunchedEffect(Unit) {
         metricsViewModel.loadMetrics()
     }
+
+    var isInferenceRunning by remember { mutableStateOf(false) }
 
     Column(
         modifier = modifier
@@ -85,10 +88,20 @@ fun InferenceHomePage(
                     contentAlignment = Alignment.Center
                 ) {
                     EEGChart()
+                    InferenceOverlay(
+                        isInferenceRunning = isInferenceRunning,
+                        onStartInference = {
+                            isInferenceRunning = true
+                            onPerformInference()
+                        }
+                    )
                 }
                 
                 ActionButtonsSection(
-                    onPerformInference = onPerformInference,
+                    onPerformInference = {
+                        isInferenceRunning = true
+                        onPerformInference()
+                    },
                     onScanDevices = { bluetoothViewModel.scanLeDevice() }
                 )
             }
@@ -114,23 +127,6 @@ private fun MetricsSection(profileViewModel: ProfileViewModel) {
         metrics = metrics,
         profileViewModel = profileViewModel
     )
-}
-
-@Composable
-private fun EEGChartSection() {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(top = 120.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        Column(
-            modifier = Modifier,
-            horizontalAlignment = Alignment.Start
-        ) {
-            EEGChart()
-        }
-    }
 }
 
 @Composable
@@ -231,6 +227,7 @@ fun BentoMetricsCard(
     }
 }
 
+
 @Composable
 private fun MetricsCardContent(
     metrics: Metrics,
@@ -239,10 +236,10 @@ private fun MetricsCardContent(
     onShowDetails: () -> Unit
 ) {
     Card(
-        shape = CardShape,
+        shape = RoundedCornerShape(20.dp),
         modifier = Modifier
             .fillMaxWidth()
-            .shadow(CardElevation, shape = CardShape),
+            .shadow(CardElevation, shape = RoundedCornerShape(20.dp)),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.primaryContainer
         )
@@ -441,6 +438,54 @@ private fun RequestBluetoothPermissions() {
 
             if (needsPermissions) {
                 permissionLauncher.launch(requiredPermissions)
+            }
+        }
+    }
+}
+
+@Composable
+fun InferenceOverlay(
+    isInferenceRunning: Boolean,
+    onStartInference: () -> Unit
+) {
+    if (!isInferenceRunning) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .clip(RoundedCornerShape(20.dp))
+                .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.9f))
+                .clickable { onStartInference() },
+            contentAlignment = Alignment.Center
+        ) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center,
+                modifier = Modifier.padding(16.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.PlayArrow,
+                    contentDescription = "Start Inference",
+                    modifier = Modifier
+                        .size(64.dp)
+                        .padding(bottom = 16.dp),
+                    tint = MaterialTheme.colorScheme.primary
+                )
+                
+                Text(
+                    text = "Start Inference",
+                    style = MaterialTheme.typography.headlineSmall,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.Bold
+                )
+                
+                Spacer(modifier = Modifier.height(8.dp))
+                
+                Text(
+                    text = "Tap anywhere to begin monitoring",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                    textAlign = TextAlign.Center
+                )
             }
         }
     }

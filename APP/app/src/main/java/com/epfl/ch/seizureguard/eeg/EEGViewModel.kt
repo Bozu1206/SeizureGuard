@@ -14,7 +14,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.CoroutineScope
 
 class EEGViewModel : ViewModel() {
     private val _eegData = MutableStateFlow<List<List<Float>>>(emptyList())
@@ -68,11 +67,9 @@ class EEGViewModel : ViewModel() {
 
     private fun updateEEGData(sample: DataSample) {
         try {
-            // Ajouter le nouveau sample à la fin des buffers
             selectedChannels.forEachIndexed { bufferIndex, channelIndex ->
                 val buffer = buffers[bufferIndex]
                 
-                // Ajouter le nouveau sample
                 for (i in 0 until 1024) {
                     val value = sample.data[channelIndex * 1024 + i] * amplificationFactor
                     buffer.add(value)
@@ -81,7 +78,6 @@ class EEGViewModel : ViewModel() {
 
             _eegData.value = buffers.map { it.toList() }
 
-            // Animation du dessin progressif
             viewModelScope.launch {
                 val currentSize = buffers[0].size
                 val startPoint = currentSize - 1024
