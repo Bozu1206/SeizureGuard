@@ -27,6 +27,7 @@ import com.epfl.ch.seizureguard.RunningApp
 import com.epfl.ch.seizureguard.dl.DataSample
 import com.epfl.ch.seizureguard.dl.metrics.Metrics
 import com.epfl.ch.seizureguard.profile.ProfileRepository
+import com.epfl.ch.seizureguard.seizure_detection.SeizureDetectionViewModel
 
 class InferenceService : Service() {
     private var modelService: ModelService? = null
@@ -40,6 +41,8 @@ class InferenceService : Service() {
     private val samples = mutableListOf<DataSample>()
     private var isPaused = false
     private var isTrainingEnabled = false
+
+    private lateinit var seizureDetectionViewModel: SeizureDetectionViewModel
 
     private val serviceConnection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
@@ -94,11 +97,7 @@ class InferenceService : Service() {
                     if (prediction == 1) {
                         val app = context.applicationContext as RunningApp
                         if (app.appLifecycleObserver.isAppInForeground) {
-                            val intent = Intent(context, MainActivity::class.java).apply {
-                                flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                                putExtra("EXTRA_SEIZURE_DETECTED", true)
-                            }
-                            context.startActivity(intent)
+                            seizureDetectionViewModel.onSeizureDetected()
                         } else {
                             Log.d("InferenceService", "app is in background, sending notification")
                             sendSeizureDetectedNotification()
@@ -112,6 +111,7 @@ class InferenceService : Service() {
     @SuppressLint("UnspecifiedRegisterReceiverFlag")
     override fun onCreate() {
         super.onCreate()
+        seizureDetectionViewModel = (application as RunningApp).seizureDetectionViewModel
         Log.d("InferenceService", "onCreate called")
         var filter = IntentFilter("com.example.seizureguard.TRAINING_COMPLETE")
         // registerReceiver(trainingCompleteReceiver, filter)

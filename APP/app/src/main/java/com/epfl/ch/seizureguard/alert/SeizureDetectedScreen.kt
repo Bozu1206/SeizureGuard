@@ -1,6 +1,9 @@
 package com.epfl.ch.seizureguard.alert
 
+import android.util.Log
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,6 +15,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Call
@@ -29,14 +34,18 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.epfl.ch.seizureguard.R
+import com.epfl.ch.seizureguard.profile.ProfileViewModel
 import com.epfl.ch.seizureguard.seizure_event.LogSeizureEventModal
 import com.epfl.ch.seizureguard.seizure_event.SeizureEventViewModel
 
@@ -44,16 +53,29 @@ import com.epfl.ch.seizureguard.seizure_event.SeizureEventViewModel
 fun SeizureDetectedScreen(
     onDismiss: () -> Unit,
     onEmergencyCall: () -> Unit,
-    seizureEventViewModel: SeizureEventViewModel
+    profileViewModel: ProfileViewModel,
 ) {
+    Log.d("SeizureDetectedScreen", "Screen composing")
     var isLogging by remember { mutableStateOf(false) }
     var hasLogged by remember { mutableStateOf(false) }
 
+    // Fond sombre semi-transparent
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.errorContainer)
+            .background(Color.Black.copy(alpha = 0.3f))
+            .clickable(enabled = false) {}
+    )
 
+    // Contenu principal
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(
+                MaterialTheme.colorScheme.errorContainer
+                    .copy(alpha = 0.98f)
+            )
+            .clickable(enabled = false) {}
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -63,29 +85,23 @@ fun SeizureDetectedScreen(
                 .padding(top = 32.dp)
         ) {
             Text(
-                text = "Seizure Detected!",
+                text = "Seizure Detected",
                 style = MaterialTheme.typography.headlineLarge,
                 color = MaterialTheme.colorScheme.onErrorContainer,
-                textAlign = TextAlign.Center
+                textAlign = TextAlign.Center,
+                fontWeight = FontWeight.ExtraBold
             )
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            Text(
-                text = "We have detected a seizure. \nStay calm and follow the instructions below.",
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onErrorContainer,
-                textAlign = TextAlign.Center
-            )
-
-            /*Image(
+            Image(
                 painter = painterResource(R.drawable.seizure_alert),
                 contentDescription = null,
                 modifier = Modifier
                     .clip(RoundedCornerShape(16.dp))
                     .fillMaxWidth()
-                    .size(240.dp)
-            )*/
+                    .size(220.dp)
+            )
 
             Spacer(modifier = Modifier.height(128.dp))
         }
@@ -119,8 +135,7 @@ fun SeizureDetectedScreen(
         if (isLogging) {
             LogSeizureEventModal(onDismiss = { isLogging = false }, onClick = { seizureEvent ->
                 hasLogged = true
-                seizureEventViewModel.saveNewSeizure(seizureEvent)
-                seizureEventViewModel.logAllPastSeizures()
+                profileViewModel.addSeizure(seizureEvent)
                 onDismiss()
             })
         }

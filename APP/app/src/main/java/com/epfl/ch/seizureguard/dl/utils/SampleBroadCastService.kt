@@ -27,7 +27,7 @@ class SampleBroadcastService : Service() {
         Log.d("SampleBroadcastService", "Service created, starting broadcast loop")
         handler.post(broadcastRunnable)
         var d = DataLoader().loadDataAndLabels(applicationContext, "data.bin")
-        data = d.slice(700..800).toTypedArray()
+        data = d.slice(742..760).toTypedArray()
         d = emptyArray()
         System.gc()
     }

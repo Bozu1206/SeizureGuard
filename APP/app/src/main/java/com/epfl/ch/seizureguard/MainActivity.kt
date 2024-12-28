@@ -11,16 +11,20 @@ import android.widget.Toast
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.annotation.RequiresApi
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.app.ActivityCompat
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
+import com.epfl.ch.seizureguard.alert.SeizureDetectedScreen
 import com.epfl.ch.seizureguard.biometrics.BiometricAuthenticator
 import com.epfl.ch.seizureguard.dl.MetricsViewModel
 import com.epfl.ch.seizureguard.dl.metrics.Metrics
@@ -38,7 +42,9 @@ import com.epfl.ch.seizureguard.profile.ProfileViewModelFactory
 import com.epfl.ch.seizureguard.seizure_event.SeizureDao
 import com.epfl.ch.seizureguard.seizure_event.SeizureDatabase
 import com.epfl.ch.seizureguard.seizure_event.SeizureEventViewModel
+import com.epfl.ch.seizureguard.seizure_detection.SeizureDetectionViewModel
 import com.epfl.ch.seizureguard.theme.AppTheme
+import com.epfl.ch.seizureguard.tools.onEmergencyCall
 import com.epfl.ch.seizureguard.wallet_manager.GoogleWalletToken
 import com.epfl.ch.seizureguard.wallet_manager.generateToken
 import kotlinx.coroutines.launch
@@ -54,7 +60,6 @@ class MainActivity : FragmentActivity() {
     private val metricsViewModel: MetricsViewModel by viewModels()
 
     private var metrics by mutableStateOf(Metrics(-1.0, -1.0, -1.0, -1.0, -1.0))
-    private var isSeizureDetected by mutableStateOf(false)
     private var isLoggedIn by mutableStateOf(false)
 
     private val walletViewModel: WalletViewModel by viewModels()
@@ -63,13 +68,8 @@ class MainActivity : FragmentActivity() {
     private lateinit var databaseRoom: SeizureDao
     private val NOTIFICATION_PERMISSION_REQUEST_CODE = 2
 
-    override fun onNewIntent(intent: Intent) {
-        super.onNewIntent(intent)
-        val seizureDetected = intent.getBooleanExtra("EXTRA_SEIZURE_DETECTED", false)
-        if (seizureDetected && !isSeizureDetected) {
-            Log.d("MainActivity", "Seizure detected (onNewIntent)")
-            // isSeizureDetected = true
-        }
+    private val seizureDetectionViewModel by lazy {
+        (application as RunningApp).seizureDetectionViewModel
     }
 
     @RequiresApi(Build.VERSION_CODES.Q)
@@ -80,81 +80,79 @@ class MainActivity : FragmentActivity() {
             OnboardingViewModelFactory(this)
         )[OnboardingViewModel::class.java]
 
-        if (intent?.getBooleanExtra("EXTRA_SEIZURE_DETECTED", false) == true) {
-            Log.d("MainActivity", "Seizure detected")
-            isSeizureDetected = true
-        }
-
         databaseRoom = initializeDatabase()
         setContent {
-            // onboardingViewModel.resetOnboarding(profileViewModel)
-            val activity = LocalContext.current as FragmentActivity
-            val biometricAuthenticator = BiometricAuthenticator(this)
-
+            val isSeizureDetected by seizureDetectionViewModel.isSeizureDetected.collectAsState()
             val firebaseLogin by onboardingViewModel.firebaseLogin.collectAsState()
             val isAuthenticated by profileViewModel.isAuthenticated.collectAsState()
             val showOnboarding by onboardingViewModel.showOnboarding.collectAsState()
             val profile by profileViewModel.profileState.collectAsState()
-
             val isTrainingEnabled = profile.isTrainingEnabled
 
             val navigationState = determineNavigationState(
                 showOnboarding = showOnboarding,
                 firebaseLogin = firebaseLogin,
                 isAuthenticated = isAuthenticated,
-                isLoggedIn = isLoggedIn,
-                isSeizureDetected = isSeizureDetected
+                isLoggedIn = isLoggedIn
             )
-
+            
             AppTheme {
-                when (navigationState) {
-                    "Onboarding" -> OnboardingScreen(
-                        onFinish = {
-                            isLoggedIn = true
-                            onboardingViewModel.completeOnboarding()
-                        },
-                        profileViewModel = profileViewModel,
-                        onboardingViewModel = onboardingViewModel
-                    )
-                    "FirebaseLogin" -> FirebaseLoginScreen(
-                        profileViewModel = profileViewModel,
-                        onLoggedIn = {
-                            isLoggedIn = true
-                            onboardingViewModel.completeOnboarding()
+                Box(modifier = Modifier.fillMaxSize()) {
+                    when (navigationState) {
+                        "Onboarding" -> OnboardingScreen(
+                            onFinish = {
+                                isLoggedIn = true
+                                onboardingViewModel.completeOnboarding()
+                            },
+                            profileViewModel = profileViewModel,
+                            onboardingViewModel = onboardingViewModel
+                        )
+                        "FirebaseLogin" -> FirebaseLoginScreen(
+                            profileViewModel = profileViewModel,
+                            onLoggedIn = {
+                                isLoggedIn = true
+                                onboardingViewModel.completeOnboarding()
+                            }
+                        )
+                        "Login" -> {
+                            val context = LocalContext.current
+                            LoginScreen(
+                                onLoginSuccess = {
+                                    isLoggedIn = true
+                                },
+                                context = context,
+                                activity = context as FragmentActivity,
+                                biometricAuthenticator = BiometricAuthenticator(context),
+                                profileViewModel = profileViewModel
+                            )
                         }
-                    )
-                    "Login" -> LoginScreen(
-                        onLoginSuccess = {
-                            isLoggedIn = true
-                        },
-                        context = this,
-                        activity = activity,
-                        biometricAuthenticator = biometricAuthenticator,
-                        profileViewModel = profileViewModel
-                    )
-                    "SeizureDetected" -> {
-                        Toast.makeText(
-                            this,
-                            "Seizure detected. Screen not implemented.",
-                            Toast.LENGTH_SHORT
-                        ).show()
-                        isSeizureDetected = false
+                        "MainScreen" -> MainScreen(
+                            onRunInference = { startInferenceServices(isTrainingEnabled) },
+                            metrics = metrics,
+                            payState = walletViewModel.walletUiState.collectAsStateWithLifecycle().value,
+                            requestSavePass = ::requestSavePass,
+                            profileViewModel = profileViewModel,
+                            seizureEventViewModel = seizureEventViewModel,
+                            historyViewModel = historyViewModel,
+                            metricsViewModel = metricsViewModel,
+                            onLogoutClicked = {
+                                profileViewModel.setAuthenticated(false)
+                                isLoggedIn = false
+                                onboardingViewModel.resetOnboarding(profileViewModel)
+                            }
+                        )
                     }
-                    "MainScreen" -> MainScreen(
-                        onRunInference = { startInferenceServices(isTrainingEnabled) },
-                        metrics = metrics,
-                        payState = walletViewModel.walletUiState.collectAsStateWithLifecycle().value,
-                        requestSavePass = ::requestSavePass,
-                        profileViewModel = profileViewModel,
-                        seizureEventViewModel = seizureEventViewModel,
-                        historyViewModel = historyViewModel,
-                        metricsViewModel = metricsViewModel,
-                        onLogoutClicked = {
-                            profileViewModel.setAuthenticated(false)
-                            isLoggedIn = false
-                            onboardingViewModel.resetOnboarding(profileViewModel)
-                        }
-                    )
+
+                    if (isSeizureDetected) {
+                        val context = LocalContext.current
+                        SeizureDetectedScreen(
+                            onDismiss = {
+                                seizureDetectionViewModel.onSeizureHandled()
+                            },
+                            onEmergencyCall = { onEmergencyCall(context) },
+                            profileViewModel = profileViewModel
+                        )
+                    }
                 }
             }
         }
@@ -166,15 +164,12 @@ class MainActivity : FragmentActivity() {
         showOnboarding: Boolean,
         firebaseLogin: Boolean,
         isAuthenticated: Boolean,
-        isLoggedIn: Boolean,
-        isSeizureDetected: Boolean
+        isLoggedIn: Boolean
     ): String {
-        Log.d("MainActivity", "states: $showOnboarding, $firebaseLogin, $isAuthenticated, $isLoggedIn, $isSeizureDetected")
         return when {
-            showOnboarding  && !isAuthenticated && !firebaseLogin -> "Onboarding"
-            showOnboarding  && !isAuthenticated && firebaseLogin  -> "FirebaseLogin"
-            // isSeizureDetected -> "SeizureDetected"
-            isAuthenticated && !isLoggedIn && !isSeizureDetected -> "Login"
+            showOnboarding && !isAuthenticated && !firebaseLogin -> "Onboarding"
+            showOnboarding && !isAuthenticated && firebaseLogin -> "FirebaseLogin"
+            isAuthenticated && !isLoggedIn -> "Login"
             else -> "MainScreen"
         }
     }

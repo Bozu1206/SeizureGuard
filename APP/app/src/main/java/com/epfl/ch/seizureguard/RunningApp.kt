@@ -1,5 +1,6 @@
 package com.epfl.ch.seizureguard
 
+import android.app.Activity
 import android.app.Application
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -8,17 +9,28 @@ import android.graphics.Color
 import android.media.AudioAttributes
 import android.media.RingtoneManager
 import android.os.Build
+import android.os.Bundle
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.ViewModelStore
+import androidx.lifecycle.ViewModelStoreOwner
+import com.epfl.ch.seizureguard.seizure_detection.SeizureDetectionViewModel
 
-class RunningApp : Application() { // Application class
-    // If the notification channel is used in a foreground service, it is better to declare it in the Application class to ensure availability.
-    lateinit var appLifecycleObserver: AppLifecycleObserver
+class RunningApp : Application(), ViewModelStoreOwner {
+    override val viewModelStore: ViewModelStore by lazy { ViewModelStore() }
+    lateinit var seizureDetectionViewModel: SeizureDetectionViewModel
+    val appLifecycleObserver = AppLifecycleObserver()
 
     override fun onCreate() {
         super.onCreate()
-        appLifecycleObserver = AppLifecycleObserver()
+        
+        seizureDetectionViewModel = ViewModelProvider(
+            this,
+            ViewModelProvider.NewInstanceFactory()
+        )[SeizureDetectionViewModel::class.java]
+        
         ProcessLifecycleOwner.get().lifecycle.addObserver(appLifecycleObserver)
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -61,8 +73,7 @@ class RunningApp : Application() { // Application class
     }
 }
 
-class AppLifecycleObserver :
-    DefaultLifecycleObserver { // used to allow the foreground service to be aware of the app's lifecycle state
+class AppLifecycleObserver : DefaultLifecycleObserver, Application.ActivityLifecycleCallbacks {
     var isAppInForeground = false
         private set
 
@@ -75,4 +86,13 @@ class AppLifecycleObserver :
         super.onStop(owner)
         isAppInForeground = false
     }
+
+    // Implémentation des méthodes requises de ActivityLifecycleCallbacks
+    override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {}
+    override fun onActivityStarted(activity: Activity) {}
+    override fun onActivityResumed(activity: Activity) {}
+    override fun onActivityPaused(activity: Activity) {}
+    override fun onActivityStopped(activity: Activity) {}
+    override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) {}
+    override fun onActivityDestroyed(activity: Activity) {}
 }

@@ -57,8 +57,8 @@ fun EEGChart(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .shadow(elevation = 4.dp, shape = RoundedCornerShape(12.dp))
-            .clip(RoundedCornerShape(12.dp))
+            .shadow(elevation = 4.dp, shape = RoundedCornerShape(20.dp))
+            .clip(RoundedCornerShape(20.dp))
             .background(Color.White)
     ) {
         Canvas(
