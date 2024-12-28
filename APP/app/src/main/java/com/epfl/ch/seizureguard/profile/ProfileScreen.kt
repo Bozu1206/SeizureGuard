@@ -36,6 +36,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
@@ -47,6 +48,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
@@ -68,7 +70,7 @@ import kotlinx.coroutines.delay
 
 @Composable
 fun ProfileScreen(
-    profileScreenViewModel: ProfileViewModel = viewModel(),
+    profileViewModel: ProfileViewModel = viewModel(),
     navController: NavController,
     requestSavePass: (GoogleWalletToken.PassRequest) -> Unit
 ) {
@@ -84,17 +86,12 @@ fun ProfileScreen(
             modifier = Modifier.fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            UserProfileSection(profileScreenViewModel, requestSavePass)
+            UserProfileSection(profileViewModel, requestSavePass)
 
             Spacer(modifier = Modifier.height(24.dp))
 
             // Emergency Contacts Section
-            EmergencyContactsSection(context, profileScreenViewModel)
-
-            // Spacer(modifier = Modifier.height(24.dp))
-
-            // Upload Medical History Button
-            // UploadMedicalDataSection(navController)
+            EmergencyContactsSection(context, profileViewModel = profileViewModel)
         }
     }
 }
@@ -104,7 +101,6 @@ fun UserProfileSection(
     profileScreenViewModel: ProfileViewModel,
     onWalletButtonClick: (GoogleWalletToken.PassRequest) -> Unit
 ) {
-
     val profile by profileScreenViewModel.profileState.collectAsState()
     val context: Context = LocalContext.current
     var showProfileSettings by remember { mutableStateOf(false) }
@@ -115,134 +111,194 @@ fun UserProfileSection(
         }
     }
 
-    Log.d("Current Profile:", profile.toString())
-
     Card(
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant,
-            contentColor = MaterialTheme.colorScheme.onSurfaceVariant
         ),
         modifier = Modifier
             .shadow(
-                elevation = 8.dp,
-                shape = RoundedCornerShape(16.dp),
+                elevation = 4.dp,
+                shape = RoundedCornerShape(24.dp),
                 spotColor = MaterialTheme.colorScheme.onSurface
             )
-            .clip(RoundedCornerShape(16.dp))
+            .clip(RoundedCornerShape(24.dp))
             .fillMaxWidth()
-
     ) {
-        Row(
-            horizontalArrangement = Arrangement.SpaceEvenly,
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.background(Color.Transparent)
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
         ) {
-            // User Avatar
-            if (profile.uri != "") {
-                AsyncImage(
-                    model = Uri.parse(profile.uri),
-                    contentDescription = "Profile Picture",
+            // Header avec photo et infos basiques
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                // Photo de profil
+                Box(
                     modifier = Modifier
-                        .size(140.dp)
-                        .padding(18.dp)
+                        .size(80.dp)
+                        .clip(CircleShape)
                         .clickable {
                             val intent = Intent(Intent.ACTION_PICK).apply {
                                 type = "image/*"
                             }
                             photoPickerLauncher.launch(intent)
                         }
-                        .clip(CircleShape),
-                    contentScale = ContentScale.Crop,
-                )
-            } else {
-                Icon(
-                    imageVector = Icons.Rounded.Person,
-                    contentDescription = "Profile Picture",
-                    tint = Color.hsl(270f, 0.61f, 0.24f),
-                    modifier = Modifier.size(65.dp)
-                )
-            }
-
-
-            Column(
-                modifier = Modifier
-                    .background(Color.Transparent)
-                    .padding(12.dp)
-            ) {
-                Row {
-                    Text(
-                        text = profile.name,
-                        style = MaterialTheme.typography.bodyLarge,
-                        fontWeight = FontWeight.SemiBold,
-                        maxLines = 2,
-                    )
-
-                    Spacer(modifier = Modifier.width(8.dp))
-
-                    Icon(
-                        imageVector = Icons.Default.Edit,
-                        contentDescription = "Edit",
-                        modifier = Modifier
-                            .size(18.dp)
-                            .clickable {
-                                showProfileSettings = !showProfileSettings
-                            }
-                    )
+                ) {
+                    if (profile.uri.isNotEmpty()) {
+                        AsyncImage(
+                            model = Uri.parse(profile.uri),
+                            contentDescription = "Profile Picture",
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop,
+                        )
+                    } else {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Rounded.Person,
+                                contentDescription = "Profile Picture",
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(36.dp)
+                            )
+                        }
+                    }
                 }
 
-                Text(
-                    text = profile.email,
-                    style = MaterialTheme.typography.labelMedium,
-                )
+                // Informations de base
+                Column(
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text(
+                        text = profile.name,
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold
+                    )
+                    
+                    Text(
+                        text = profile.email,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                    )
+                }
+                
+                IconButton(
+                    onClick = { showProfileSettings = !showProfileSettings }
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Edit,
+                        contentDescription = "Edit Profile",
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
 
-                Text(
-                    text = profile.birthdate,
-                    style = MaterialTheme.typography.labelMedium,
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Medical Info Section
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(
+                        MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                        RoundedCornerShape(16.dp)
+                    )
+                    .padding(16.dp)
+            ) {
+                MedicalInfoRow(
+                    label = "Birth Date",
+                    value = profile.birthdate
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                Text(
-                    text = "Epilepsy Type: ${profile.epi_type}",
-                    style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.Bold,
+                MedicalInfoRow(
+                    label = "Epilepsy Type",
+                    value = profile.epi_type
                 )
 
-                Text(
-                    text = "Medication: None",
-                    style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.Bold,
-                )
+                Spacer(modifier = Modifier.height(8.dp))
 
-                if (showProfileSettings) {
-                    EditProfile(onDismissRequest = {
-                        showProfileSettings = false
-                        profileScreenViewModel.saveProfile()
-                    }, profileScreenViewModel)
+                MedicalInfoRow(
+                    label = "Medication",
+                    value = if (profile.medications.isEmpty()) "None"
+                           else profile.medications.joinToString(", ")
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Google Wallet Button
+            WalletButton(
+                type = ButtonType.Add,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+                onClick = {
+                    val request = GoogleWalletToken.PassRequest(
+                        uid = profile.uid,
+                        patientName = profile.name,
+                        emergencyContact = profileScreenViewModel.profileState.value.emergencyContacts.firstOrNull()?.phone ?: "",
+                        seizureType = profile.epi_type,
+                        medication = "",
+                        birthdate = profile.birthdate,
+                    )
+                    onWalletButtonClick(request)
                 }
-            }
+            )
         }
+    }
 
-        WalletButton(
-            type = ButtonType.Add,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(start = 16.dp, end = 16.dp)
-                .padding(vertical = 10.dp)
-                .height(60.dp),
-            onClick = {
-                val request = GoogleWalletToken.PassRequest(
-                    uid = profile.uid,
-                    patientName = profile.name,
-                    emergencyContact = profileScreenViewModel.profileState.value.emergencyContacts.first().phone,
-                    seizureType = profile.epi_type,
-                    medication = "",
-                    birthdate = profile.birthdate,
-                )
-                Log.d("ProfileScreen", "Wallet Button Clicked: $request")
-                onWalletButtonClick(request)
-            }
+    if (showProfileSettings) {
+        EditProfile(
+            onDismissRequest = {
+                showProfileSettings = false
+                profileScreenViewModel.saveProfile()
+            },
+            profileScreenViewModel
         )
+    }
+}
+
+@Composable
+private fun MedicalInfoRow(
+    label: String,
+    value: String,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+        )
+        if (label == "Medication" && value != "None") {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                Text(
+                    text = value,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
+        } else {
+            Text(
+                text = value,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.SemiBold
+            )
+        }
     }
 }
 
@@ -253,183 +309,213 @@ fun EmergencyContactsSection(context: Context, profileViewModel: ProfileViewMode
     val activity = LocalContext.current as Activity
     val contactPicker = getContactPicker(context, profileViewModel)
 
-    Box(
+    Card(
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+        ),
         modifier = Modifier
-            .fillMaxSize()
-            .padding(horizontal = 8.dp)
+            .fillMaxWidth()
+            .shadow(
+                elevation = 4.dp,
+                shape = RoundedCornerShape(24.dp),
+                spotColor = MaterialTheme.colorScheme.onSurface
+            )
+            .clip(RoundedCornerShape(24.dp))
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(bottom = 16.dp) // Space for the button at the bottom
+                .padding(16.dp)
         ) {
-            Text(
-                text = "Emergency Contacts",
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(bottom = 4.dp)
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            LazyColumn(
+            // Header
+            Row(
                 modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                items(emergencyContacts) { contact ->
-                    val uri =
-                        if (contact.photoUri != null) Uri.parse(contact.photoUri) else null
-                    EmergencyContactCard(
-                        name = contact.name,
-                        phone = contact.phone,
-                        picture = uri,
-                        profileViewModel = profileViewModel
-                    )
+                Text(
+                    text = "Emergency Contacts",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                
+                Text(
+                    text = "${emergencyContacts.size}/5",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Contacts List
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+            ) {
+                if (emergencyContacts.isEmpty()) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 24.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "No emergency contacts yet",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                        )
+                    }
+                } else {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        items(emergencyContacts) { contact ->
+                            EmergencyContactCard(
+                                name = contact.name,
+                                phone = contact.phone,
+                                picture = contact.photoUri?.let { Uri.parse(it) },
+                                profileViewModel = profileViewModel
+                            )
+                        }
+                    }
                 }
             }
 
             Spacer(modifier = Modifier.height(16.dp))
-        }
 
-        if (emergencyContacts.size < 5) {
-            Column(
-                modifier = Modifier
-                    .align(Alignment.BottomCenter) // Align to the bottom
-                    .fillMaxWidth()
-                    .padding(bottom = 16.dp)
-            ) {
-                Button(
-                    onClick = {
-                        if (hasContactPermission(context)) {
-                            val intent = Intent(Intent.ACTION_PICK).apply {
-                                type = ContactsContract.CommonDataKinds.Phone.CONTENT_TYPE
-                            }
-                            contactPicker.launch(intent)
-                        } else {
-                            requestContactPermission(context, activity)
+            // Add Contact Button
+            Button(
+                onClick = {
+                    if (hasContactPermission(context)) {
+                        val intent = Intent(Intent.ACTION_PICK).apply {
+                            type = ContactsContract.CommonDataKinds.Phone.CONTENT_TYPE
                         }
-                    },
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Icon(
-                        imageVector = Icons.Rounded.Add,
-                        contentDescription = "Add Another Contact (${5 - emergencyContacts.size} remaining)",
-                        modifier = Modifier.size(24.dp)
-                    )
-                    Text(text = "Add Emergency Contact")
-                }
-
-                Text(
-                    text = "Add up to 5 emergency contacts",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = Color.Gray,
-                    modifier = Modifier
-                        .padding(top = 8.dp)
-                        .fillMaxWidth()
-                        .wrapContentWidth(align = Alignment.CenterHorizontally)
+                        contactPicker.launch(intent)
+                    } else {
+                        requestContactPermission(context, activity)
+                    }
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .alpha(if (emergencyContacts.size >= 5) 0.5f else 1f),
+                enabled = emergencyContacts.size < 5
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.Add,
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp)
                 )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(text = "Add Contact")
             }
         }
     }
 }
-
 
 @Composable
 fun EmergencyContactCard(
     name: String,
     phone: String,
     picture: Uri?,
-    profileViewModel: ProfileViewModel,
-    onClick: () -> Unit = {}
+    profileViewModel: ProfileViewModel
 ) {
-    val context = LocalContext.current
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
+    Card(
         modifier = Modifier
             .fillMaxWidth()
-            .background(
-                MaterialTheme.colorScheme.tertiaryContainer
-                    .copy(0.3f), shape = RoundedCornerShape(16.dp)
-            )
-            .padding(12.dp)
-
-            .clickable {
-                onClick()
-            }
-
+            .clip(RoundedCornerShape(12.dp)),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
+        )
     ) {
-        if (picture != null) {
-            AsyncImage(
-                model = picture,
-                contentDescription = "Profile Picture",
-                contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .size(40.dp)
-                    .clip(CircleShape),
-            )
-        } else {
-            Icon(
-                imageVector = Icons.Default.Person,
-                contentDescription = null,
-                modifier = Modifier
-                    .size(40.dp)
-                    .background(
-                        MaterialTheme.colorScheme.tertiary.copy(alpha = 0.2f),
-                        CircleShape
-                    )
-                    .padding(8.dp)
-            )
-        }
-        Spacer(modifier = Modifier.width(12.dp))
-
-        Column {
-            Text(
-                text = name,
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.Bold
-            )
-            Text(
-                text = phone,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onPrimaryContainer
-            )
-        }
-
-        Spacer(modifier = Modifier.weight(1f))
-
-        Icon(
-            imageVector = Icons.Filled.Phone,
-            contentDescription = "Call",
-            tint = MaterialTheme.colorScheme.onTertiaryContainer,
+        Row(
             modifier = Modifier
-                .size(24.dp)
-                .clickable {
-                    onEmergencyCall(
-                        context = context,
-                        phone = phone
+                .fillMaxWidth()
+                .padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            // Contact Picture
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
+                contentAlignment = Alignment.Center
+            ) {
+                if (picture != null) {
+                    AsyncImage(
+                        model = picture,
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                } else {
+                    Icon(
+                        imageVector = Icons.Default.Person,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(24.dp)
                     )
                 }
-        )
+            }
 
-        Spacer(modifier = Modifier.width(16.dp))
+            // Contact Info
+            Column(
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(
+                    text = name,
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Text(
+                    text = phone,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                )
+            }
 
-        if (profileViewModel.profileState.value.emergencyContacts.size > 1) {
-            Icon(
-                imageVector = Icons.Filled.Delete,
-                contentDescription = "Edit",
-                tint = MaterialTheme.colorScheme.error,
-                modifier = Modifier
-                    .size(24.dp)
-                    .clickable {
-                        profileViewModel.updateEmergencyContacts(
-                            EmergencyContact(
-                                name = name,
-                                phone = phone,
-                                photoUri = picture.toString()
-                            ), isAdding = false
+            val context = LocalContext.current
+            // Actions
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                IconButton(
+                    onClick = {
+                        onEmergencyCall(context, phone)
+                    }
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Phone,
+                        contentDescription = "Call",
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
+
+                if (profileViewModel.profileState.value.emergencyContacts.size > 1) {
+                    IconButton(
+                        onClick = {
+                            profileViewModel.updateEmergencyContacts(
+                                EmergencyContact(
+                                    name = name,
+                                    phone = phone,
+                                    photoUri = picture?.toString()
+                                ),
+                                isAdding = false
+                            )
+                        }
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.Delete,
+                            contentDescription = "Remove",
+                            tint = MaterialTheme.colorScheme.error
                         )
                     }
-            )
+                }
+            }
         }
     }
 }

@@ -124,7 +124,7 @@ private fun MetricsSection(profileViewModel: ProfileViewModel) {
     val metrics by profileViewModel.latestMetrics.collectAsState()
 
     BentoMetricsCard(
-        metrics = metrics,
+        metrics = if (metrics.f1 > -1.0) metrics else Metrics.defaultsModelMetrics(),
         profileViewModel = profileViewModel
     )
 }
@@ -216,7 +216,8 @@ fun BentoMetricsCard(
             profileViewModel.requestTraining()
             Toast.makeText(context, "Training has started", Toast.LENGTH_SHORT).show()
         },
-        onShowDetails = { showExtra = true }
+        onShowDetails = { showExtra = true },
+        profileViewModel = profileViewModel
     )
 
     if (showExtra) {
@@ -233,8 +234,11 @@ private fun MetricsCardContent(
     metrics: Metrics,
     canTrain: Boolean,
     onTrainClick: () -> Unit,
-    onShowDetails: () -> Unit
+    onShowDetails: () -> Unit,
+    profileViewModel: ProfileViewModel
 ) {
+    val profile by profileViewModel.profileState.collectAsState()
+
     Card(
         shape = RoundedCornerShape(20.dp),
         modifier = Modifier
@@ -266,15 +270,18 @@ private fun MetricsCardContent(
                 )
             }
 
-            Spacer(modifier = Modifier.height(DefaultPadding))
 
-            Button(
-                onClick = onTrainClick,
-                enabled = canTrain,
-                modifier = Modifier.fillMaxWidth(),
-                shape = CardShape,
-            ) {
-                Text("Train Model", color = MaterialTheme.colorScheme.onPrimary)
+
+            if (profile.isTrainingEnabled) {
+                Spacer(modifier = Modifier.height(DefaultPadding))
+                Button(
+                    onClick = onTrainClick,
+                    enabled = canTrain,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = CardShape,
+                ) {
+                    Text("Train Model", color = MaterialTheme.colorScheme.onPrimary)
+                }
             }
         }
     }

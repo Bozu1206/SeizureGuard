@@ -8,7 +8,6 @@ import android.util.Log
 import androidx.datastore.preferences.core.*
 import androidx.datastore.preferences.preferencesDataStore
 import com.epfl.ch.seizureguard.dl.metrics.Metrics
-import com.epfl.ch.seizureguard.seizure_event.SeizureEntity
 import com.epfl.ch.seizureguard.seizure_event.SeizureEvent
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ktx.toObject
@@ -18,7 +17,9 @@ import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.tasks.await
+import java.io.File
 
 val Context.dataStore by preferencesDataStore(name = "user_profile")
 
@@ -38,6 +39,8 @@ object Keys {
     val PAST_SEIZURES = stringPreferencesKey("past_seizures")
     val DEF_METRICS = stringPreferencesKey("def_metrics")
     val LATEST_METRICS = stringPreferencesKey("latest_metrics")
+    val LOCAL_MODEL_PATH = stringPreferencesKey("local_model_path")
+    val MEDICATIONS = stringPreferencesKey("medications")
 }
 
 class ProfileRepository private constructor(
@@ -45,6 +48,8 @@ class ProfileRepository private constructor(
     private val firestore: FirebaseFirestore,
     private val storage: FirebaseStorage
 ) {
+    private val gson = Gson()
+
     companion object {
         @SuppressLint("StaticFieldLeak")
         @Volatile
@@ -65,7 +70,6 @@ class ProfileRepository private constructor(
         }
     }
 
-
     private val _sampleCount = MutableStateFlow(0)
     val sampleCount: StateFlow<Int> = _sampleCount
 
@@ -85,34 +89,71 @@ class ProfileRepository private constructor(
         _isTrainReady.value = false
     }
 
-    private val _latestMetrics = MutableStateFlow(Metrics.defaultsModelMetrics())
+    private val _latestMetrics = MutableStateFlow(Metrics())
     val latestMetrics: StateFlow<Metrics> = _latestMetrics
 
-    fun updateMetrics(newMetrics: Metrics) {
-        _latestMetrics.value = newMetrics
-        Log.d("ProfileRepository", "Updated latestMetrics: $newMetrics")
+    init {
+        runBlocking {
+            try {
+                val preferences = context.dataStore.data.first()
+                val latestMetricsJson = preferences[Keys.LATEST_METRICS]
+                if (latestMetricsJson != null) {
+                    val metrics = gson.fromJson(latestMetricsJson, Metrics::class.java)
+                    if (metrics != null) {
+                        _latestMetrics.value = metrics
+                        Log.d("ProfileRepository", "Initialized latestMetrics from preferences: $metrics")
+                    } else {
+                        Log.w("ProfileRepository", "Could not parse metrics from JSON: $latestMetricsJson")
+                    }
+                } else {
+                    Log.d("ProfileRepository", "No stored metrics found in preferences")
+                }
+            } catch (e: Exception) {
+                Log.e("ProfileRepository", "Error initializing metrics", e)
+            }
+        }
     }
 
-    private val gson = Gson()
+    suspend fun updateMetrics(metrics: Metrics) {
+        _latestMetrics.value = metrics
+        
+        context.dataStore.edit { preferences ->
+            preferences[Keys.LATEST_METRICS] = gson.toJson(metrics)
+        }
+
+        try {
+            val currentProfile = loadProfileFromPreferences()
+            val updatedProfile = currentProfile.copy(latestMetrics = metrics)
+            saveProfileToFirestore(updatedProfile)
+            Log.d("ProfileRepository", "Metrics updated everywhere: $metrics")
+        } catch (e: Exception) {
+            Log.e("ProfileRepository", "Error updating metrics in Firestore", e)
+        }
+    }
 
     suspend fun saveProfileToPreferences(profile: Profile) {
-        context.dataStore.edit { preferences ->
-            preferences[Keys.USER_ID] = profile.uid
-            preferences[Keys.USER_NAME] = profile.name
-            preferences[Keys.USER_EMAIL] = profile.email
-            preferences[Keys.USER_DOB] = profile.birthdate
-            preferences[Keys.USER_PP] = profile.uri
-            preferences[Keys.USER_PWD] = profile.pwd
-            preferences[Keys.USER_EPI_TYPE] = profile.epi_type
-            preferences[Keys.AUTH_MODE] = profile.auth_mode
-            preferences[Keys.IS_BIOMETRIC_ENABLED] = profile.isBiometricEnabled
-            preferences[Keys.IS_TRAINING_ENABLED] = profile.isTrainingEnabled
-            preferences[Keys.EMERGENCY_CONTACTS] = gson.toJson(profile.emergencyContacts)
-            preferences[Keys.PAST_SEIZURES] = gson.toJson(profile.pastSeizures)
-            preferences[Keys.DEF_METRICS] = gson.toJson(profile.defaultsMetrics)
-            preferences[Keys.LATEST_METRICS] = gson.toJson(profile.latestMetrics)
+        try {
+            context.dataStore.edit { preferences ->
+                preferences[Keys.USER_ID] = profile.uid
+                preferences[Keys.USER_NAME] = profile.name
+                preferences[Keys.USER_EMAIL] = profile.email
+                preferences[Keys.USER_DOB] = profile.birthdate
+                preferences[Keys.USER_PP] = profile.uri
+                preferences[Keys.USER_PWD] = profile.pwd
+                preferences[Keys.USER_EPI_TYPE] = profile.epi_type
+                preferences[Keys.AUTH_MODE] = profile.auth_mode
+                preferences[Keys.IS_BIOMETRIC_ENABLED] = profile.isBiometricEnabled
+                preferences[Keys.IS_TRAINING_ENABLED] = profile.isTrainingEnabled
+                preferences[Keys.EMERGENCY_CONTACTS] = gson.toJson(profile.emergencyContacts)
+                preferences[Keys.PAST_SEIZURES] = gson.toJson(profile.pastSeizures)
+                preferences[Keys.DEF_METRICS] = gson.toJson(profile.defaultsMetrics)
+                preferences[Keys.LATEST_METRICS] = gson.toJson(profile.latestMetrics)
+                preferences[Keys.MEDICATIONS] = gson.toJson(profile.medications)
+            }
+            Log.d("ProfileRepository", "Profile saved to preferences successfully: $profile")
+        } catch (e: Exception) {
+            Log.e("ProfileRepository", "Error saving profile to preferences", e)
         }
-        Log.d("ProfileRepository", "Profile saved to preferences: $profile")
     }
 
     suspend fun loadProfileFromPreferences(): Profile {
@@ -149,6 +190,14 @@ class ProfileRepository private constructor(
             Metrics()
         }
 
+        val medicationsJson = preferences[Keys.MEDICATIONS] ?: "[]"
+        val medications: List<String> = try {
+            gson.fromJson(medicationsJson, object : TypeToken<List<String>>() {}.type) ?: emptyList()
+        } catch (e: Exception) {
+            Log.e("ProfileRepository", "Failed to parse medications: ${e.message}", e)
+            emptyList()
+        }
+
         return Profile(
             uid = preferences[Keys.USER_ID] ?: "",
             name = preferences[Keys.USER_NAME] ?: "",
@@ -163,30 +212,34 @@ class ProfileRepository private constructor(
             emergencyContacts = contacts,
             pastSeizures = pastSeizures,
             defaultsMetrics = defMetrics,
-            latestMetrics = latestMetrics
+            latestMetrics = latestMetrics,
+            medications = medications
         )
     }
 
-
-
     suspend fun saveProfileToFirestore(profile: Profile) {
-        if (profile.uid.isEmpty()) {
-            Log.e("ProfileRepository", "Profile UID is empty, skipping Firestore save.")
-            return
-        }
-
         try {
-            val imageUri = Uri.parse(profile.uri)
-            uploadImageToStorage(profile.uid, imageUri)
+            val userId = context.dataStore.data.first()[Keys.USER_ID] ?: run {
+                Log.e("ProfileRepository", "No user ID found in preferences")
+                return
+            }
+            
+            Log.d("ProfileRepository", "Starting Firestore save for user $userId")
+            Log.d("ProfileRepository", "Profile to save: $profile")
 
-            Log.d("ProfileRepository", "Saving profile to Firestore: $profile")
+            if (profile.uri.isNotEmpty()) {
+                uploadImageToStorage(userId, Uri.parse(profile.uri))
+            }
+
             firestore.collection("profiles")
-                .document(profile.uid)
+                .document(userId)
                 .set(profile)
                 .await()
-            Log.d("ProfileRepository", "Profile successfully saved to Firestore.")
+            
+            Log.d("ProfileRepository", "Profile successfully saved to Firestore")
         } catch (e: Exception) {
-            Log.e("ProfileRepository", "Failed to save profile to Firestore: ${e.message}", e)
+            Log.e("ProfileRepository", "Error saving profile to Firestore", e)
+            throw e
         }
     }
 
@@ -244,7 +297,6 @@ class ProfileRepository private constructor(
         firestore.collection("profiles").document(userId).set(profile!!)
     }
 
-
     suspend fun saveAuthPreference(isBiometric: Boolean) {
         context.dataStore.edit { preferences ->
             preferences[Keys.AUTH_MODE] = if (isBiometric) "biometric" else "password"
@@ -261,19 +313,34 @@ class ProfileRepository private constructor(
     }
 
     suspend fun updateProfileField(key: String, value: String) {
-        context.dataStore.edit { preferences ->
-            when (key) {
-                "name" -> preferences[Keys.USER_NAME] = value
-                "email" -> preferences[Keys.USER_EMAIL] = value
-                "birthdate" -> preferences[Keys.USER_DOB] = value
-                "uri" -> preferences[Keys.USER_PP] = value
-                "pwd" -> preferences[Keys.USER_PWD] = value
-                "epi_type" -> preferences[Keys.USER_EPI_TYPE] = value
-                "auth_mode" -> preferences[Keys.AUTH_MODE] = value
+        try {
+            // Charger le profil actuel
+            val currentProfile = loadProfileFromPreferences()
+            
+            // Mettre à jour le champ spécifique
+            val updatedProfile = when (key) {
+                "name" -> currentProfile.copy(name = value)
+                "email" -> currentProfile.copy(email = value)
+                "birthdate" -> currentProfile.copy(birthdate = value)
+                "uri" -> currentProfile.copy(uri = value)
+                "pwd" -> currentProfile.copy(pwd = value)
+                "epi_type" -> currentProfile.copy(epi_type = value)
+                "auth_mode" -> currentProfile.copy(auth_mode = value)
+                else -> currentProfile
             }
+
+            // Sauvegarder le profil complet dans les préférences
+            saveProfileToPreferences(updatedProfile)
+            
+            // Sauvegarder dans Firestore aussi
+            saveProfileToFirestore(updatedProfile)
+
+            Log.d("ProfileRepository", "Updated field $key with value $value")
+            Log.d("ProfileRepository", "Updated profile: $updatedProfile")
+        } catch (e: Exception) {
+            Log.e("ProfileRepository", "Error updating profile field", e)
+            throw e
         }
-        Log.d("ProfileRepository", "Updated $key with value $value")
-        Log.d("ProfileRepository", "Updated preferences: ${context.dataStore.data.first()}")
     }
 
     suspend fun setAuthenticated(authenticated: Boolean) {
@@ -287,5 +354,89 @@ class ProfileRepository private constructor(
             preferences[Keys.IS_TRAINING_ENABLED] = isEnabled
         }
         Log.d("ProfileRepository", "Saved training preference: isEnabled=$isEnabled")
+    }
+
+    fun saveModelToFirebase(modelFile: File) {
+        runBlocking {
+            try {
+                val preferences = context.dataStore.data.first()
+                val userId = preferences[Keys.USER_ID] ?: return@runBlocking
+
+                val localModelFile = File(context.filesDir, "local_model.onnx")
+                modelFile.copyTo(localModelFile, overwrite = true)
+                
+                context.dataStore.edit { prefs ->
+                    prefs[Keys.LOCAL_MODEL_PATH] = localModelFile.absolutePath
+                }
+
+                val modelRef = storage.reference
+                    .child("models")
+                    .child("$userId.onnx")
+
+                modelRef.putFile(Uri.fromFile(modelFile))
+                    .addOnSuccessListener {
+                        Log.d("ProfileRepository", "Model uploaded successfully for user $userId")
+                    }
+                    .addOnFailureListener { e ->
+                        Log.e("ProfileRepository", "Error uploading model for user $userId", e)
+                    }
+
+                Log.d("ProfileRepository", "Model saved locally at: ${localModelFile.absolutePath}")
+            } catch (e: Exception) {
+                Log.e("ProfileRepository", "Error saving model", e)
+            }
+        }
+    }
+
+    fun loadLatestModelFromFirebase(onComplete: (File?) -> Unit) {
+        runBlocking {
+            try {
+                val preferences = context.dataStore.data.first()
+                val userId = preferences[Keys.USER_ID] ?: return@runBlocking onComplete(null)
+
+                val localModelPath = preferences[Keys.LOCAL_MODEL_PATH]
+                if (localModelPath != null) {
+                    val localFile = File(localModelPath)
+                    if (localFile.exists()) {
+                        Log.d("ProfileRepository", "Using cached local model: $localModelPath")
+                        return@runBlocking onComplete(localFile)
+                    }
+                }
+
+                val modelRef = storage.reference
+                    .child("models")
+                    .child("$userId.onnx")
+
+                val downloadedFile = File(context.filesDir, "downloaded_model.onnx")
+                
+                modelRef.getFile(downloadedFile)
+                    .addOnSuccessListener {
+                        val localModelFile = File(context.filesDir, "local_model.onnx")
+                        downloadedFile.copyTo(localModelFile, overwrite = true)
+                        
+                        runBlocking {
+                            context.dataStore.edit { prefs ->
+                                prefs[Keys.LOCAL_MODEL_PATH] = localModelFile.absolutePath
+                            }
+                        }
+                        
+                        Log.d("ProfileRepository", "Model downloaded and cached locally")
+                        onComplete(localModelFile)
+                    }
+                    .addOnFailureListener { e ->
+                        Log.e("ProfileRepository", "Error downloading model", e)
+                        onComplete(null)
+                    }
+            } catch (e: Exception) {
+                Log.e("ProfileRepository", "Error loading model", e)
+                onComplete(null)
+            }
+        }
+    }
+
+    suspend fun updateMedications(medications: List<String>) {
+        context.dataStore.edit { preferences ->
+            preferences[Keys.MEDICATIONS] = gson.toJson(medications)
+        }
     }
 }
