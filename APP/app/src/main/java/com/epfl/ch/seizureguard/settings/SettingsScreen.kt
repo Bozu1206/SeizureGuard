@@ -50,6 +50,9 @@ import androidx.compose.material3.Surface
 import android.content.Intent
 import android.content.Context
 import android.widget.Toast
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.ui.platform.LocalContext
@@ -59,6 +62,11 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import com.google.gson.GsonBuilder
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.IconButton
+import androidx.navigation.NavController
+import androidx.lifecycle.viewmodel.compose.viewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -303,7 +311,6 @@ fun SettingsScreen(
                     )
                 }
 
-                Spacer(modifier = Modifier.weight(1f))
 
                 SettingsSection(title = "About") {
                     SettingsItem(
@@ -313,6 +320,8 @@ fun SettingsScreen(
                         trailing = null
                     )
                 }
+
+                Spacer(modifier = Modifier.weight(1f))
 
 
                 SettingsItem(
@@ -425,5 +434,3 @@ private fun SettingsItem(
         }
     }
 }
-
-

@@ -28,9 +28,13 @@ import com.epfl.ch.seizureguard.dl.DataSample
 import com.epfl.ch.seizureguard.dl.metrics.Metrics
 import com.epfl.ch.seizureguard.profile.ProfileRepository
 import com.epfl.ch.seizureguard.seizure_detection.SeizureDetectionViewModel
+import kotlinx.coroutines.coroutineScope
 
 class InferenceService : Service() {
     private var modelService: ModelService? = null
+    private val profileViewModel by lazy {
+        RunningApp.getInstance(applicationContext).profileViewModel
+    }
 
     private val repository: ProfileRepository by lazy {
         ProfileRepository.getInstance(
@@ -47,6 +51,7 @@ class InferenceService : Service() {
     private val serviceConnection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
             modelService = (service as ModelService.LocalBinder).getService()
+            loadCustomModel()
         }
 
         override fun onServiceDisconnected(name: ComponentName?) {
@@ -92,7 +97,10 @@ class InferenceService : Service() {
                 // Inference
                 modelService?.getModelManager()?.let { modelManager ->
                     val prediction = modelManager.performInference(sample)
-                    Log.d("InferenceService", "Predictions: $prediction (${repository.sampleCount} | Ground Truth: ${sample.label})")
+                    Log.d(
+                        "InferenceService",
+                        "Predictions: $prediction (${repository.sampleCount} | Ground Truth: ${sample.label})"
+                    )
 
                     if (prediction == 1) {
                         val app = context.applicationContext as RunningApp
@@ -113,6 +121,10 @@ class InferenceService : Service() {
         super.onCreate()
         seizureDetectionViewModel = (application as RunningApp).seizureDetectionViewModel
         Log.d("InferenceService", "onCreate called")
+
+        // Charger le modèle personnalisé
+        loadCustomModel()
+
         var filter = IntentFilter("com.example.seizureguard.TRAINING_COMPLETE")
         // registerReceiver(trainingCompleteReceiver, filter)
         ContextCompat.registerReceiver(
@@ -134,23 +146,33 @@ class InferenceService : Service() {
         Log.d("InferenceService", "SampleReceiver registered")
     }
 
+    private fun loadCustomModel() {
+        profileViewModel.loadLatestModelFromFirebase { modelFile ->
+            if (modelFile != null) {
+                Log.d("InferenceService", "Custom model loaded successfully")
+                modelService?.getModelManager()?.updateInferenceModel(modelFile)
+            } else {
+                Log.d("InferenceService", "No custom model found, using default")
+            }
+        }
+    }
+
     private fun doTraining() {
         Thread {
             samples.shuffle()
             modelService?.getModelManager().let { modelManager ->
+
                 for (i in 0..20) {
                     modelManager?.performTrainingEpoch(samples.toTypedArray())
                 }
 
                 samples.clear()
 
-                modelManager?.saveModel(context = applicationContext)
+                modelManager?.saveModel(
+                    context = applicationContext,
+                    profileViewModel = RunningApp.getInstance(applicationContext).profileViewModel
+                )
 
-                val metrics =
-                    modelManager?.validate(context = applicationContext) ?: Metrics()
-
-                Log.d("InferenceService", "Metrics: $metrics")
-                repository.updateMetrics(metrics)
                 repository.resetSamples()
             }
 

@@ -8,6 +8,7 @@ import com.epfl.ch.seizureguard.dl.metrics.Metrics
 import com.epfl.ch.seizureguard.dl.utils.utils.floatArrayToFloatBuffer
 import com.epfl.ch.seizureguard.dl.utils.utils.intToLongBuffer
 import com.epfl.ch.seizureguard.profile.ProfileViewModel
+import kotlinx.coroutines.runBlocking
 import java.io.File
 import java.nio.file.Path
 import java.util.Collections
@@ -139,10 +140,11 @@ class ModelManager() {
         return metrics
     }
 
-    fun saveModel(context: Context) {
-        val modelDirectory = context.filesDir
+    fun saveModel(context: Context, profileViewModel: ProfileViewModel? = null) {
+        val currentMetrics = validate(context)
+        Log.d("Trainer", "Current metrics: $currentMetrics")
 
-        // Print all files in the directory
+        val modelDirectory = context.filesDir
         modelDirectory.listFiles()?.forEach {
             Log.d("Trainer", "File: ${it.name}")
         }
@@ -156,15 +158,39 @@ class ModelManager() {
         ortTrainingSession?.exportModelForInference(modelPath, arrayOf("output"))
         ortTrainingSession?.saveCheckpoint(checkpointPath, true)
 
-        // update inference model with fine-tuned model
         inferenceModelPath = modelPath.toString()
+        val newMetrics = validate(context)
+        Log.d("Trainer", "New metrics: $newMetrics")
 
-        // update training session with new model
         ortTrainingSession = ortEnv?.createTrainingSession(
             checkpointPath.toString(),
             trainModelPath,
             evalModelPath,
             optimizerModelPath
         )
+
+        if (newMetrics.f1 > currentMetrics.f1) {
+            Log.d("Trainer", "Saving model to Firebase: $modelFile, $profileViewModel")
+            profileViewModel?.saveModelToFirebase(modelFile)
+            runBlocking {
+                profileViewModel?.updateMetricsFromUI(newMetrics)
+            }
+        } else {
+            Log.d("Trainer", "New model is not better, discarding")
+            runBlocking {
+                profileViewModel?.updateMetricsFromUI(currentMetrics)
+            }
+        }
+    }
+
+    fun updateInferenceModel(modelFile: File) {
+        try {
+            inferenceModelPath = modelFile.absolutePath
+            ortSession?.close()
+            ortSession = ortEnv?.createSession(inferenceModelPath)
+            Log.d("ModelManager", "Updated inference model to: ${modelFile.absolutePath}")
+        } catch (e: Exception) {
+            Log.e("ModelManager", "Error updating inference model", e)
+        }
     }
 }

@@ -72,7 +72,7 @@ fun AppContent(
             }
             composable("profile") {
                 ProfileScreen(
-                    profileScreenViewModel = profileViewModel,
+                    profileViewModel = profileViewModel,
                     navController = navController,
                     requestSavePass = requestSavePass
                 )

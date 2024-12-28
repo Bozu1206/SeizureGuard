@@ -17,10 +17,13 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.ViewModelStoreOwner
 import com.epfl.ch.seizureguard.seizure_detection.SeizureDetectionViewModel
+import com.epfl.ch.seizureguard.profile.ProfileViewModel
+import com.epfl.ch.seizureguard.profile.ProfileViewModelFactory
 
 class RunningApp : Application(), ViewModelStoreOwner {
     override val viewModelStore: ViewModelStore by lazy { ViewModelStore() }
     lateinit var seizureDetectionViewModel: SeizureDetectionViewModel
+    lateinit var profileViewModel: ProfileViewModel
     val appLifecycleObserver = AppLifecycleObserver()
 
     override fun onCreate() {
@@ -30,6 +33,11 @@ class RunningApp : Application(), ViewModelStoreOwner {
             this,
             ViewModelProvider.NewInstanceFactory()
         )[SeizureDetectionViewModel::class.java]
+        
+        profileViewModel = ViewModelProvider(
+            this,
+            ProfileViewModelFactory(applicationContext, this)
+        )[ProfileViewModel::class.java]
         
         ProcessLifecycleOwner.get().lifecycle.addObserver(appLifecycleObserver)
 
@@ -69,6 +77,12 @@ class RunningApp : Application(), ViewModelStoreOwner {
             val notificationManager =
                 getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             notificationManager.createNotificationChannel(channel)
+        }
+    }
+
+    companion object {
+        fun getInstance(context: Context): RunningApp {
+            return context.applicationContext as RunningApp
         }
     }
 }

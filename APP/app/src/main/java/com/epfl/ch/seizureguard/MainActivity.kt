@@ -143,7 +143,7 @@ class MainActivity : FragmentActivity() {
                         )
                     }
 
-                    if (isSeizureDetected) {
+                    if (false) {
                         val context = LocalContext.current
                         SeizureDetectedScreen(
                             onDismiss = {

@@ -10,7 +10,7 @@ import com.epfl.ch.seizureguard.dl.DataSample
 
 class SampleBroadcastService : Service() {
     private val handler = Handler()
-    private val interval: Long = 4000
+    private val interval: Long = 100
     private var counter: Int = 0
 
     private lateinit var data: Array<DataSample>
@@ -26,8 +26,8 @@ class SampleBroadcastService : Service() {
         super.onCreate()
         Log.d("SampleBroadcastService", "Service created, starting broadcast loop")
         handler.post(broadcastRunnable)
-        var d = DataLoader().loadDataAndLabels(applicationContext, "data.bin")
-        data = d.slice(742..760).toTypedArray()
+        var d = DataLoader().loadDataAndLabels(applicationContext, "data_20.bin")
+        data = d.slice(200..800).toTypedArray()
         d = emptyArray()
         System.gc()
     }
@@ -39,10 +39,8 @@ class SampleBroadcastService : Service() {
     }
 
     private fun sendSampleBroadcast() {
-        counter = (counter + 1) % data.size
-        // val sample = data.random()
-        // data = data.filter { it != sample }.toTypedArray()
-        val sample = data[counter]
+        val sample = data.random()
+        data = data.filter { it != sample }.toTypedArray()
 
         val intent = Intent("com.example.seizureguard.NEW_SAMPLE").apply {
             putExtra("EXTRA_SAMPLE", sample)
