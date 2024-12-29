@@ -10,8 +10,7 @@ import com.epfl.ch.seizureguard.dl.DataSample
 
 class SampleBroadcastService : Service() {
     private val handler = Handler()
-    private val interval: Long = 100
-    private var counter: Int = 0
+    private val interval: Long = 4000
 
     private lateinit var data: Array<DataSample>
 
