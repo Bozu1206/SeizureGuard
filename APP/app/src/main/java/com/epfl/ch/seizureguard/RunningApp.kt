@@ -19,11 +19,14 @@ import androidx.lifecycle.ViewModelStoreOwner
 import com.epfl.ch.seizureguard.seizure_detection.SeizureDetectionViewModel
 import com.epfl.ch.seizureguard.profile.ProfileViewModel
 import com.epfl.ch.seizureguard.profile.ProfileViewModelFactory
+import com.epfl.ch.seizureguard.bluetooth.BluetoothViewModel
 
 class RunningApp : Application(), ViewModelStoreOwner {
     override val viewModelStore: ViewModelStore by lazy { ViewModelStore() }
     lateinit var seizureDetectionViewModel: SeizureDetectionViewModel
     lateinit var profileViewModel: ProfileViewModel
+    lateinit var bluetoothViewModel: BluetoothViewModel
+
     val appLifecycleObserver = AppLifecycleObserver()
 
     override fun onCreate() {
@@ -38,7 +41,11 @@ class RunningApp : Application(), ViewModelStoreOwner {
             this,
             ProfileViewModelFactory(applicationContext, this)
         )[ProfileViewModel::class.java]
-        
+
+        bluetoothViewModel = ViewModelProvider(
+            this,
+            ViewModelProvider.AndroidViewModelFactory.getInstance(this)
+        )[BluetoothViewModel::class.java]
         ProcessLifecycleOwner.get().lifecycle.addObserver(appLifecycleObserver)
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {

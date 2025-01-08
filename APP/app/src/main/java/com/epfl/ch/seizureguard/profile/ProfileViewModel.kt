@@ -156,6 +156,19 @@ class ProfileViewModel(context: Context, application: Application) : AndroidView
         }
     }
 
+    fun saveDebugPreference(isDebug: Boolean) {
+        viewModelScope.launch {
+            repository.saveDebugPreference(isDebug)
+            _profileState.update { currentState ->
+                currentState.copy(
+                    isDebugEnabled = isDebug
+                )
+            }
+            saveProfile()
+            Log.d("ProfileViewModel", "Saved debug preference: isBiometric=$isDebug")
+        }
+    }
+
     fun addSeizure(seizure: SeizureEvent) {
         viewModelScope.launch {
             val profile = _profileState.value
@@ -193,7 +206,8 @@ class ProfileViewModel(context: Context, application: Application) : AndroidView
         val modelPath = "inference_artifacts/inference.onnx"
         val inferenceModelPath =
             copyAssetToInternalStorage(repository.context, modelPath, "defaults.onnx")
-        val modelManager = ModelManager(inferenceModelPath)
+        val profile = _profileState.value
+        val modelManager = ModelManager(inferenceModelPath, profile.isDebugEnabled)
         return modelManager.validate(repository.context)
     }
 

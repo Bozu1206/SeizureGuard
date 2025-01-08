@@ -16,6 +16,7 @@ data class Profile(
     var auth_mode: String = "password",
     var isBiometricEnabled: Boolean = false,
     var isTrainingEnabled: Boolean = false,
+    var isDebugEnabled: Boolean = false,
     var emergencyContacts: List<EmergencyContact> = emptyList(),
     var pastSeizures: List<SeizureEvent> = emptyList(),
     var defaultsMetrics: Metrics = Metrics(),

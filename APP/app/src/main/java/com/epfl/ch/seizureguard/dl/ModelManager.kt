@@ -3,6 +3,7 @@ package com.epfl.ch.seizureguard.dl
 import ai.onnxruntime.*
 import android.content.Context
 import android.util.Log
+import com.epfl.ch.seizureguard.RunningApp
 import com.epfl.ch.seizureguard.dl.metrics.ComputeMetrics.computeMetrics
 import com.epfl.ch.seizureguard.dl.metrics.Metrics
 import com.epfl.ch.seizureguard.dl.utils.utils.floatArrayToFloatBuffer
@@ -18,6 +19,8 @@ class ModelManager() {
     private var ortTrainingSession: OrtTrainingSession? = null
     private var ortSession: OrtSession? = null
 
+    private var isDebugEnabled: Boolean = false
+
     private var checkpointPath: String = ""
     private var trainModelPath: String = ""
     private var evalModelPath: String = ""
@@ -30,9 +33,11 @@ class ModelManager() {
         evalModelPath: String,
         optimizerModelPath: String,
         inferenceModelPath: String,
+        isDebugEnabled: Boolean
     ) : this() {
         ortEnv = OrtEnvironment.getEnvironment()
 
+        this.isDebugEnabled = isDebugEnabled
         this.checkpointPath = checkpointPath
         this.trainModelPath = trainModelPath
         this.evalModelPath = evalModelPath
@@ -47,10 +52,11 @@ class ModelManager() {
         )
     }
 
-    constructor(inferenceModelPath: String): this() {
+    constructor(inferenceModelPath: String, isDebugEnabled: Boolean ): this() {
         // Create a new instance of ModelManager
         ortEnv = OrtEnvironment.getEnvironment()
 
+        this.isDebugEnabled = isDebugEnabled
         this.checkpointPath = ""
         this.trainModelPath = ""
         this.evalModelPath = ""
@@ -91,17 +97,18 @@ class ModelManager() {
     }
 
     fun performInference(sample: DataSample): Int {
+        Log.d("performInference", "sample size : ${sample.data.size}")
         ortSession = ortEnv?.createSession(inferenceModelPath)
         ortEnv?.use {
             val shape = longArrayOf(1, 18, 1024)
-            val tensor =
-                OnnxTensor.createTensor(ortEnv, floatArrayToFloatBuffer(sample.data), shape)
+            val tensor = OnnxTensor.createTensor(ortEnv, floatArrayToFloatBuffer(sample.data), shape)
             tensor.use {
                 val output = ortSession?.run(Collections.singletonMap("input", tensor))
                 output.use {
                     @Suppress("UNCHECKED_CAST")
                     val rawOutput = ((output?.get(0)?.value) as Array<FloatArray>)[0]
                     val prediction = rawOutput.withIndex().maxByOrNull { it.value }?.index
+                    Log.d("ModelManager","Prediction: $prediction")
                     return prediction!!
                 }
             }

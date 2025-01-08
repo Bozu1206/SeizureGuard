@@ -5,6 +5,7 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.net.Uri
 import android.util.Log
+import androidx.compose.ui.platform.isDebugInspectorInfoEnabled
 import androidx.datastore.preferences.core.*
 import androidx.datastore.preferences.preferencesDataStore
 import com.epfl.ch.seizureguard.dl.metrics.Metrics
@@ -14,9 +15,11 @@ import com.google.firebase.firestore.ktx.toObject
 import com.google.firebase.storage.FirebaseStorage
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.tasks.await
 import java.io.File
@@ -36,6 +39,7 @@ object Keys {
     val IS_BIOMETRIC_ENABLED = booleanPreferencesKey("is_biometric_enabled")
     val IS_TRAINING_ENABLED = booleanPreferencesKey("is_training_enabled")
     val IS_AUTHENTICATED = booleanPreferencesKey("is_authenticated")
+    val IS_DEBUG_ENABLED = booleanPreferencesKey("debug_mode")
     val PAST_SEIZURES = stringPreferencesKey("past_seizures")
     val DEF_METRICS = stringPreferencesKey("def_metrics")
     val LATEST_METRICS = stringPreferencesKey("latest_metrics")
@@ -69,6 +73,9 @@ class ProfileRepository private constructor(
             }
         }
     }
+
+    private val _debugMode = MutableStateFlow(false)
+    val debugMode: StateFlow<Boolean> = _debugMode
 
     private val _sampleCount = MutableStateFlow(0)
     val sampleCount: StateFlow<Int> = _sampleCount
@@ -209,6 +216,7 @@ class ProfileRepository private constructor(
             auth_mode = preferences[Keys.AUTH_MODE] ?: "",
             isBiometricEnabled = preferences[Keys.IS_BIOMETRIC_ENABLED] ?: false,
             isTrainingEnabled = preferences[Keys.IS_TRAINING_ENABLED] ?: false,
+            isDebugEnabled = preferences[Keys.IS_DEBUG_ENABLED] ?: false,
             emergencyContacts = contacts,
             pastSeizures = pastSeizures,
             defaultsMetrics = defMetrics,
@@ -355,6 +363,14 @@ class ProfileRepository private constructor(
         }
         Log.d("ProfileRepository", "Saved training preference: isEnabled=$isEnabled")
     }
+
+    suspend fun saveDebugPreference(isEnabled: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[Keys.IS_DEBUG_ENABLED] = isEnabled
+        }
+        Log.d("ProfileRepository", "Saved debug preference: isEnabled=$isEnabled")
+    }
+
 
     fun saveModelToFirebase(modelFile: File) {
         runBlocking {
