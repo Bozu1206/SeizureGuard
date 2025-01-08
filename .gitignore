@@ -6,3 +6,5 @@ logs
 data_old/*
 .DS_Store
 .idea
+egg_app/.vscode
+APP/local.properties
