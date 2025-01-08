@@ -7,14 +7,15 @@ import android.os.IBinder
 import android.util.Log
 import com.epfl.ch.seizureguard.tools.copyAssetFileOrDir
 
-class ModelService : Service() {
+// Android Service whose main job is to create and manage a single instance of ModelManager
+class ModelService() : Service() {
     private val binder = LocalBinder()
     private lateinit var modelManager: ModelManager
 
+    private var isDebugEnabled: Boolean = false
+
     override fun onCreate() {
         super.onCreate()
-        modelManager = makeOrtTrainerAndCopyAssets()
-        Log.d("ModelService", "modelManager created: $modelManager")
     }
 
     inner class LocalBinder : Binder() {
@@ -26,6 +27,12 @@ class ModelService : Service() {
     }
 
     override fun onBind(intent: Intent?): IBinder {
+        // 1) Read debug flag from the Intent
+        isDebugEnabled = intent?.getBooleanExtra("IS_DEBUG_ENABLED", false) ?: false
+        // 2) Create the modelManager with the correct debug flag
+        modelManager = makeOrtTrainerAndCopyAssets()
+        Log.d("ModelService", "modelManager created: $modelManager (debug=$isDebugEnabled)")
+
         return binder
     }
 
@@ -41,6 +48,7 @@ class ModelService : Service() {
             evalModelPath,
             optimizerModelPath,
             inferenceModelPath,
+            isDebugEnabled
         )
     }
 

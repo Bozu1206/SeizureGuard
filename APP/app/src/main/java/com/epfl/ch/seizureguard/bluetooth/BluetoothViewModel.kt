@@ -20,6 +20,7 @@ import java.nio.ByteOrder
 import java.util.UUID
 import com.epfl.ch.seizureguard.dl.DataSample
 
+// TODO add plotting with BLE (probably need to modify broadcastservice)
 @SuppressLint("MissingPermission")
 class BluetoothViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -38,27 +39,53 @@ class BluetoothViewModel(application: Application) : AndroidViewModel(applicatio
     val eegValue: LiveData<Int>
         get() = _eegValue
 
+    private val _isConnected = MutableLiveData<Boolean>(false) // is the device connected?
+    val isConnected: LiveData<Boolean>
+        get() = _isConnected
+
+    private val _dataSample = MutableLiveData<DataSample>()
+    val dataSample: LiveData<DataSample>
+        get() = _dataSample
+
     private var bluetoothGatt: BluetoothGatt? = null
 
     private val context = getApplication<Application>().applicationContext
 
-    // MutableList to accumulate channel floats
-    private val currentSampleChannels = mutableListOf<Float>()
-    private val totalChannels = 18 // Number of channels per sample
+    // Define batch processing parameters
+    private val totalSamplesPerBatch = 1024
+    private val totalFloatsPerSample = 18
+    private val totalFloatsPerBatch = totalSamplesPerBatch * totalFloatsPerSample // 18,432 floats
+
+    // Buffer to accumulate floats
+    private val currentBatchChannels = FloatArray(totalFloatsPerBatch)
+    private var floatIndex = 0 // Tracks the current position in the batch buffer
 
     private fun setEEGCharacteristicNotification(
         characteristic: BluetoothGattCharacteristic,
         enabled: Boolean
     ) { //  enable notifications for a characteristic
         bluetoothGatt?.let { gatt ->
-            gatt.setCharacteristicNotification(characteristic, enabled) // enable/disable notifications (in the local state)
-            val descriptor =
-                characteristic.getDescriptor(UUID.fromString(CLIENT_CHARACTERISTIC_CONFIG)) // specific UUID to configure a characteristic
-            descriptor.value =
-                BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE // set configuration
-            gatt.writeDescriptor(descriptor) // send configuration
+            gatt.setCharacteristicNotification(characteristic, enabled)
+            val descriptor = characteristic.getDescriptor(UUID.fromString(CLIENT_CHARACTERISTIC_CONFIG))
+            descriptor.value = if (enabled) {
+                BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
+            } else {
+                BluetoothGattDescriptor.DISABLE_NOTIFICATION_VALUE
+            }
+            gatt.writeDescriptor(descriptor)
         } ?: run {
             Log.w("BluetoothCallback", "BluetoothGatt not initialized")
+        }
+    }
+
+    public fun enableEEGNotifications() { // Public function that external code can call to enable notifications.
+        val gattService = bluetoothGatt?.getService(UUID.fromString(EEG_SERVICE))
+        val gattCharacteristic = gattService?.getCharacteristic(UUID.fromString(EEG_MEASUREMENT))
+        if (gattCharacteristic != null) {
+            setEEGCharacteristicNotification(gattCharacteristic, true)
+            Log.d("BluetoothViewModel", "EEG Characteristic Notification Enabled via enableEEGNotifications()")
+        } else {
+            Log.e("BluetoothViewModel", "EEG Measurement Characteristic not found in enableEEGNotifications()")
         }
     }
 
@@ -76,12 +103,14 @@ class BluetoothViewModel(application: Application) : AndroidViewModel(applicatio
                         "Successfully connected to $deviceAddress"
                     )
                     bluetoothGatt = gatt // save the GATT in the bluetoothGatt variable.
+                    bluetoothGatt?.requestMtu(512)
                     bluetoothGatt?.discoverServices() // get information about the services available on the remote device. This will trigger onServicesDiscovered when it's done
                 } else if (newState == BluetoothProfile.STATE_DISCONNECTED) { // if disconnected
                     Log.w(
                         "BluetoothGattCallback",
                         "Successfully disconnected from $deviceAddress"
                     )
+                    _isConnected.postValue(false)
                     gatt.close() // close the GATT
                 }
             } else {
@@ -93,20 +122,27 @@ class BluetoothViewModel(application: Application) : AndroidViewModel(applicatio
             }
         }
 
+        override fun onMtuChanged(gatt: BluetoothGatt, mtu: Int, status: Int) {
+            super.onMtuChanged(gatt, mtu, status)
+            if (status == BluetoothGatt.GATT_SUCCESS) {
+                Log.i("BluetoothViewModel", "MTU successfully changed to $mtu")
+            } else {
+                Log.w("BluetoothViewModel", "MTU change failed with status $status")
+            }
+        }
+
         override fun onServicesDiscovered(gatt: BluetoothGatt?, status: Int) { // called when the device reports on its available services
-            if (status == BluetoothGatt.GATT_SUCCESS) { // if no errors
-                val gattService =
-                    bluetoothGatt?.getService(UUID.fromString(EEG_SERVICE))  // get the EEG service using its specific UUID
-                val gattCharacteristics =
-                    gattService?.getCharacteristic(UUID.fromString(EEG_MEASUREMENT)) // get measurement characteristic from the EEG service
+            Log.d("onServicesDiscovered", "onServicesDiscovered called")
+            if (status == BluetoothGatt.GATT_SUCCESS) {
+                val gattService = bluetoothGatt?.getService(UUID.fromString(EEG_SERVICE))  // get the EEG service using its specific UUID
+                val gattCharacteristics = gattService?.getCharacteristic(UUID.fromString(EEG_MEASUREMENT)) // get measurement characteristic from the EEG service
                 if (gattCharacteristics != null) {
-                    setEEGCharacteristicNotification(gattCharacteristics, true) // enable notification for the EEG characteristic
+                    setEEGCharacteristicNotification(
+                        gattCharacteristics,
+                        true
+                    ) // enable notification for the EEG characteristic
                     Log.d("BluetoothGattCallback", "EEG Characteristic Notification Enabled")
-                } else {
-                    Log.e(
-                        "BluetoothGattCallback",
-                        "EEG Measurement Characteristic not found!"
-                    )
+                    _isConnected.postValue(true)
                 }
             } else {
                 Log.w(
@@ -117,34 +153,50 @@ class BluetoothViewModel(application: Application) : AndroidViewModel(applicatio
         }
 
         override fun onCharacteristicChanged(
-            gatt: BluetoothGatt, // once notifications are enabled, called everytime we have a new value in our characteristic
+            gatt: BluetoothGatt,
             characteristic: BluetoothGattCharacteristic
         ) {
-            // Handle individual channel float
-            val floatValue = parseSingleFloatFromCharacteristic(characteristic)
-            if (floatValue != null) {
-                currentSampleChannels.add(floatValue)
-                Log.d("BluetoothViewModel", "Received channel ${currentSampleChannels.size}: $floatValue")
-
-                if (currentSampleChannels.size == totalChannels) {
-                    // All channels for the current sample have been received
-                    val dataSample = DataSample(
-                        data = currentSampleChannels.toFloatArray(),
+            // Handle multiple floats per notification
+            val floatValues = parseFloatsFromCharacteristic(characteristic)
+            if (floatValues != null) {
+                Log.i("BluetoothViewModel", "Notification Received with ${floatValues.size} floats, index: $floatIndex")
+                // Accumulate the floats into the batch buffer
+                for (floatValue in floatValues) {
+                    if (floatIndex < totalFloatsPerBatch) {
+                        currentBatchChannels[floatIndex] = floatValue
+                        floatIndex++
+                        // Log.d("BluetoothViewModel", "Received float $floatIndex: $floatValue")
+                    } else {
+                        Log.w("BluetoothViewModel", "Batch buffer overflow. Resetting buffer.")
+                        // Handle buffer overflow by resetting
+                        floatIndex = 0
+                        currentBatchChannels[floatIndex] = floatValue
+                        floatIndex++
+                    }
+                }
+                // Check if the batch is complete
+                if (floatIndex == totalFloatsPerBatch) {
+                    // Create a new DataSample with the accumulated floats
+                    val newDataSample = DataSample(
+                        data = currentBatchChannels.clone(), // Clone to prevent overwriting
                         label = 0 // Assign a default label or handle accordingly
                     )
-                    Log.i("BluetoothViewModel", "Complete DataSample Received: ${dataSample.data.joinToString(", ")}")
-                    // Reset for next sample
-                    currentSampleChannels.clear()
+                    // Post the complete batch to LiveData
+                    _dataSample.postValue(newDataSample)
+                    Log.i("BluetoothViewModel", "Complete DataSample Received: ${newDataSample.data.size} floats")
+
+                    // Reset the batch buffer for the next batch
+                    floatIndex = 0
                 }
             } else {
-                Log.e("BluetoothViewModel", "Failed to parse float from characteristic.")
+                Log.e("BluetoothViewModel", "Failed to parse floats from characteristic.")
             }
         }
     }
 
-    private fun parseSingleFloatFromCharacteristic(characteristic: BluetoothGattCharacteristic): Float? {
+    private fun parseFloatsFromCharacteristic(characteristic: BluetoothGattCharacteristic): List<Float>? {
         val value = characteristic.value
-        if (value == null || value.size < 4) { // A float is 4 bytes
+        if (value == null || value.size < 4) { // At least one float
             Log.e(
                 "DataSampleParser",
                 "Characteristic value is too short or null: size=${value?.size}"
@@ -152,11 +204,14 @@ class BluetoothViewModel(application: Application) : AndroidViewModel(applicatio
             return null
         }
         return try {
-            // Prepare to read the binary data
+            val floats = mutableListOf<Float>()
             val buffer = ByteBuffer.wrap(value).order(ByteOrder.LITTLE_ENDIAN)
-            buffer.float
+            while (buffer.remaining() >= 4) { // Each float is 4 bytes
+                floats.add(buffer.float)
+            }
+            floats
         } catch (e: Exception) {
-            Log.e("DataSampleParser", "Error parsing float: ${e.message}")
+            Log.e("DataSampleParser", "Error parsing floats: ${e.message}")
             null
         }
     }

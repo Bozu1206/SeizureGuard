@@ -53,6 +53,7 @@ import android.widget.Toast
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.DeveloperBoard
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.ui.platform.LocalContext
@@ -67,6 +68,7 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.IconButton
 import androidx.navigation.NavController
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.epfl.ch.seizureguard.profile.ProfileRepository
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -318,6 +320,25 @@ fun SettingsScreen(
                         onClick = { showAboutDialog = true },
                         icon = Icons.Default.Info,
                         trailing = null
+                    )
+                }
+
+                SettingsSection(title = "Developer options") {
+                    SettingsItem(
+                        title = "Debug Mode",
+                        icon = Icons.Default.DeveloperBoard,
+                        tint = if (profile.isDebugEnabled)
+                            MaterialTheme.colorScheme.primary
+                        else
+                            MaterialTheme.colorScheme.onSurfaceVariant,
+                        trailing = {
+                            Switch(
+                                checked = profile.isDebugEnabled,
+                                onCheckedChange = { isChecked ->
+                                    profileViewModel.saveDebugPreference(isChecked)
+                                }
+                            )
+                        }
                     )
                 }
 

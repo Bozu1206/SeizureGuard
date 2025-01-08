@@ -4,9 +4,11 @@ import EEGChart
 import android.Manifest
 import android.app.Activity
 import android.bluetooth.BluetoothAdapter
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -19,6 +21,7 @@ import androidx.compose.material.icons.filled.Bluetooth
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.clip
@@ -32,9 +35,12 @@ import com.epfl.ch.seizureguard.dl.metrics.Metrics
 import com.epfl.ch.seizureguard.bluetooth.BluetoothViewModel
 import com.epfl.ch.seizureguard.dl.MetricsViewModel
 import com.epfl.ch.seizureguard.profile.ProfileViewModel
+import com.epfl.ch.seizureguard.profile.ProfileRepository
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.tooling.preview.Preview
+import com.epfl.ch.seizureguard.RunningApp
+import com.epfl.ch.seizureguard.profile.ProfileViewModelFactory
 import org.tensorflow.op.math.Round
 import kotlin.math.round
 
@@ -46,12 +52,25 @@ private val CardHeight = 120.dp
 
 @Composable
 fun InferenceHomePage(
-    profileViewModel: ProfileViewModel,
     onPerformInference: () -> Unit,
     modifier: Modifier = Modifier,
     bluetoothViewModel: BluetoothViewModel = viewModel(),
     metricsViewModel: MetricsViewModel,
+    profileViewModel: ProfileViewModel = viewModel(factory = ProfileViewModelFactory(
+                                                LocalContext.current,
+                                                (LocalContext.current.applicationContext as RunningApp)))
 ) {
+    val profile by profileViewModel.profileState.collectAsState()
+
+    val context = LocalContext.current
+
+    val runningApp = context.applicationContext as RunningApp
+    val bluetoothViewModel = runningApp.bluetoothViewModel // Retrieve the singleton instance
+
+    val debugMode = profile.isDebugEnabled
+    val isConnected by bluetoothViewModel.isConnected.observeAsState(initial = false) // is the BLE device connected?
+
+
     // Handle Bluetooth setup
     HandleBluetoothSetup(bluetoothViewModel)
 
@@ -89,6 +108,9 @@ fun InferenceHomePage(
                 ) {
                     EEGChart()
                     InferenceOverlay(
+                        debugMode,
+                        isConnected,
+                        context,
                         isInferenceRunning = isInferenceRunning,
                         onStartInference = {
                             isInferenceRunning = true
@@ -98,6 +120,8 @@ fun InferenceHomePage(
                 }
                 
                 ActionButtonsSection(
+                    debugMode,
+                    isConnected,
                     onPerformInference = {
                         isInferenceRunning = true
                         onPerformInference()
@@ -131,6 +155,8 @@ private fun MetricsSection(profileViewModel: ProfileViewModel) {
 
 @Composable
 private fun ActionButtonsSection(
+    debugMode: Boolean,
+    isConnected: Boolean,
     onPerformInference: () -> Unit,
     onScanDevices: () -> Unit
 ) {
@@ -147,8 +173,13 @@ private fun ActionButtonsSection(
         ) {
             ActionButton(
                 onClick = {
-                    onPerformInference()
-                    Toast.makeText(context, "Performing Inference", Toast.LENGTH_SHORT).show()
+                    Log.e(context::class.java.toString(), "debugMode: $debugMode")
+                    Log.e(context::class.java.toString(), "isConnected: $isConnected")
+                     if(!debugMode  && !isConnected){ // if no EEG device connected
+                        Toast.makeText(context,"No device connected!", Toast.LENGTH_LONG).show()
+                    }else{
+                        onPerformInference()
+                    }
                 },
                 icon = Icons.Default.PlayArrow,
                 text = "Perform Inference"
@@ -451,7 +482,11 @@ private fun RequestBluetoothPermissions() {
 }
 
 @Composable
-fun InferenceOverlay(
+fun InferenceOverlay( // big clickable box with the plots
+    debugMode: Boolean,
+    isConnected: Boolean,
+    context : Context,
+
     isInferenceRunning: Boolean,
     onStartInference: () -> Unit
 ) {
@@ -461,7 +496,15 @@ fun InferenceOverlay(
                 .fillMaxSize()
                 .clip(RoundedCornerShape(20.dp))
                 .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.9f))
-                .clickable { onStartInference() },
+                .clickable {
+                    Log.e("InferenceOverlay", "debugMode: $debugMode")
+                    Log.e("InferenceOverlay", "isConnected: $isConnected")
+                    if(!debugMode  && !isConnected){ // if no EEG device connected
+                        Toast.makeText(context,"No device connected!", Toast.LENGTH_LONG).show()
+                    }else{
+                        onStartInference()
+                    }
+               },
             contentAlignment = Alignment.Center
         ) {
             Column(

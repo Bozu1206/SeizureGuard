@@ -54,13 +54,14 @@
         </activity>
         <service
             android:name=".inference.InferenceService"
-            android:foregroundServiceType="health"/>
+            android:foregroundServiceType="health"
+            android:exported="true"/>
         <service
             android:name=".dl.ModelService"
-            android:exported="false" />
+            android:exported="true" />
         <service
             android:name=".dl.utils.SampleBroadcastService"
-            android:exported="false" />
+            android:exported="true" />
     </application>
 
 </manifest>

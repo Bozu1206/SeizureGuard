@@ -6,6 +6,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
+import android.provider.ContactsContract.Profile
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.setContent
@@ -88,6 +89,7 @@ class MainActivity : FragmentActivity() {
             val showOnboarding by onboardingViewModel.showOnboarding.collectAsState()
             val profile by profileViewModel.profileState.collectAsState()
             val isTrainingEnabled = profile.isTrainingEnabled
+            val isDebugEnabled = profile.isDebugEnabled
 
             val navigationState = determineNavigationState(
                 showOnboarding = showOnboarding,
@@ -127,7 +129,7 @@ class MainActivity : FragmentActivity() {
                             )
                         }
                         "MainScreen" -> MainScreen(
-                            onRunInference = { startInferenceServices(isTrainingEnabled) },
+                            onRunInference = { startInferenceServices(isTrainingEnabled, isDebugEnabled) },
                             metrics = metrics,
                             payState = walletViewModel.walletUiState.collectAsStateWithLifecycle().value,
                             requestSavePass = ::requestSavePass,
@@ -194,14 +196,20 @@ class MainActivity : FragmentActivity() {
         }
     }
 
-    private fun startInferenceServices(isTrainingEnabled: Boolean) {
-        Intent(applicationContext, SampleBroadcastService::class.java).also {
-            startService(it)
-        }
-
+    // starting the correct foreground services for starting inference
+    private fun startInferenceServices(
+        isTrainingEnabled: Boolean,
+        isDebugEnabled: Boolean) {
+        Log.d("startInferenceServices", "isTrainingEnabled: $isTrainingEnabled ; isDebugEnabled: $isDebugEnabled")
+       // if(isDebugEnabled){ // enable the broadcast service only in debug mode to read data from known dataset in memory
+            Intent(applicationContext, SampleBroadcastService::class.java).also {
+                startService(it)
+            }
+      //  }
         Intent(applicationContext, InferenceService::class.java).also {
             it.action = InferenceService.Actions.START.toString()
             it.putExtra("IS_TRAINING_ENABLED", isTrainingEnabled)
+            it.putExtra("IS_DEBUG_ENABLED", isDebugEnabled)
             startForegroundService(it)
         }
     }
