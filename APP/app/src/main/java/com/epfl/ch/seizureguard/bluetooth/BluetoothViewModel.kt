@@ -20,12 +20,11 @@ import java.nio.ByteOrder
 import java.util.UUID
 import com.epfl.ch.seizureguard.dl.DataSample
 
-// TODO add plotting with BLE (probably need to modify broadcastservice)
 @SuppressLint("MissingPermission")
 class BluetoothViewModel(application: Application) : AndroidViewModel(application) {
 
     private val SCAN_PERIOD: Long = 20000
-    private val myDeviceName = "EEG Sensor"
+    val myDeviceName = "EEG Sensor"
     private val EEG_SERVICE = "0000745D-0000-1100-8800-00605f9c34ca" // GATT service UUID for EEG
     private val EEG_MEASUREMENT = "00002a27-0000-4300-8900-00805a4a21fb" // EEG measure characteristic
     private val CLIENT_CHARACTERISTIC_CONFIG = "00002902-0000-1000-8000-00805f9b34fb"

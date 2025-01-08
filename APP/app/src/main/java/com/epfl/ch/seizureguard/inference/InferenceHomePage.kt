@@ -12,12 +12,17 @@ import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.ui.Modifier.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bluetooth
+import androidx.compose.material.icons.filled.BluetoothConnected
+import androidx.compose.material.icons.filled.BluetoothDisabled
+import androidx.compose.material.icons.filled.Cancel
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -38,6 +43,7 @@ import com.epfl.ch.seizureguard.profile.ProfileViewModel
 import com.epfl.ch.seizureguard.profile.ProfileRepository
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import com.epfl.ch.seizureguard.RunningApp
 import com.epfl.ch.seizureguard.profile.ProfileViewModelFactory
@@ -126,7 +132,8 @@ fun InferenceHomePage(
                         isInferenceRunning = true
                         onPerformInference()
                     },
-                    onScanDevices = { bluetoothViewModel.scanLeDevice() }
+                    onScanDevices = { bluetoothViewModel.scanLeDevice() },
+                    bluetoothViewModel = bluetoothViewModel
                 )
             }
         }
@@ -158,7 +165,8 @@ private fun ActionButtonsSection(
     debugMode: Boolean,
     isConnected: Boolean,
     onPerformInference: () -> Unit,
-    onScanDevices: () -> Unit
+    onScanDevices: () -> Unit,
+    bluetoothViewModel: BluetoothViewModel
 ) {
     val context = LocalContext.current
 
@@ -171,34 +179,62 @@ private fun ActionButtonsSection(
                 .fillMaxWidth()
                 .padding(bottom = SmallPadding)
         ) {
+            val buttonHeight = 48.dp
             ActionButton(
                 onClick = {
                     Log.e(context::class.java.toString(), "debugMode: $debugMode")
                     Log.e(context::class.java.toString(), "isConnected: $isConnected")
-                     if(!debugMode  && !isConnected){ // if no EEG device connected
-                        Toast.makeText(context,"No device connected!", Toast.LENGTH_LONG).show()
-                    }else{
+                    if (!debugMode && !isConnected) {
+                        Toast.makeText(context, "No device connected!", Toast.LENGTH_LONG).show()
+                    } else {
                         onPerformInference()
                     }
                 },
                 icon = Icons.Default.PlayArrow,
-                text = "Perform Inference"
+                text = "Perform Inference",
+                modifier = Modifier.height(buttonHeight)
             )
 
-            Spacer(modifier = Modifier.height(SmallPadding / 4))
+            Spacer(modifier = Modifier.height(SmallPadding))
 
-            ActionButton(
-                onClick = {
-                    onScanDevices()
-                    Toast.makeText(context, "Scanning for devices", Toast.LENGTH_SHORT).show()
-                },
-                icon = Icons.Default.Bluetooth,
-                text = "Look for Devices"
-            )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = SmallPadding),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                val scanButtonText = if (isConnected) "Connected to ${bluetoothViewModel.myDeviceName}" else "Look for Devices"
+                val scanButtonColors = if (isConnected) {
+                    ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50) )
+                } else {
+                    ButtonDefaults.buttonColors()
+                }
+                ActionButtonBLE(
+                    onClick = {
+                        if (!isConnected) {
+                            onScanDevices()
+                            Toast.makeText(context, "Scanning for devices", Toast.LENGTH_SHORT).show()
+                        }
+                    },
+                    icon = Icons.Default.Bluetooth,
+                    text = scanButtonText,
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(buttonHeight),
+                    buttonColors = scanButtonColors // Apply conditional colors
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+
+                DeviceConnectionIcon(
+                    isConnected = isConnected,
+                    buttonColors = scanButtonColors,
+                    modifier = Modifier
+                        .height(buttonHeight)    // Match the height of the button
+                )
+            }
         }
     }
 }
-
 @Composable
 private fun ActionButton(
     onClick: () -> Unit,
@@ -215,6 +251,33 @@ private fun ActionButton(
             imageVector = icon,
             contentDescription = text,
             modifier = Modifier.size(18.dp)
+        )
+        Spacer(modifier = Modifier.width(SmallPadding))
+        Text(
+            text = text,
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.Bold
+        )
+    }
+}
+@Composable
+private fun ActionButtonBLE(
+    onClick: () -> Unit,
+    icon: ImageVector,
+    text: String,
+    modifier: Modifier = Modifier,
+    buttonColors: ButtonColors = ButtonDefaults.buttonColors()
+) {
+    Button(
+        onClick = onClick,
+        shape = CardShape,
+        colors = buttonColors, // Apply the custom colors
+        modifier = modifier.fillMaxWidth()
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = text,
+            modifier = Modifier.size(18.dp) // Adjusted size for better visibility
         )
         Spacer(modifier = Modifier.width(SmallPadding))
         Text(
@@ -499,12 +562,14 @@ fun InferenceOverlay( // big clickable box with the plots
                 .clickable {
                     Log.e("InferenceOverlay", "debugMode: $debugMode")
                     Log.e("InferenceOverlay", "isConnected: $isConnected")
-                    if(!debugMode  && !isConnected){ // if no EEG device connected
-                        Toast.makeText(context,"No device connected!", Toast.LENGTH_LONG).show()
-                    }else{
+                    if (!debugMode && !isConnected) { // if no EEG device connected
+                        Toast
+                            .makeText(context, "No device connected!", Toast.LENGTH_LONG)
+                            .show()
+                    } else {
                         onStartInference()
                     }
-               },
+                },
             contentAlignment = Alignment.Center
         ) {
             Column(
@@ -540,3 +605,20 @@ fun InferenceOverlay( // big clickable box with the plots
         }
     }
 }
+
+@Composable
+fun DeviceConnectionIcon(
+    isConnected: Boolean,
+    buttonColors: ButtonColors = ButtonDefaults.buttonColors(),
+    modifier: Modifier = Modifier
+) {
+    val icon = if (isConnected) Icons.Default.BluetoothConnected else Icons.Default.BluetoothDisabled
+    Icon(
+        imageVector = icon,
+        contentDescription = if (isConnected) "Device Connected" else "Device Disconnected",
+        modifier = modifier.aspectRatio(1f),
+        tint = buttonColors.containerColor
+    )
+}
+
+
