@@ -167,6 +167,15 @@ class InferenceService : Service() {
 
         pendingAction = intent?.action
 
+        // Extract the action
+        val action = intent?.action
+        if (action == Actions.STOP.toString()) { // when  we receive the stop command from the ongoing notification
+            Log.d("InferenceService", "Stopping service and BLE from onStartCommand")
+            bluetoothViewModel.stopBLE()
+            stopSelf()
+            return START_NOT_STICKY
+        }
+
         // Extract flags from Intent
         intent?.extras?.let {
             isTrainingEnabled = it.getBoolean("IS_TRAINING_ENABLED", false)

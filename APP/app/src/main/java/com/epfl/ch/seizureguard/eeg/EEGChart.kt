@@ -31,10 +31,12 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.epfl.ch.seizureguard.eeg.EEGViewModel
+import com.epfl.ch.seizureguard.profile.ProfileViewModel
 
 
 @Composable
 fun EEGChart(
+    isDebugEnabled : Boolean,
     viewModel: EEGViewModel = viewModel(),
     modifier: Modifier = Modifier
 ) {
@@ -42,7 +44,10 @@ fun EEGChart(
     val eegData by viewModel.eegData.collectAsState()
     val pointsToShow by viewModel.pointsToShow.collectAsState()
     val scrollOffset by viewModel.scrollOffset.collectAsState()
-    
+    val samplesPerChannel by viewModel.samplesPerChannel.collectAsState()
+
+    val sampleWidthRatio : Float = if(isDebugEnabled) 4f else 16f
+
     var isDragging by remember { mutableStateOf(false) }
     var canvasWidth by remember { mutableStateOf(0f) }
     var isAutoScrolling by remember { mutableStateOf(true) }
@@ -66,7 +71,7 @@ fun EEGChart(
                 .fillMaxSize()
                 .pointerInput(Unit) {
                     detectDragGestures(
-                        onDragStart = { 
+                        onDragStart = {
                             isDragging = true
                             isAutoScrolling = false
                         },
@@ -74,7 +79,7 @@ fun EEGChart(
                         onDrag = { change, dragAmount ->
                             change.consume()
                             val graphWidth = canvasWidth - 300f
-                            viewModel.updateScrollOffset(dragAmount.x, graphWidth)
+                            viewModel.updateScrollOffset(dragAmount.x, graphWidth, sampleWidthRatio)
                         }
                     )
                 }
@@ -84,13 +89,13 @@ fun EEGChart(
             val graphWidth = canvasWidth - leftMargin
 
             if (!isDragging && isAutoScrolling && eegData.isNotEmpty()) {
-                val totalSamples = eegData[0].size / 1024
-                val sampleWidth = graphWidth / 4f
+                val totalSamples = eegData[0].size / samplesPerChannel
+                val sampleWidth = graphWidth / sampleWidthRatio
                 val safetyMargin = sampleWidth / 2
                 val minScroll = -(totalSamples * sampleWidth) + graphWidth + safetyMargin
                 
                 if (scrollOffset > minScroll) {
-                    viewModel.updateScrollOffset(minScroll, graphWidth)
+                    viewModel.updateScrollOffset(minScroll, graphWidth, sampleWidthRatio)
                 }
             }
 
@@ -119,8 +124,10 @@ fun EEGChart(
                                 leftMargin,
                                 yCenter,
                                 graphWidth,
+                                sampleWidthRatio,
                                 spacingY,
-                                channelData.size / 1024
+                                samplesPerChannel,
+                                channelData.size / samplesPerChannel
                             )
                         }
                     }
@@ -168,16 +175,18 @@ private fun DrawScope.drawChannel(
     leftMargin: Float,
     yCenter: Float,
     graphWidth: Float,
+    sampleWidthRatio: Float,
     spacingY: Float,
+    samplesPerChannel: Int,
     totalSamples: Int
 ) {
     if (channelData.isEmpty()) return
     
     val path = Path()
     val amplitudeY = spacingY * 1.2f
-    val sampleWidth = graphWidth / 4f
+    val sampleWidth = graphWidth / sampleWidthRatio
     val totalWidth = sampleWidth * totalSamples
-    val pixelsPerPoint = sampleWidth / 1024f
+    val pixelsPerPoint = sampleWidth / samplesPerChannel
     
     path.moveTo(leftMargin, yCenter - channelData[0] * amplitudeY)
     

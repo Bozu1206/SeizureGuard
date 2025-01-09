@@ -33,6 +33,9 @@ class EEGViewModel : ViewModel() {
         12  // FP2-F8
     )
 
+    private val _samplesPerChannel = MutableStateFlow(1024)
+    val samplesPerChannel = _samplesPerChannel.asStateFlow()
+
     // Garder tous les samples
     private val buffers = List(6) { mutableListOf<Float>() }
 
@@ -44,7 +47,7 @@ class EEGViewModel : ViewModel() {
         override fun onReceive(context: Context, intent: Intent) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 val sample = intent.getParcelableExtra("EXTRA_SAMPLE", DataSample::class.java)
-                if (sample != null) {
+                if (sample != null && sample.data.size != 0) {
                     updateEEGData(sample)
                 }
             }
@@ -67,11 +70,14 @@ class EEGViewModel : ViewModel() {
 
     private fun updateEEGData(sample: DataSample) {
         try {
+            _samplesPerChannel.value = sample.data.size / 18
+            _pointsToShow.value = sample.data.size / 18
+            Log.d("updateEEGData","samplesPerChannel = ${samplesPerChannel.value}")
             selectedChannels.forEachIndexed { bufferIndex, channelIndex ->
                 val buffer = buffers[bufferIndex]
                 
-                for (i in 0 until 1024) {
-                    val value = sample.data[channelIndex * 1024 + i] * amplificationFactor
+                for (i in 0 until samplesPerChannel.value) {
+                    val value = sample.data[channelIndex * samplesPerChannel.value + i] * amplificationFactor
                     buffer.add(value)
                 }
             }
@@ -80,16 +86,16 @@ class EEGViewModel : ViewModel() {
 
             viewModelScope.launch {
                 val currentSize = buffers[0].size
-                val startPoint = currentSize - 1024
+                val startPoint = currentSize - samplesPerChannel.value
                 _pointsToShow.value = startPoint
 
                 val sampleDuration = 4000L
                 val updateInterval = 40L
-                val pointsPerUpdate = (1024 * updateInterval) / sampleDuration
+                val pointsPerUpdate = (samplesPerChannel.value * updateInterval) / sampleDuration
                 
                 var currentPoints = 0
-                while (currentPoints < 1024) {
-                    currentPoints = (currentPoints + pointsPerUpdate).toInt().coerceAtMost(1024)
+                while (currentPoints < samplesPerChannel.value) {
+                    currentPoints = (currentPoints + pointsPerUpdate).toInt().coerceAtMost(samplesPerChannel.value)
                     _pointsToShow.value = startPoint + currentPoints
                     delay(updateInterval)
                 }
@@ -99,9 +105,9 @@ class EEGViewModel : ViewModel() {
         }
     }
 
-    fun updateScrollOffset(delta: Float, graphWidth: Float) {
-        val totalSamples = buffers[0].size / 1024f
-        val sampleWidth = graphWidth / 4f
+    fun updateScrollOffset(delta: Float, graphWidth: Float, sampleWidthRatio: Float) {
+        val totalSamples = buffers[0].size / samplesPerChannel.value
+        val sampleWidth = graphWidth / sampleWidthRatio
         val maxScroll = 0f
         val minScroll = -(totalSamples * sampleWidth) + graphWidth
 

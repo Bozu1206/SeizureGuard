@@ -39,6 +39,7 @@ import com.epfl.ch.seizureguard.profile.ProfileViewModel
 fun AppContent(
     metrics: Metrics,
     onRunInference: () -> Unit,
+    onPauseInference: () -> Unit,
     payState: WalletUiState,
     requestSavePass: (GoogleWalletToken.PassRequest) -> Unit,
     onLogoutClicked: () -> Unit,
@@ -59,6 +60,7 @@ fun AppContent(
                 InferenceHomePage(
                     profileViewModel = profileViewModel,
                     onPerformInference = onRunInference,
+                    onPauseInference = onPauseInference,
                     metricsViewModel = metricsViewModel
                 )
             }
