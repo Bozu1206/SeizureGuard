@@ -127,9 +127,11 @@ static void notify_work_handler(struct k_work *work)
     if (floats_in_buffer > 0) {
         int err = bt_gatt_notify(current_conn, &eeg_attrs[1], notification_buffer, floats_in_buffer * sizeof(float));
         if (err) {
-            printk("Failed to notify, err %d\n", err);
+            samples_sent_in_batch --;
+            sample_index --;
+            printk("Failed to notify, err %d; samples_sent_in_batch: %d\n", err, samples_sent_in_batch);
         } else {
-            printk("Notification sent: %d floats; samples_sent_in_batch: %d\n", floats_in_buffer, samples_sent_in_batch);
+            // printk("Notification sent: %d floats; samples_sent_in_batch: %d\n", floats_in_buffer, samples_sent_in_batch);
         }
     }
     k_work_reschedule(&notify_work, K_MSEC(NOTIFY_INTERVAL));

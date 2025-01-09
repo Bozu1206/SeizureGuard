@@ -9,9 +9,13 @@ import android.bluetooth.BluetoothGattCharacteristic
 import android.bluetooth.BluetoothGattDescriptor
 import android.bluetooth.BluetoothProfile
 import android.bluetooth.le.ScanCallback
+import android.bluetooth.le.ScanFilter
 import android.bluetooth.le.ScanResult
+import android.bluetooth.le.ScanSettings
 import android.os.Handler
+import android.os.Looper
 import android.util.Log
+import android.widget.Toast
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
@@ -32,15 +36,21 @@ class BluetoothViewModel(application: Application) : AndroidViewModel(applicatio
     val bluetoothAdapter: BluetoothAdapter? = BluetoothAdapter.getDefaultAdapter()
     private val bluetoothLeScanner = bluetoothAdapter?.bluetoothLeScanner
     private var scanning = false
-    private val handler = Handler()
+    private val handler = Handler(Looper.getMainLooper())
 
-    private val _eegValue = MutableLiveData<Int>(0)
-    val eegValue: LiveData<Int>
-        get() = _eegValue
+    private val _lastValues = MutableLiveData<DataSample>()
+    val lastValues: LiveData<DataSample>
+        get() = _lastValues
+    private var lastValuesIndex = 0
+    private val floatsPerLastSample = 18 * 128
+    private val lastValuesBuffer = FloatArray(floatsPerLastSample)
+
 
     private val _isConnected = MutableLiveData<Boolean>(false) // is the device connected?
     val isConnected: LiveData<Boolean>
         get() = _isConnected
+
+    private var deviceFound: Boolean = false // have i finished scanning?
 
     private val _dataSample = MutableLiveData<DataSample>()
     val dataSample: LiveData<DataSample>
@@ -77,17 +87,6 @@ class BluetoothViewModel(application: Application) : AndroidViewModel(applicatio
         }
     }
 
-    public fun enableEEGNotifications() { // Public function that external code can call to enable notifications.
-        val gattService = bluetoothGatt?.getService(UUID.fromString(EEG_SERVICE))
-        val gattCharacteristic = gattService?.getCharacteristic(UUID.fromString(EEG_MEASUREMENT))
-        if (gattCharacteristic != null) {
-            setEEGCharacteristicNotification(gattCharacteristic, true)
-            Log.d("BluetoothViewModel", "EEG Characteristic Notification Enabled via enableEEGNotifications()")
-        } else {
-            Log.e("BluetoothViewModel", "EEG Measurement Characteristic not found in enableEEGNotifications()")
-        }
-    }
-
     private val gattCallback = object : BluetoothGattCallback() { //  triggered at every change in GATT connection state, service discovery, characteristic reads, and characteristic notifications
         override fun onConnectionStateChange(
             gatt: BluetoothGatt, // called when the device's GATT changes
@@ -117,6 +116,7 @@ class BluetoothViewModel(application: Application) : AndroidViewModel(applicatio
                     "BluetoothGattCallback",
                     "Error $status encountered for $deviceAddress! Disconnecting..."
                 )
+                _isConnected.postValue(false)
                 gatt.close()
             }
         }
@@ -187,9 +187,32 @@ class BluetoothViewModel(application: Application) : AndroidViewModel(applicatio
                     // Reset the batch buffer for the next batch
                     floatIndex = 0
                 }
+                // --- Handle lastDataSample accumulation --- for plotting faster
+                for (floatValue in floatValues) {
+                    if (lastValuesIndex < floatsPerLastSample) {
+                        lastValuesBuffer[lastValuesIndex] = floatValue
+                        lastValuesIndex++
+                    } else {
+                        Log.w("BluetoothViewModel", "Last sample buffer overflow. Resetting buffer.")
+                        lastValuesIndex = 0
+                        lastValuesBuffer[lastValuesIndex] = floatValue
+                        lastValuesIndex++
+                    }
+                }
+                // Check if the lastDataSample batch is complete
+                if (lastValuesIndex == floatsPerLastSample) {
+                    val newLastDataSample = DataSample(
+                        data = lastValuesBuffer.clone(), // Clone to prevent overwriting
+                        label = 0 // Assign a default label or handle accordingly
+                    )
+                    _lastValues.postValue(newLastDataSample)
+                    Log.i("BluetoothViewModel", "Complete LastDataSample Received: ${newLastDataSample.data.size} floats")
+                    lastValuesIndex = 0
+                }
             } else {
                 Log.e("BluetoothViewModel", "Failed to parse floats from characteristic.")
             }
+
         }
     }
 
@@ -217,17 +240,43 @@ class BluetoothViewModel(application: Application) : AndroidViewModel(applicatio
 
     fun scanLeDevice() { // For scanning for Bluetooth low energy devices
         Log.d("BluetoothScan", "Scanning for BLE devices")
+        deviceFound = false
         if (!scanning) { // if not already scanning
             handler.postDelayed({ // do the following after SCAN_PERIOD time
                 scanning = false // set local scanning flag to false
                 bluetoothLeScanner?.stopScan(leScanCallback)
                 Log.d("ScanLeDevice", "Scanning is over")
+                if (deviceFound == false){
+                    Toast.makeText(context, "No Devices found!", Toast.LENGTH_LONG).show()
+                }
             }, SCAN_PERIOD)
             scanning = true // set scanning to true
-            bluetoothLeScanner?.startScan(leScanCallback) // start scanning
+            bluetoothLeScanner?.startScan(getScanFilters(), getScanSettings(), leScanCallback) // start scanning
         } else { // if already scanning, stop
             scanning = false
             bluetoothLeScanner?.stopScan(leScanCallback)
+        }
+    }
+    private fun getScanFilters(): List<ScanFilter> {
+        return listOf(
+            ScanFilter.Builder()
+                .setDeviceName(myDeviceName)
+                .build()
+        )
+    }
+    private fun getScanSettings(): ScanSettings {
+        return ScanSettings.Builder()
+            .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY) // Adjust as needed
+            .build()
+    }
+    fun stopScanning() {
+        if (scanning) {
+            scanning = false
+            bluetoothLeScanner?.stopScan(leScanCallback)
+            handler.removeCallbacksAndMessages(null) // Remove any pending callbacks
+            Log.d("BluetoothScan", "Scanning stopped")
+        } else {
+            Log.d("BluetoothScan", "Scanning was not active")
         }
     }
 
@@ -241,18 +290,23 @@ class BluetoothViewModel(application: Application) : AndroidViewModel(applicatio
                         " RSSI: ${result.rssi}"
             )
             if (result.device.name == myDeviceName) { // check if it's the desired device
+                deviceFound = true
                 Log.d("Device found", "Device found")
+                Toast.makeText(context, "Device found!", Toast.LENGTH_SHORT).show()
                 bluetoothLeScanner?.stopScan(this) // stop scanning
                 result.device.connectGatt(context, false, gattCallback) // connect to device's GATT
+                stopScanning()
             }
         }
     }
 
     fun stopBLE() {
-        bluetoothGatt?.let { gatt ->
-            gatt.close()
-            bluetoothGatt = null
-        }
+        val gattService = bluetoothGatt?.getService(UUID.fromString(EEG_SERVICE))  // get the EEG service using its specific UUID
+        val gattCharacteristics = gattService?.getCharacteristic(UUID.fromString(EEG_MEASUREMENT)) // get measurement characteristic from the EEG service
+        if (gattCharacteristics != null) setEEGCharacteristicNotification(gattCharacteristics, false)
+        bluetoothGatt?.disconnect()
+        bluetoothGatt?.close()
+        bluetoothGatt = null
+        _isConnected.postValue(false)
     }
-
 }

@@ -12,17 +12,21 @@ import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.ui.Modifier.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Bluetooth
+import androidx.compose.material.icons.filled.Autorenew
 import androidx.compose.material.icons.filled.BluetoothConnected
 import androidx.compose.material.icons.filled.BluetoothDisabled
-import androidx.compose.material.icons.filled.Cancel
-import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -40,14 +44,12 @@ import com.epfl.ch.seizureguard.dl.metrics.Metrics
 import com.epfl.ch.seizureguard.bluetooth.BluetoothViewModel
 import com.epfl.ch.seizureguard.dl.MetricsViewModel
 import com.epfl.ch.seizureguard.profile.ProfileViewModel
-import com.epfl.ch.seizureguard.profile.ProfileRepository
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.graphics.graphicsLayer
 import com.epfl.ch.seizureguard.RunningApp
 import com.epfl.ch.seizureguard.profile.ProfileViewModelFactory
-import org.tensorflow.op.math.Round
 import kotlin.math.round
 
 private val CardShape = RoundedCornerShape(12.dp)
@@ -59,6 +61,7 @@ private val CardHeight = 120.dp
 @Composable
 fun InferenceHomePage(
     onPerformInference: () -> Unit,
+    onPauseInference: () -> Unit,
     modifier: Modifier = Modifier,
     bluetoothViewModel: BluetoothViewModel = viewModel(),
     metricsViewModel: MetricsViewModel,
@@ -75,7 +78,6 @@ fun InferenceHomePage(
 
     val debugMode = profile.isDebugEnabled
     val isConnected by bluetoothViewModel.isConnected.observeAsState(initial = false) // is the BLE device connected?
-
 
     // Handle Bluetooth setup
     HandleBluetoothSetup(bluetoothViewModel)
@@ -112,7 +114,7 @@ fun InferenceHomePage(
                         .padding(vertical = 16.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    EEGChart()
+                    EEGChart(debugMode)
                     InferenceOverlay(
                         debugMode,
                         isConnected,
@@ -128,9 +130,14 @@ fun InferenceHomePage(
                 ActionButtonsSection(
                     debugMode,
                     isConnected,
+                    isInferenceRunning,
                     onPerformInference = {
                         isInferenceRunning = true
                         onPerformInference()
+                    },
+                    onPauseInference = {
+                        onPauseInference()
+                        isInferenceRunning = false
                     },
                     onScanDevices = { bluetoothViewModel.scanLeDevice() },
                     bluetoothViewModel = bluetoothViewModel
@@ -164,7 +171,9 @@ private fun MetricsSection(profileViewModel: ProfileViewModel) {
 private fun ActionButtonsSection(
     debugMode: Boolean,
     isConnected: Boolean,
+    isInferenceRunning : Boolean,
     onPerformInference: () -> Unit,
+    onPauseInference: () -> Unit,
     onScanDevices: () -> Unit,
     bluetoothViewModel: BluetoothViewModel
 ) {
@@ -180,20 +189,61 @@ private fun ActionButtonsSection(
                 .padding(bottom = SmallPadding)
         ) {
             val buttonHeight = 48.dp
-            ActionButton(
-                onClick = {
-                    Log.e(context::class.java.toString(), "debugMode: $debugMode")
-                    Log.e(context::class.java.toString(), "isConnected: $isConnected")
-                    if (!debugMode && !isConnected) {
-                        Toast.makeText(context, "No device connected!", Toast.LENGTH_LONG).show()
-                    } else {
-                        onPerformInference()
-                    }
-                },
-                icon = Icons.Default.PlayArrow,
-                text = "Perform Inference",
-                modifier = Modifier.height(buttonHeight)
-            )
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = SmallPadding),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                val inferenceButtonText = if (isInferenceRunning) "Inference Running" else "Perform Inference"
+
+                ActionButtonInference(
+                    onClick = {
+                        if(isInferenceRunning){
+                            onPauseInference()
+                        }
+                        else{
+                            Log.e(context::class.java.toString(), "debugMode: $debugMode")
+                            Log.e(context::class.java.toString(), "isConnected: $isConnected")
+                            if (!debugMode && !isConnected) {
+                                Toast.makeText(context, "No device connected!", Toast.LENGTH_LONG).show()
+                            } else {
+                                onPerformInference()
+                            }
+                        }
+
+                    },
+                    icon =  if (isInferenceRunning) Icons.Default.Autorenew else Icons.Default.PlayArrow,
+                    text = inferenceButtonText,
+                    isInferenceRunning = isInferenceRunning,
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(buttonHeight),
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+
+                InferenceRunningIcon(
+                    isInferenceRunning = isInferenceRunning,
+                    buttonColors = ButtonDefaults.buttonColors(),
+                    onClick = {
+                          if(isInferenceRunning){
+                              onPauseInference()
+                          }
+                        else{
+                          Log.e(context::class.java.toString(), "debugMode: $debugMode")
+                          Log.e(context::class.java.toString(), "isConnected: $isConnected")
+                          if (!debugMode && !isConnected) {
+                              Toast.makeText(context, "No device connected!", Toast.LENGTH_LONG).show()
+                          } else {
+                              onPerformInference()
+                          }
+                          }
+                    },
+                    modifier = Modifier
+                        .height(buttonHeight)    // Match the height of the button
+                )
+            }
 
             Spacer(modifier = Modifier.height(SmallPadding))
 
@@ -205,7 +255,7 @@ private fun ActionButtonsSection(
             ) {
                 val scanButtonText = if (isConnected) "Connected to ${bluetoothViewModel.myDeviceName}" else "Look for Devices"
                 val scanButtonColors = if (isConnected) {
-                    ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50) )
+                    ButtonDefaults.buttonColors(containerColor = Color(0xFF3EFD46))
                 } else {
                     ButtonDefaults.buttonColors()
                 }
@@ -216,7 +266,7 @@ private fun ActionButtonsSection(
                             Toast.makeText(context, "Scanning for devices", Toast.LENGTH_SHORT).show()
                         }
                     },
-                    icon = Icons.Default.Bluetooth,
+                    icon =  if (isConnected) Icons.Default.BluetoothConnected else Icons.Default.BluetoothDisabled,
                     text = scanButtonText,
                     modifier = Modifier
                         .weight(1f)
@@ -236,12 +286,22 @@ private fun ActionButtonsSection(
     }
 }
 @Composable
-private fun ActionButton(
+private fun ActionButtonInference(
     onClick: () -> Unit,
     icon: ImageVector,
     text: String,
+    isInferenceRunning: Boolean,
     modifier: Modifier = Modifier
 ) {
+    val infiniteTransition = rememberInfiniteTransition(label = "Rotating arrow")
+    val rotationAngle by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 2000, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ), label = "Rotating arrow"
+    )
     Button(
         onClick = onClick,
         shape = CardShape,
@@ -250,7 +310,11 @@ private fun ActionButton(
         Icon(
             imageVector = icon,
             contentDescription = text,
-            modifier = Modifier.size(18.dp)
+            modifier = Modifier
+                .size(18.dp)
+                .graphicsLayer(
+                    rotationZ = if (isInferenceRunning) rotationAngle else 0f
+                )
         )
         Spacer(modifier = Modifier.width(SmallPadding))
         Text(
@@ -621,4 +685,23 @@ fun DeviceConnectionIcon(
     )
 }
 
-
+@Composable
+fun InferenceRunningIcon(
+    isInferenceRunning: Boolean,
+    buttonColors: ButtonColors = ButtonDefaults.buttonColors(),
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val icon = if (isInferenceRunning) Icons.Default.Pause else Icons.Default.PlayArrow
+    IconButton(
+        onClick = onClick,
+        modifier = modifier.aspectRatio(1f)
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = if (isInferenceRunning) "Inference running" else "Inference not running",
+            tint = buttonColors.containerColor,
+            modifier = modifier.fillMaxSize()
+        )
+    }
+}

@@ -88,17 +88,19 @@ class SampleBroadcastService : Service() {
     private val bleDataSampleObserver = Observer<DataSample> { sample ->
         if (sample != null) {
             val context = this@SampleBroadcastService.applicationContext
-            sendSampleBroadcastBLE(sample)
+            if(sample.data.size != 0){
+                sendSampleBroadcastBLE(sample)
+            }
         }
     }
 
     private fun startObservingLiveData() {
-        bluetoothViewModel.dataSample.observeForever(bleDataSampleObserver)
+        bluetoothViewModel.lastValues.observeForever(bleDataSampleObserver)
         Log.d("InferenceService", "Started observing bluetoothViewModel.dataSample")
     }
 
     private fun stopObservingLiveData() {
-        bluetoothViewModel.dataSample.removeObserver(bleDataSampleObserver)
+        bluetoothViewModel.lastValues.removeObserver(bleDataSampleObserver)
         Log.d("InferenceService", "Stopped observing bluetoothViewModel.dataSample")
     }
 

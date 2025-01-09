@@ -130,6 +130,11 @@ class MainActivity : FragmentActivity() {
                         }
                         "MainScreen" -> MainScreen(
                             onRunInference = { startInferenceServices(isTrainingEnabled, isDebugEnabled) },
+                            onPauseInference  = {
+                                Intent(applicationContext, InferenceService::class.java).apply {
+                                    action = InferenceService.Actions.STOP.toString()
+                                }
+                            },
                             metrics = metrics,
                             payState = walletViewModel.walletUiState.collectAsStateWithLifecycle().value,
                             requestSavePass = ::requestSavePass,
@@ -201,11 +206,9 @@ class MainActivity : FragmentActivity() {
         isTrainingEnabled: Boolean,
         isDebugEnabled: Boolean) {
         Log.d("startInferenceServices", "isTrainingEnabled: $isTrainingEnabled ; isDebugEnabled: $isDebugEnabled")
-       // if(isDebugEnabled){ // enable the broadcast service only in debug mode to read data from known dataset in memory
-            Intent(applicationContext, SampleBroadcastService::class.java).also {
-                startService(it)
-            }
-      //  }
+        Intent(applicationContext, SampleBroadcastService::class.java).also {
+            startService(it)
+        }
         Intent(applicationContext, InferenceService::class.java).also {
             it.action = InferenceService.Actions.START.toString()
             it.putExtra("IS_TRAINING_ENABLED", isTrainingEnabled)

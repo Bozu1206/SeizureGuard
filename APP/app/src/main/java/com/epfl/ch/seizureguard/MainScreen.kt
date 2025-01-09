@@ -13,6 +13,7 @@ import com.epfl.ch.seizureguard.profile.ProfileViewModel
 @Composable
 fun MainScreen(
     onRunInference: () -> Unit,
+    onPauseInference: () -> Unit,
     metrics: Metrics,
     payState: WalletUiState,
     profileViewModel: ProfileViewModel,
@@ -25,6 +26,7 @@ fun MainScreen(
     AppContent(
         metrics = metrics,
         onRunInference = onRunInference,
+        onPauseInference = onPauseInference,
         payState = payState,
         requestSavePass = requestSavePass,
         profileViewModel = profileViewModel,
