@@ -2,6 +2,7 @@ package com.epfl.ch.seizureguard.inference
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.app.Notification
 import android.app.PendingIntent
 import android.app.Service
 import android.content.BroadcastReceiver
@@ -20,6 +21,8 @@ import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.Observer
 import com.epfl.ch.seizureguard.MainActivity
 import com.epfl.ch.seizureguard.R
@@ -54,6 +57,8 @@ class InferenceService : Service() {
     private var isPaused = false
     private var isTrainingEnabled = false
     private var isDebugEnabled = false
+
+    private lateinit var ongoingNotification: Notification
 
     private lateinit var seizureDetectionViewModel: SeizureDetectionViewModel
 
@@ -163,17 +168,17 @@ class InferenceService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         Log.d("InferenceService", "onStartCommand called")
 
-        sendOngoingInferenceNotification()
-
         pendingAction = intent?.action
 
-        // Extract the action
-        val action = intent?.action
-        if (action == Actions.STOP.toString()) { // when  we receive the stop command from the ongoing notification
+        if (pendingAction == Actions.STOP.toString()) { // when  we receive the stop command from the ongoing notification
             Log.d("InferenceService", "Stopping service and BLE from onStartCommand")
             bluetoothViewModel.stopBLE()
+            stopForeground(STOP_FOREGROUND_REMOVE)
             stopSelf()
             return START_NOT_STICKY
+        }
+        else{
+            sendOngoingInferenceNotification()
         }
 
         // Extract flags from Intent
@@ -327,7 +332,7 @@ class InferenceService : Service() {
             stopServiceIntent,
             PendingIntent.FLAG_IMMUTABLE
         )
-        val notification = NotificationCompat.Builder(
+        ongoingNotification = NotificationCompat.Builder(
             this,
             getString(R.string.fixed_foregroung_notification_channel_id)
         )
@@ -344,7 +349,7 @@ class InferenceService : Service() {
             )
             .build()
 
-        startForeground(FIXED_NOTIFICATION_ID, notification)
+        startForeground(FIXED_NOTIFICATION_ID, ongoingNotification)
     }
 
     private fun sendSeizureDetectedNotification() {

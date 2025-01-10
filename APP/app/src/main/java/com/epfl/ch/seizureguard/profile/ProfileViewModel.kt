@@ -169,6 +169,19 @@ class ProfileViewModel(context: Context, application: Application) : AndroidView
         }
     }
 
+    fun savePowerModePreference(powerMode: String) {
+        viewModelScope.launch {
+            repository.savePowerModePreference(powerMode)
+            _profileState.update { currentState ->
+                currentState.copy(
+                    powerMode = powerMode
+                )
+            }
+            saveProfile()
+            Log.d("ProfileViewModel", "Saved power model preference: isBiometric=$powerMode")
+        }
+    }
+
     fun addSeizure(seizure: SeizureEvent) {
         viewModelScope.launch {
             val profile = _profileState.value

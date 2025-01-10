@@ -52,6 +52,8 @@ fun EEGChart(
     var canvasWidth by remember { mutableStateOf(0f) }
     var isAutoScrolling by remember { mutableStateOf(true) }
 
+    val leftMargin = 250f
+
     DisposableEffect(Unit) {
         viewModel.registerReceiver(context)
         onDispose {
@@ -64,7 +66,7 @@ fun EEGChart(
             .fillMaxSize()
             .shadow(elevation = 4.dp, shape = RoundedCornerShape(20.dp))
             .clip(RoundedCornerShape(20.dp))
-            .background(Color.White)
+            .background(Color.Black)
     ) {
         Canvas(
             modifier = Modifier
@@ -78,14 +80,13 @@ fun EEGChart(
                         onDragEnd = { isDragging = false },
                         onDrag = { change, dragAmount ->
                             change.consume()
-                            val graphWidth = canvasWidth - 300f
+                            val graphWidth = canvasWidth - leftMargin
                             viewModel.updateScrollOffset(dragAmount.x, graphWidth, sampleWidthRatio)
                         }
                     )
                 }
         ) {
             canvasWidth = size.width
-            val leftMargin = 300f
             val graphWidth = canvasWidth - leftMargin
 
             if (!isDragging && isAutoScrolling && eegData.isNotEmpty()) {
@@ -145,7 +146,7 @@ private fun DrawScope.drawLabelsAndGrid(
     channelNames: List<String>
 ) {
     val labelPaint = android.graphics.Paint().apply {
-        color = android.graphics.Color.BLACK
+        color = android.graphics.Color.WHITE
         textSize = 50f
         isAntiAlias = true
         isFakeBoldText = true
@@ -155,7 +156,7 @@ private fun DrawScope.drawLabelsAndGrid(
         val yCenter = (index + 1) * spacingY
 
         drawLine(
-            color = Color.Black.copy(alpha = 0.5f),
+            color = Color.White.copy(alpha = 0.5f),
             start = Offset(leftMargin, yCenter),
             end = Offset(leftMargin + graphWidth, yCenter),
             strokeWidth = 1.5f
@@ -163,7 +164,7 @@ private fun DrawScope.drawLabelsAndGrid(
 
         drawContext.canvas.nativeCanvas.drawText(
             channelName,
-            100f,
+            50f,
             yCenter + (labelPaint.textSize / 3f),
             labelPaint
         )
@@ -198,7 +199,7 @@ private fun DrawScope.drawChannel(
 
     drawPath(
         path = path,
-        color = Color.Blue.copy(0.8f),
+        color = Color.Green.copy(0.8f),
         style = Stroke(width = 2f, cap = StrokeCap.Round, join = StrokeJoin.Round)
     )
 }

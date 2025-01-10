@@ -40,6 +40,7 @@ object Keys {
     val IS_TRAINING_ENABLED = booleanPreferencesKey("is_training_enabled")
     val IS_AUTHENTICATED = booleanPreferencesKey("is_authenticated")
     val IS_DEBUG_ENABLED = booleanPreferencesKey("debug_mode")
+    val POWER_MODE = stringPreferencesKey("power_mode")
     val PAST_SEIZURES = stringPreferencesKey("past_seizures")
     val DEF_METRICS = stringPreferencesKey("def_metrics")
     val LATEST_METRICS = stringPreferencesKey("latest_metrics")
@@ -76,6 +77,9 @@ class ProfileRepository private constructor(
 
     private val _debugMode = MutableStateFlow(false)
     val debugMode: StateFlow<Boolean> = _debugMode
+
+    private val _powerMode = MutableStateFlow("Normal")
+    val powerMode: StateFlow<String> = _powerMode
 
     private val _sampleCount = MutableStateFlow(0)
     val sampleCount: StateFlow<Int> = _sampleCount
@@ -217,6 +221,7 @@ class ProfileRepository private constructor(
             isBiometricEnabled = preferences[Keys.IS_BIOMETRIC_ENABLED] ?: false,
             isTrainingEnabled = preferences[Keys.IS_TRAINING_ENABLED] ?: false,
             isDebugEnabled = preferences[Keys.IS_DEBUG_ENABLED] ?: false,
+            powerMode = preferences[Keys.POWER_MODE] ?: "Normal",
             emergencyContacts = contacts,
             pastSeizures = pastSeizures,
             defaultsMetrics = defMetrics,
@@ -371,6 +376,12 @@ class ProfileRepository private constructor(
         Log.d("ProfileRepository", "Saved debug preference: isEnabled=$isEnabled")
     }
 
+    suspend fun savePowerModePreference(powerMode: String) {
+        context.dataStore.edit { preferences ->
+            preferences[Keys.POWER_MODE] = powerMode
+        }
+        Log.d("ProfileRepository", "Saved power mode preference: isEnabled=$powerMode")
+    }
 
     fun saveModelToFirebase(modelFile: File) {
         runBlocking {

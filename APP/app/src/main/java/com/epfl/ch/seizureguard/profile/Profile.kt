@@ -17,6 +17,7 @@ data class Profile(
     var isBiometricEnabled: Boolean = false,
     var isTrainingEnabled: Boolean = false,
     var isDebugEnabled: Boolean = false,
+    var powerMode: String = "Normal",
     var emergencyContacts: List<EmergencyContact> = emptyList(),
     var pastSeizures: List<SeizureEvent> = emptyList(),
     var defaultsMetrics: Metrics = Metrics(),
@@ -29,7 +30,6 @@ data class Profile(
                 name.isNotEmpty() && email.isNotEmpty() && birthdate.isNotEmpty() && pwd.isNotEmpty() && uri.isNotEmpty()
             }
         }
-
         fun empty() = Profile()
     }
 }
