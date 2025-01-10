@@ -32,6 +32,7 @@ class BluetoothViewModel(application: Application) : AndroidViewModel(applicatio
     private val EEG_SERVICE = "0000745D-0000-1100-8800-00605f9c34ca" // GATT service UUID for EEG
     private val EEG_MEASUREMENT = "00002a27-0000-4300-8900-00805a4a21fb" // EEG measure characteristic
     private val CLIENT_CHARACTERISTIC_CONFIG = "00002902-0000-1000-8000-00805f9b34fb"
+    private val CONFIG_CHARACTERISTIC = "bb54968e-e5f8-c6ad-eb11-982cdfb71a46"
 
     val bluetoothAdapter: BluetoothAdapter? = BluetoothAdapter.getDefaultAdapter()
     private val bluetoothLeScanner = bluetoothAdapter?.bluetoothLeScanner
@@ -44,7 +45,6 @@ class BluetoothViewModel(application: Application) : AndroidViewModel(applicatio
     private var lastValuesIndex = 0
     private val floatsPerLastSample = 18 * 128
     private val lastValuesBuffer = FloatArray(floatsPerLastSample)
-
 
     private val _isConnected = MutableLiveData<Boolean>(false) // is the device connected?
     val isConnected: LiveData<Boolean>
@@ -68,6 +68,11 @@ class BluetoothViewModel(application: Application) : AndroidViewModel(applicatio
     // Buffer to accumulate floats
     private val currentBatchChannels = FloatArray(totalFloatsPerBatch)
     private var floatIndex = 0 // Tracks the current position in the batch buffer
+
+    private var powerMode : Byte = 0x00
+    fun setPowerMode(newPowerMode : Byte){
+        powerMode = newPowerMode
+    }
 
     private fun setEEGCharacteristicNotification(
         characteristic: BluetoothGattCharacteristic,
@@ -134,6 +139,19 @@ class BluetoothViewModel(application: Application) : AndroidViewModel(applicatio
             Log.d("onServicesDiscovered", "onServicesDiscovered called")
             if (status == BluetoothGatt.GATT_SUCCESS) {
                 val gattService = bluetoothGatt?.getService(UUID.fromString(EEG_SERVICE))  // get the EEG service using its specific UUID
+
+                val configCharacteristic = gattService?.getCharacteristic(UUID.fromString(CONFIG_CHARACTERISTIC))
+                if (configCharacteristic != null) {
+                    configCharacteristic.value = byteArrayOf(powerMode)
+                    val writeSuccess = bluetoothGatt?.writeCharacteristic(configCharacteristic) ?: false
+                    if (writeSuccess) {
+                        Log.d("BluetoothGattCallback", "Wrote config byte: $powerMode")
+                    } else {
+                        Log.e("BluetoothGattCallback", "Failed to write config byte!")
+                    }
+                } else {
+                    Log.w("BluetoothGattCallback", "Config characteristic not found!")
+                }
                 val gattCharacteristics = gattService?.getCharacteristic(UUID.fromString(EEG_MEASUREMENT)) // get measurement characteristic from the EEG service
                 if (gattCharacteristics != null) {
                     setEEGCharacteristicNotification(
@@ -212,7 +230,25 @@ class BluetoothViewModel(application: Application) : AndroidViewModel(applicatio
             } else {
                 Log.e("BluetoothViewModel", "Failed to parse floats from characteristic.")
             }
-
+        }
+        override fun onCharacteristicWrite(
+            gatt: BluetoothGatt,
+            characteristic: BluetoothGattCharacteristic,
+            status: Int
+        ) {
+            if (status == BluetoothGatt.GATT_SUCCESS) {
+                if (characteristic.uuid == UUID.fromString(CONFIG_CHARACTERISTIC)) {
+                    Log.d("BluetoothGattCallback", "Config byte write successful!")
+                    // Now enable notifications:
+                    val eegChar = gatt.getService(UUID.fromString(EEG_SERVICE))
+                        ?.getCharacteristic(UUID.fromString(EEG_MEASUREMENT))
+                    if (eegChar != null) {
+                        setEEGCharacteristicNotification(eegChar, true)
+                    }
+                }
+            } else {
+                Log.e("BluetoothGattCallback", "Characteristic write failed with status=$status")
+            }
         }
     }
 

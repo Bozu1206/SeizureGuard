@@ -50,9 +50,11 @@ import androidx.compose.material3.Surface
 import android.content.Intent
 import android.content.Context
 import android.widget.Toast
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.DeveloperBoard
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Info
@@ -64,6 +66,9 @@ import java.util.Date
 import java.util.Locale
 import com.google.gson.GsonBuilder
 import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.Power
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.IconButton
 import androidx.navigation.NavController
@@ -285,9 +290,9 @@ fun SettingsScreen(
                 }
 
                 // Section "Model Training"
-                SettingsSection(title = "Model Training") {
+                SettingsSection(title = "Power Options") {
                     SettingsItem(
-                        title = "Enable Training",
+                        title = "Enable Model Training",
                         icon = Icons.Default.ModelTraining,
                         tint = if (profile.isTrainingEnabled)
                             MaterialTheme.colorScheme.primary
@@ -300,6 +305,23 @@ fun SettingsScreen(
                                     profileViewModel.saveTrainingPreference(isChecked)
                                 }
                             )
+                        }
+                    )
+                    SettingsDropdownItem(
+                        title = "Power Mode",
+                        icon = Icons.Default.Power,
+                        tint = if (profile.isTrainingEnabled)
+                            MaterialTheme.colorScheme.primary
+                        else
+                            MaterialTheme.colorScheme.onSurfaceVariant,
+                        options = listOf(
+                                    context.getString(R.string.low_power_mode),
+                                    context.getString(R.string.normal_power_mode),
+                                    context.getString(R.string.high_performance_mode)
+                                ),
+                        selectedOption = profile.powerMode,
+                        onOptionSelected = { option ->
+                            profileViewModel.savePowerModePreference(option)
                         }
                     )
                 }
@@ -454,4 +476,58 @@ private fun SettingsItem(
             )
         }
     }
+}
+@Composable
+fun SettingsDropdownItem(
+    title: String,
+    icon: ImageVector? = null,
+    tint: Color = MaterialTheme.colorScheme.primary,
+    options: List<String>,
+    selectedOption: String,
+    onOptionSelected: (String) -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val trailing: @Composable () -> Unit = {
+        Box {
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = selectedOption,
+                    style = MaterialTheme.typography.bodyLarge,
+                    modifier = Modifier.padding(end = 8.dp)
+                )
+                IconButton(onClick = { expanded = !expanded }) {
+                    Icon(
+                        imageVector = Icons.Default.ArrowDropDown,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+            DropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { expanded = false }
+            ) {
+                options.forEach { option ->
+                    DropdownMenuItem(
+                        text = { Text(option) },
+                        onClick = {
+                            onOptionSelected(option)
+                            expanded = false
+                        }
+                    )
+                }
+            }
+        }
+    }
+    SettingsItem(
+        title = title,
+        onClick = {
+
+        },
+        icon = icon,
+        tint = tint,
+        trailing = trailing
+    )
 }

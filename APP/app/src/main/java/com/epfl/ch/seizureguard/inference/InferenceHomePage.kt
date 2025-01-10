@@ -31,6 +31,7 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.clip
@@ -48,6 +49,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import com.epfl.ch.seizureguard.R
 import com.epfl.ch.seizureguard.RunningApp
 import com.epfl.ch.seizureguard.profile.ProfileViewModelFactory
 import kotlin.math.round
@@ -63,7 +65,6 @@ fun InferenceHomePage(
     onPerformInference: () -> Unit,
     onPauseInference: () -> Unit,
     modifier: Modifier = Modifier,
-    bluetoothViewModel: BluetoothViewModel = viewModel(),
     metricsViewModel: MetricsViewModel,
     profileViewModel: ProfileViewModel = viewModel(factory = ProfileViewModelFactory(
                                                 LocalContext.current,
@@ -78,6 +79,13 @@ fun InferenceHomePage(
 
     val debugMode = profile.isDebugEnabled
     val isConnected by bluetoothViewModel.isConnected.observeAsState(initial = false) // is the BLE device connected?
+    val powerModeValue = when (profile.powerMode){
+        context.getString(R.string.low_power_mode) -> context.resources.getInteger(R.integer.low_power_config)
+        context.getString(R.string.normal_power_mode) -> context.resources.getInteger(R.integer.normal_power_config)
+        context.getString(R.string.high_performance_mode) -> context.resources.getInteger(R.integer.high_performance_config)
+        else -> context.resources.getInteger(R.integer.normal_power_config)
+    }
+    bluetoothViewModel.setPowerMode(powerModeValue.toByte())
 
     // Handle Bluetooth setup
     HandleBluetoothSetup(bluetoothViewModel)
@@ -87,7 +95,7 @@ fun InferenceHomePage(
         metricsViewModel.loadMetrics()
     }
 
-    var isInferenceRunning by remember { mutableStateOf(false) }
+    var isInferenceRunning by rememberSaveable { mutableStateOf(false) }
 
     Column(
         modifier = modifier
