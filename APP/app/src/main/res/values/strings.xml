@@ -14,4 +14,8 @@
     <string name="seizure_notification_id">"seizure found "</string>
     <string name="about">SeizureGuard is an innovative application designed to detect and monitor epileptic seizures using EEG signals. It provides real-time monitoring, emergency alerts, and detailed seizure history tracking.</string>
     <string name="authors"><![CDATA[Francesco Poluzzi and François Dumoncel EE-490(g): Lab on App Development for Smartphones \nSupervisor: Ansaloni Giovanni & Amirhossein Shahbazinia]]></string>
+    <string name="low_power_mode">"Low Power"</string>
+    <string name="normal_power_mode">"Normal"</string>
+    <string name="high_performance_mode">Performance</string>
+
 </resources>
