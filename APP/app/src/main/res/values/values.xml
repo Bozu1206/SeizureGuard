@@ -1,0 +1,6 @@
+<resources>
+    <integer name="low_power_config">1</integer>
+    <integer name="normal_power_config">0</integer>
+    <integer name="high_performance_config">2</integer>
+
+</resources>
