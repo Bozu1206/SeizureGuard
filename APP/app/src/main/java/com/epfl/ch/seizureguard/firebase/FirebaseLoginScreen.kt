@@ -81,6 +81,7 @@ fun FirebaseLoginScreen(profileViewModel: ProfileViewModel, onLoggedIn: () -> Un
             Button(
                 onClick = {
                     profileViewModel.loadProfileFromEmail(email, pwd, onLoggedIn)
+                    profileViewModel.retrieveAndStoreFcmToken()
                 },
                 modifier = Modifier
                     .fillMaxWidth()

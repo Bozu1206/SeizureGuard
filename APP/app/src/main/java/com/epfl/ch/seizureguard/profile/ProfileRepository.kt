@@ -6,23 +6,37 @@ import android.content.Context
 import android.net.Uri
 import android.util.Log
 import androidx.compose.ui.platform.isDebugInspectorInfoEnabled
+import androidx.datastore.core.IOException
 import androidx.datastore.preferences.core.*
 import androidx.datastore.preferences.preferencesDataStore
 import com.epfl.ch.seizureguard.dl.metrics.Metrics
 import com.epfl.ch.seizureguard.seizure_event.SeizureEvent
+import com.google.auth.oauth2.GoogleCredentials
+import com.google.firebase.Firebase
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.firestore
 import com.google.firebase.firestore.ktx.toObject
 import com.google.firebase.storage.FirebaseStorage
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.withContext
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.RequestBody
+import okhttp3.RequestBody.Companion.toRequestBody
+import okhttp3.logging.HttpLoggingInterceptor
 import java.io.File
+import java.io.FileInputStream
 
 val Context.dataStore by preferencesDataStore(name = "user_profile")
 
@@ -38,6 +52,7 @@ object Keys {
     val AUTH_MODE = stringPreferencesKey("auth_mode")
     val IS_BIOMETRIC_ENABLED = booleanPreferencesKey("is_biometric_enabled")
     val IS_TRAINING_ENABLED = booleanPreferencesKey("is_training_enabled")
+    val IS_PARENT_MODE = booleanPreferencesKey("is_parent_mode")
     val IS_AUTHENTICATED = booleanPreferencesKey("is_authenticated")
     val IS_DEBUG_ENABLED = booleanPreferencesKey("debug_mode")
     val POWER_MODE = stringPreferencesKey("power_mode")
@@ -383,6 +398,18 @@ class ProfileRepository private constructor(
         Log.d("ProfileRepository", "Saved power mode preference: isEnabled=$powerMode")
     }
 
+    suspend fun saveParentPreference(isEnabled: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[Keys.IS_PARENT_MODE] = isEnabled
+        }
+        Log.d("ProfileRepository", "Parent preference saved locally: $isEnabled")
+    }
+
+    fun getParentPreference(): Flow<Boolean> {
+        return context.dataStore.data
+            .map { preferences -> preferences[Keys.IS_PARENT_MODE] ?: false }
+    }
+
     fun saveModelToFirebase(modelFile: File) {
         runBlocking {
             try {
@@ -460,6 +487,85 @@ class ProfileRepository private constructor(
             }
         }
     }
+
+    suspend fun storeFcmToken(uid: String, token: String) {
+        // Reference to the profile document and its "tokens" sub-collection
+        val tokensRef = Firebase.firestore
+            .collection("profiles")
+            .document(uid)
+            .collection("tokens")
+        val tokenDocRef = tokensRef.document(token)
+
+        try {
+            // Check if this token document already exists
+            val documentSnapshot = tokenDocRef.get().await()
+            if (!documentSnapshot.exists()) {
+                // If it doesn’t exist, create/set the token document
+                tokenDocRef.set(mapOf("token" to token)).await()
+                Log.d("ProfileRepository", "FCM token stored in 'profiles/$uid/tokens': $token")
+            } else {
+                Log.d("ProfileRepository", "Token already exists in 'profiles/$uid/tokens': $token")
+            }
+        } catch (e: Exception) {
+            Log.e("ProfileRepository", "Failed to store FCM token in profile $uid", e)
+            throw e
+        }
+    }
+
+    suspend fun getAllFcmTokens(uid: String): List<String> {
+        val tokensRef = Firebase.firestore
+            .collection("profiles")
+            .document(uid)
+            .collection("tokens")
+
+        return try {
+            val querySnapshot = tokensRef.get().await()
+            querySnapshot.documents.mapNotNull { it.getString("token") }
+        } catch (e: Exception) {
+            Log.e("ProfileRepository", "Failed to retrieve FCM tokens in profile $uid", e)
+            emptyList()
+        }
+    }
+
+    suspend fun getAccessToken(): String = withContext(Dispatchers.IO) {
+        val credentialsStream = context.assets.open("seizureguard-1e3d9-firebase-adminsdk-bmgtm-812b9e8cb0.json")
+        val googleCredentials = GoogleCredentials.fromStream(credentialsStream)
+            .createScoped(listOf("https://www.googleapis.com/auth/firebase.messaging"))
+        googleCredentials.refreshIfExpired()
+        return@withContext googleCredentials.accessToken.tokenValue
+    }
+
+    suspend fun sendFcmNotificationToTokens(tokens: List<String>, title: String, body: String) {
+        withContext(Dispatchers.IO) {
+            val url = "https://fcm.googleapis.com/v1/projects/seizureguard-1e3d9/messages:send"
+            val accessToken = getAccessToken()
+            tokens.forEach { token ->
+                val payload = mapOf(
+                    "message" to mapOf(
+                        "token" to token,
+                        "data" to mapOf(
+                            "title" to title,
+                            "body" to body
+                        ),
+                        "android" to mapOf("priority" to "high")
+                    )
+                )
+                val jsonPayload = Gson().toJson(payload)
+                val client = OkHttpClient()
+                val request = Request.Builder()
+                    .url(url)
+                    .post(RequestBody.create("application/json".toMediaType(), jsonPayload))
+                    .addHeader("Authorization", "Bearer $accessToken")
+                    .addHeader("Content-Type", "application/json")
+                    .build()
+                val response = client.newCall(request).execute()
+                if (!response.isSuccessful) {
+                    throw IOException("Failed to send FCM notification: ${response.body?.string()}")
+                }
+            }
+        }
+    }
+
 
     suspend fun updateMedications(medications: List<String>) {
         context.dataStore.edit { preferences ->

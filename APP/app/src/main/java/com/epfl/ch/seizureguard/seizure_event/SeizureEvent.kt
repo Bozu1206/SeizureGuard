@@ -29,6 +29,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.epfl.ch.seizureguard.profile.ProfileViewModel
 import com.google.accompanist.flowlayout.FlowRow
@@ -218,3 +219,15 @@ data class SeizureEvent(
     val triggers: List<String> = emptyList(),
     var timestamp: Long = 0
 )
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Preview(showBackground = true)
+@Composable
+fun PreviewLogSeizureEventModal() {
+    LogSeizureEventModal(
+        onDismiss = {},
+        onClick = { /* Handle SeizureEvent */ },
+        label = "Preview Log Seizure",
+        default = DefaultState() // Replace with appropriate default values
+    )
+}

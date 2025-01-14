@@ -67,6 +67,7 @@ import java.util.Locale
 import com.google.gson.GsonBuilder
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Power
+import androidx.compose.material.icons.filled.SupervisorAccount
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FloatingActionButton
@@ -83,6 +84,7 @@ fun SettingsScreen(
 ) {
     val context = LocalContext.current
     val profile by profileViewModel.profileState.collectAsState()
+    val isParentMode by profileViewModel.parentMode.collectAsState()
     var showPasswordDialog by remember { mutableStateOf(false) }
     var showExportDialog by remember { mutableStateOf(false) }
     var showAboutDialog by remember { mutableStateOf(false) }
@@ -288,40 +290,57 @@ fun SettingsScreen(
                         icon = Icons.Default.Key
                     )
                 }
+                if(!isParentMode){
+                    // Section "Model Training"
+                    SettingsSection(title = "Power Options") {
+                        SettingsItem(
+                            title = "Enable Model Training",
+                            icon = Icons.Default.ModelTraining,
+                            tint = if (profile.isTrainingEnabled)
+                                MaterialTheme.colorScheme.primary
+                            else
+                                MaterialTheme.colorScheme.onSurfaceVariant,
+                            trailing = {
+                                Switch(
+                                    checked = profile.isTrainingEnabled,
+                                    onCheckedChange = { isChecked ->
+                                        profileViewModel.saveTrainingPreference(isChecked)
+                                    }
+                                )
+                            }
+                        )
+                        SettingsDropdownItem(
+                            title = "Power Mode",
+                            icon = Icons.Default.Power,
+                            tint = if (profile.isTrainingEnabled)
+                                MaterialTheme.colorScheme.primary
+                            else
+                                MaterialTheme.colorScheme.onSurfaceVariant,
+                            options = listOf(
+                                context.getString(R.string.low_power_mode),
+                                context.getString(R.string.normal_power_mode),
+                                context.getString(R.string.high_performance_mode)
+                            ),
+                            selectedOption = profile.powerMode,
+                            onOptionSelected = { option ->
+                                profileViewModel.savePowerModePreference(option)
+                            }
+                        )
+                    }
+                }
 
-                // Section "Model Training"
-                SettingsSection(title = "Power Options") {
+                SettingsSection(title = "Parent Mode") {
                     SettingsItem(
-                        title = "Enable Model Training",
-                        icon = Icons.Default.ModelTraining,
-                        tint = if (profile.isTrainingEnabled)
-                            MaterialTheme.colorScheme.primary
-                        else
-                            MaterialTheme.colorScheme.onSurfaceVariant,
+                        title = "Parent Mode",
+                        onClick = { },
+                        icon = Icons.Default.SupervisorAccount,
                         trailing = {
                             Switch(
-                                checked = profile.isTrainingEnabled,
+                                checked = isParentMode,
                                 onCheckedChange = { isChecked ->
-                                    profileViewModel.saveTrainingPreference(isChecked)
+                                    profileViewModel.saveParentPreference(isChecked)
                                 }
                             )
-                        }
-                    )
-                    SettingsDropdownItem(
-                        title = "Power Mode",
-                        icon = Icons.Default.Power,
-                        tint = if (profile.isTrainingEnabled)
-                            MaterialTheme.colorScheme.primary
-                        else
-                            MaterialTheme.colorScheme.onSurfaceVariant,
-                        options = listOf(
-                                    context.getString(R.string.low_power_mode),
-                                    context.getString(R.string.normal_power_mode),
-                                    context.getString(R.string.high_performance_mode)
-                                ),
-                        selectedOption = profile.powerMode,
-                        onOptionSelected = { option ->
-                            profileViewModel.savePowerModePreference(option)
                         }
                     )
                 }

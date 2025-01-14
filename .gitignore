@@ -7,4 +7,6 @@ data_old/*
 .DS_Store
 .idea
 egg_app/.vscode
+egg_app/build
+.vscode
 APP/local.properties
