@@ -12,9 +12,11 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.content.ServiceConnection
 import android.content.pm.PackageManager
+import android.location.Location
 import android.os.Build
 import android.os.Handler
 import android.os.IBinder
+import android.os.Looper
 import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.core.app.ActivityCompat
@@ -33,6 +35,12 @@ import com.epfl.ch.seizureguard.profile.Profile
 import com.epfl.ch.seizureguard.profile.ProfileRepository
 import com.epfl.ch.seizureguard.profile.ProfileViewModel
 import com.epfl.ch.seizureguard.seizure_detection.SeizureDetectionViewModel
+import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.location.LocationCallback
+import com.google.android.gms.location.LocationRequest
+import com.google.android.gms.location.LocationResult
+import com.google.android.gms.location.LocationServices
+import com.google.android.gms.location.Priority
 
 class InferenceService : Service() {
 
@@ -61,6 +69,21 @@ class InferenceService : Service() {
     private lateinit var ongoingNotification: Notification
 
     private lateinit var seizureDetectionViewModel: SeizureDetectionViewModel
+
+    var location : Location? = null
+
+    private lateinit var fusedLocationProviderClient: FusedLocationProviderClient
+    val locationRequest = LocationRequest.create().apply {
+        interval = 5000 // 5 seconds
+        fastestInterval = 2000 // 2 seconds
+        priority = Priority.PRIORITY_HIGH_ACCURACY
+    }
+    val locationCallback = object : LocationCallback() {
+        override fun onLocationResult(locationResult: LocationResult) {
+            location = locationResult.lastLocation
+            Log.d("locationCallback", "Location Updated")
+        }
+    }
 
     private val serviceConnection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName?, service: IBinder?) { // triggered when this service gets connected
@@ -116,6 +139,7 @@ class InferenceService : Service() {
         seizureDetectionViewModel = (application as RunningApp).seizureDetectionViewModel
         profileViewModel = RunningApp.getInstance(application as RunningApp).profileViewModel
         profile = profileViewModel.profileState.value
+        fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this)
 
         Log.d("InferenceService", "onCreate called")
 
@@ -178,6 +202,27 @@ class InferenceService : Service() {
             return START_NOT_STICKY
         }
         else{
+            if (ActivityCompat.checkSelfPermission(
+                    this,
+                    Manifest.permission.ACCESS_FINE_LOCATION
+                ) == PackageManager.PERMISSION_GRANTED
+            ) {
+                fusedLocationProviderClient.getCurrentLocation(
+                    Priority.PRIORITY_HIGH_ACCURACY,
+                    null
+                ).addOnSuccessListener { initialLocation ->
+                    if (initialLocation != null) {
+                        location = initialLocation
+                        Log.d("InferenceService", "Initial Location: Lat=${location?.latitude}, Long=${location?.longitude}")
+                    } else {
+                        Log.w("InferenceService", "Initial location is null")
+                    }
+                }.addOnFailureListener { e ->
+                    Log.e("InferenceService", "Failed to get initial location", e)
+                }
+                // Start continuous location updates
+                fusedLocationProviderClient.requestLocationUpdates(locationRequest, locationCallback, Looper.getMainLooper())
+            }
             sendOngoingInferenceNotification()
         }
 
@@ -296,6 +341,7 @@ class InferenceService : Service() {
                 } else {
                     Log.d("InferenceService", "app is in background, sending notification")
                     sendSeizureDetectedNotification()
+                    profileViewModel.sendNotificationToMyDevices("Seizure Detected!", "A device in this profile detected an epileptic seizure", location)
                 }
             }
         }

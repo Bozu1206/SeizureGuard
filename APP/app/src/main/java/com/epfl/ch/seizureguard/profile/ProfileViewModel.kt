@@ -1,6 +1,7 @@
 // ProfileViewModel.kt
 package com.epfl.ch.seizureguard.profile
 
+import android.Manifest
 import android.app.Application
 import android.content.Context
 import android.content.Intent
@@ -25,7 +26,13 @@ import java.util.UUID
 import com.google.gson.GsonBuilder
 import android.widget.Toast
 import android.app.Activity
+import android.content.pm.PackageManager
+import android.location.Location
 import android.net.Uri
+import androidx.core.app.ActivityCompat
+import com.google.android.gms.location.LocationServices
+import com.google.android.gms.location.Priority
+import com.google.firebase.messaging.FirebaseMessaging
 
 class ProfileViewModel(context: Context, application: Application) : AndroidViewModel(application) {
     private val repository: ProfileRepository by lazy {
@@ -33,6 +40,9 @@ class ProfileViewModel(context: Context, application: Application) : AndroidView
             context = context
         )
     }
+
+    val parentMode: StateFlow<Boolean> = repository.getParentPreference()
+        .stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
     val sampleCount: StateFlow<Int> = repository.sampleCount
         .stateIn(viewModelScope, SharingStarted.Eagerly, 0)
@@ -42,6 +52,9 @@ class ProfileViewModel(context: Context, application: Application) : AndroidView
 
     val latestMetrics: StateFlow<Metrics> = repository.latestMetrics
         .stateIn(viewModelScope, SharingStarted.Eagerly, Metrics())
+
+    private val _tokensList = MutableStateFlow<List<String>>(emptyList())
+    val tokensList: StateFlow<List<String>> = _tokensList
 
     fun requestTraining() {
         val intent = Intent(getApplication(), InferenceService::class.java).apply {
@@ -95,6 +108,7 @@ class ProfileViewModel(context: Context, application: Application) : AndroidView
     private fun loadProfile() = viewModelScope.launch {
         val profile = repository.loadProfileFromPreferences()
         _profileState.value = profile
+        retrieveAndStoreFcmToken()
         Log.d("ProfileViewModel", "Loaded profile: $profile")
     }
 
@@ -311,6 +325,13 @@ class ProfileViewModel(context: Context, application: Application) : AndroidView
         }
     }
 
+    fun saveParentPreference(isEnabled: Boolean) {
+        viewModelScope.launch {
+            repository.saveParentPreference(isEnabled)
+            Log.d("ProfileViewModel", "Parent mode saved: $isEnabled")
+        }
+    }
+
     fun updateEmergencyContacts(contact: EmergencyContact, isAdding: Boolean) =
         viewModelScope.launch {
             val updatedContacts = if (isAdding) {
@@ -447,6 +468,79 @@ class ProfileViewModel(context: Context, application: Application) : AndroidView
         viewModelScope.launch {
             val currentMedications = _profileState.value.medications
             updateMedications(currentMedications - medication)
+        }
+    }
+
+    fun retrieveAndStoreFcmToken() {
+        FirebaseMessaging.getInstance().token
+            .addOnCompleteListener { task ->
+                if (!task.isSuccessful) {
+                    Log.w("ProfileViewModel", "Fetching FCM registration token failed", task.exception)
+                    return@addOnCompleteListener
+                }
+                // Get the new FCM registration token
+                val profile = _profileState.value
+                val token = task.result
+                Log.d("ProfileViewModel", "FCM Token retrieved: $token")
+                // If the token is not null or empty, store it in Firestore
+                if (!token.isNullOrEmpty()) {
+                    viewModelScope.launch {
+                        try {
+                            repository.storeFcmToken(profile.uid, token)
+                            Log.d("ProfileViewModel", "Token successfully stored if not present")
+                        } catch (e: Exception) {
+                            Log.e("ProfileViewModel", "Error storing FCM token", e)
+                        }
+                    }
+                }
+            }
+    }
+
+    fun fetchAllFcmTokens() {
+        viewModelScope.launch {
+            try {
+                val profile = _profileState.value
+                val tokens = repository.getAllFcmTokens(profile.uid)
+                _tokensList.value = tokens
+                Log.d("ProfileViewModel", "Successfully retrieved tokens: $tokens")
+            } catch (e: Exception) {
+                Log.e("ProfileViewModel", "Error fetching all FCM tokens", e)
+            }
+        }
+    }
+
+    fun sendNotificationToMyDevices(
+        title: String,
+        body: String,
+        location: Location?
+    ) {
+        val uid = _profileState.value.uid
+        if (uid.isNullOrEmpty()) {
+            Log.w("ProfileViewModel", "Cannot send notification without a valid UID")
+            return
+        }
+
+        val locationInfo = location?.let {
+            "Lat: ${it.latitude}, Long: ${it.longitude}"
+        } ?: "Location unavailable"
+
+        val updatedBody = "$body\nLocation: $locationInfo"
+
+        viewModelScope.launch {
+            try {
+                val tokens = repository.getAllFcmTokens(uid)
+                if (tokens.isEmpty()) {
+                    Log.w(
+                        "ProfileViewModel",
+                        "No tokens found for user $uid, skipping notification"
+                    )
+                    return@launch
+                }
+                repository.sendFcmNotificationToTokens(tokens, title, updatedBody)
+                Log.d("ProfileViewModel", "Notification sent to ${tokens.size} device(s).")
+            } catch (e: Exception) {
+                Log.e("ProfileViewModel", "Error sending notifications", e)
+            }
         }
     }
 

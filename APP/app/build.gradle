@@ -33,6 +33,17 @@ android {
         vectorDrawables {
             useSupportLibrary true
         }
+
+        def properties = new Properties()
+        if (localPropertiesFile.exists()) {
+            properties.load(new FileInputStream(localPropertiesFile))
+        }
+        def mapsApiKey = properties.getProperty("MAPS_API_KEY")
+        android {
+            defaultConfig {
+                manifestPlaceholders = [MAPS_API_KEY: mapsApiKey]
+            }
+        }
     }
     buildFeatures {
         buildConfig true
@@ -60,6 +71,21 @@ android {
     packaging {
         resources {
             excludes += '/META-INF/{AL2.0,LGPL2.1}'
+        }
+    }
+    packagingOptions { // conflicting paths
+        resources {
+            excludes += [
+                    'META-INF/DEPENDENCIES',
+                    'META-INF/LICENSE',
+                    'META-INF/LICENSE.txt',
+                    'META-INF/license.txt',
+                    'META-INF/NOTICE',
+                    'META-INF/NOTICE.txt',
+                    'META-INF/notice.txt',
+                    'META-INF/ASL2.0',
+                    'mozilla/public-suffix-list.txt'
+            ]
         }
     }
 }
@@ -114,6 +140,10 @@ dependencies {
     implementation("androidx.room:room-runtime:$room_version")
     implementation("androidx.room:room-ktx:$room_version")
     implementation 'com.google.firebase:firebase-crashlytics-buildtools:3.0.2'
+    implementation 'com.google.firebase:firebase-messaging:24.1.0'
+    implementation "com.squareup.okhttp3:okhttp:4.9.3"
+    implementation "com.squareup.okhttp3:logging-interceptor:4.9.3"
+    implementation 'com.google.auth:google-auth-library-oauth2-http:1.18.0'
     implementation 'com.google.android.gms:play-services-wallet:19.4.0'
     implementation 'androidx.appcompat:appcompat:1.7.0'
     implementation 'com.google.firebase:firebase-database:21.0.0'
@@ -146,6 +176,10 @@ dependencies {
     implementation("com.google.android.gms:play-services-pay:16.5.0")
     implementation("com.google.wallet.button:compose-wallet-button:0.1.0-beta01")
     implementation('com.auth0:java-jwt:4.4.0')
+
+    // Location
+    implementation("com.google.android.gms:play-services-location:21.0.1")
+    implementation("com.google.maps.android:maps-compose:4.3.0")
 
     implementation "androidx.lifecycle:lifecycle-livedata-ktx:2.8.7"
 }

@@ -13,6 +13,7 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -49,11 +50,12 @@ fun AppContent(
     metricsViewModel: MetricsViewModel
 ) {
     val navController = rememberNavController()
+    val isParentMode by profileViewModel.parentMode.collectAsState()
 
-    Scaffold(bottomBar = { BottomNavigationBar(navController) }) { innerPadding ->
+    Scaffold(bottomBar = { BottomNavigationBar(navController, isParentMode) }) { innerPadding ->
         NavHost(
             navController = navController,
-            startDestination = "inference",
+            startDestination = if(!isParentMode)"inference" else "profile",
             Modifier.padding(innerPadding)
         ) {
             composable("inference") {
@@ -93,14 +95,20 @@ fun AppContent(
 }
 
 @Composable
-fun BottomNavigationBar(navController: NavController) {
-    val items = listOf(
-        BottomNavItem("Home", Icons.Default.Home, "home"),
-        BottomNavItem("Monitor", Icons.Default.MonitorHeart, "inference"),
-        BottomNavItem("Profile", Icons.Default.Person, "profile"),
-        BottomNavItem("History", Icons.Default.DateRange, "history"),
-        BottomNavItem("Settings", Icons.Default.Settings, "settings")
-    )
+fun BottomNavigationBar(navController: NavController, isParentMode: Boolean) {
+    val items = if(!isParentMode)listOf(
+                        BottomNavItem("Home", Icons.Default.Home, "home"),
+                        BottomNavItem("Monitor", Icons.Default.MonitorHeart, "inference"),
+                        BottomNavItem("Profile", Icons.Default.Person, "profile"),
+                        BottomNavItem("History", Icons.Default.DateRange, "history"),
+                        BottomNavItem("Settings", Icons.Default.Settings, "settings")
+                    )
+                else listOf(
+                    BottomNavItem("Home", Icons.Default.Home, "home"),
+                    BottomNavItem("Profile", Icons.Default.Person, "profile"),
+                    BottomNavItem("History", Icons.Default.DateRange, "history"),
+                    BottomNavItem("Settings", Icons.Default.Settings, "settings")
+                )
 
     NavigationBar {
         val currentRoute = currentRoute(navController)

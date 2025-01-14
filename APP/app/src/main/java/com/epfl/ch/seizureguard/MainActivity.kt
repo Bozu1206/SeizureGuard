@@ -100,57 +100,7 @@ class MainActivity : FragmentActivity() {
             
             AppTheme {
                 Box(modifier = Modifier.fillMaxSize()) {
-                    when (navigationState) {
-                        "Onboarding" -> OnboardingScreen(
-                            onFinish = {
-                                isLoggedIn = true
-                                onboardingViewModel.completeOnboarding()
-                            },
-                            profileViewModel = profileViewModel,
-                            onboardingViewModel = onboardingViewModel
-                        )
-                        "FirebaseLogin" -> FirebaseLoginScreen(
-                            profileViewModel = profileViewModel,
-                            onLoggedIn = {
-                                isLoggedIn = true
-                                onboardingViewModel.completeOnboarding()
-                            }
-                        )
-                        "Login" -> {
-                            val context = LocalContext.current
-                            LoginScreen(
-                                onLoginSuccess = {
-                                    isLoggedIn = true
-                                },
-                                context = context,
-                                activity = context as FragmentActivity,
-                                biometricAuthenticator = BiometricAuthenticator(context),
-                                profileViewModel = profileViewModel
-                            )
-                        }
-                        "MainScreen" -> MainScreen(
-                            onRunInference = { startInferenceServices(isTrainingEnabled, isDebugEnabled) },
-                            onPauseInference  = {
-                                Intent(applicationContext, InferenceService::class.java).apply {
-                                    action = InferenceService.Actions.STOP.toString()
-                                }
-                            },
-                            metrics = metrics,
-                            payState = walletViewModel.walletUiState.collectAsStateWithLifecycle().value,
-                            requestSavePass = ::requestSavePass,
-                            profileViewModel = profileViewModel,
-                            seizureEventViewModel = seizureEventViewModel,
-                            historyViewModel = historyViewModel,
-                            metricsViewModel = metricsViewModel,
-                            onLogoutClicked = {
-                                profileViewModel.setAuthenticated(false)
-                                isLoggedIn = false
-                                onboardingViewModel.resetOnboarding(profileViewModel)
-                            }
-                        )
-                    }
-
-                    if (false) {
+                    if(isSeizureDetected){
                         val context = LocalContext.current
                         SeizureDetectedScreen(
                             onDismiss = {
@@ -160,6 +110,69 @@ class MainActivity : FragmentActivity() {
                             profileViewModel = profileViewModel
                         )
                     }
+                    else{
+                        when (navigationState) {
+                            "Onboarding" -> OnboardingScreen(
+                                onFinish = {
+                                    isLoggedIn = true
+                                    onboardingViewModel.completeOnboarding()
+                                },
+                                profileViewModel = profileViewModel,
+                                onboardingViewModel = onboardingViewModel
+                            )
+                            "FirebaseLogin" -> FirebaseLoginScreen(
+                                profileViewModel = profileViewModel,
+                                onLoggedIn = {
+                                    isLoggedIn = true
+                                    onboardingViewModel.completeOnboarding()
+                                }
+                            )
+                            "Login" -> {
+                                val context = LocalContext.current
+                                LoginScreen(
+                                    onLoginSuccess = {
+                                        isLoggedIn = true
+                                    },
+                                    context = context,
+                                    activity = context as FragmentActivity,
+                                    biometricAuthenticator = BiometricAuthenticator(context),
+                                    profileViewModel = profileViewModel
+                                )
+                            }
+                            "MainScreen" -> MainScreen(
+                                onRunInference = { startInferenceServices(isTrainingEnabled, isDebugEnabled) },
+                                onPauseInference  = {
+                                    Intent(applicationContext, InferenceService::class.java).apply {
+                                        action = InferenceService.Actions.STOP.toString()
+                                    }
+                                },
+                                metrics = metrics,
+                                payState = walletViewModel.walletUiState.collectAsStateWithLifecycle().value,
+                                requestSavePass = ::requestSavePass,
+                                profileViewModel = profileViewModel,
+                                seizureEventViewModel = seizureEventViewModel,
+                                historyViewModel = historyViewModel,
+                                metricsViewModel = metricsViewModel,
+                                onLogoutClicked = {
+                                    profileViewModel.setAuthenticated(false)
+                                    isLoggedIn = false
+                                    onboardingViewModel.resetOnboarding(profileViewModel)
+                                }
+                            )
+                        }
+
+                        if (false) {
+                            val context = LocalContext.current
+                            SeizureDetectedScreen(
+                                onDismiss = {
+                                    seizureDetectionViewModel.onSeizureHandled()
+                                },
+                                onEmergencyCall = { onEmergencyCall(context) },
+                                profileViewModel = profileViewModel
+                            )
+                        }
+                    }
+
                 }
             }
         }
@@ -194,6 +207,12 @@ class MainActivity : FragmentActivity() {
         }
         if (checkSelfPermission(Manifest.permission.BODY_SENSORS) != PackageManager.PERMISSION_GRANTED) {
             permissions.add(Manifest.permission.BODY_SENSORS)
+        }
+        if (checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            permissions.add(Manifest.permission.ACCESS_COARSE_LOCATION)
+        }
+        if (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            permissions.add(Manifest.permission.ACCESS_FINE_LOCATION)
         }
 
         if (permissions.isNotEmpty()) {
