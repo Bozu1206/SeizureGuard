@@ -524,7 +524,7 @@ class ProfileViewModel(context: Context, application: Application) : AndroidView
             "Lat: ${it.latitude}, Long: ${it.longitude}"
         } ?: "Location unavailable"
 
-        val updatedBody = "$body\nLocation: $locationInfo"
+        val updatedBody = "Location: $locationInfo"
 
         viewModelScope.launch {
             try {
