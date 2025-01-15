@@ -187,7 +187,8 @@ class MainActivity : FragmentActivity() {
                                 seizureDetectionViewModel.onSeizureHandled()
                             },
                             onEmergencyCall = { onEmergencyCall(context) },
-                            profileViewModel = profileViewModel
+                            profileViewModel = profileViewModel,
+                            context = context
                         )
                     }else{
                         if(isSeizureDetected || isSeizureDetectedExtra){
