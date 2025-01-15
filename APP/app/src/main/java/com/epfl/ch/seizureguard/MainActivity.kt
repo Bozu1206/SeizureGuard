@@ -7,6 +7,7 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
+import android.widget.Toast
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.annotation.RequiresApi
@@ -71,9 +72,80 @@ class MainActivity : FragmentActivity() {
         (application as RunningApp).seizureDetectionViewModel
     }
 
+    private var permissionsGranted = false    // Track if all necessary permissions have been granted.
+
     @RequiresApi(Build.VERSION_CODES.Q)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        requestAllPermissions()
+
+    }
+
+    private fun determineNavigationState(
+        showOnboarding: Boolean,
+        firebaseLogin: Boolean,
+        isAuthenticated: Boolean,
+        isLoggedIn: Boolean
+    ): String {
+        return when {
+            showOnboarding && !isAuthenticated && !firebaseLogin -> "Onboarding"
+            showOnboarding && !isAuthenticated && firebaseLogin -> "FirebaseLogin"
+            isAuthenticated && !isLoggedIn -> "Login"
+            else -> "MainScreen"
+        }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.Q)
+    private fun requestAllPermissions() {
+        val permissions = mutableListOf<String>()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+        ) {
+            permissions.add(Manifest.permission.POST_NOTIFICATIONS)
+        }
+        if (checkSelfPermission(Manifest.permission.ACTIVITY_RECOGNITION) != PackageManager.PERMISSION_GRANTED) {
+            permissions.add(Manifest.permission.ACTIVITY_RECOGNITION)
+        }
+        if (checkSelfPermission(Manifest.permission.BODY_SENSORS) != PackageManager.PERMISSION_GRANTED) {
+            permissions.add(Manifest.permission.BODY_SENSORS)
+        }
+        if (checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            permissions.add(Manifest.permission.ACCESS_COARSE_LOCATION)
+        }
+        if (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            permissions.add(Manifest.permission.ACCESS_FINE_LOCATION)
+        }
+
+        if (permissions.isNotEmpty()) {
+            ActivityCompat.requestPermissions(
+                this,
+                permissions.toTypedArray(),
+                NOTIFICATION_PERMISSION_REQUEST_CODE
+            )
+        } else {
+            onPermissionsGranted()  // All permissions are already granted.
+        }
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == NOTIFICATION_PERMISSION_REQUEST_CODE) {
+            // Check that all permissions are granted.
+            permissionsGranted = grantResults.all { it == PackageManager.PERMISSION_GRANTED }
+            if (permissionsGranted) {
+                onPermissionsGranted()
+            } else {
+                Toast.makeText(this, "Please grant permissions to continue", Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+
+    private fun onPermissionsGranted() {
         onboardingViewModel = ViewModelProvider(
             this,
             OnboardingViewModelFactory(this)
@@ -97,7 +169,7 @@ class MainActivity : FragmentActivity() {
                 isAuthenticated = isAuthenticated,
                 isLoggedIn = isLoggedIn
             )
-            
+
             AppTheme {
                 Box(modifier = Modifier.fillMaxSize()) {
                     if(isSeizureDetectedParent){
@@ -190,49 +262,10 @@ class MainActivity : FragmentActivity() {
                 }
             }
         }
-
-        requestAllPermissions()
     }
 
-    private fun determineNavigationState(
-        showOnboarding: Boolean,
-        firebaseLogin: Boolean,
-        isAuthenticated: Boolean,
-        isLoggedIn: Boolean
-    ): String {
-        return when {
-            showOnboarding && !isAuthenticated && !firebaseLogin -> "Onboarding"
-            showOnboarding && !isAuthenticated && firebaseLogin -> "FirebaseLogin"
-            isAuthenticated && !isLoggedIn -> "Login"
-            else -> "MainScreen"
-        }
-    }
 
-    @RequiresApi(Build.VERSION_CODES.Q)
-    private fun requestAllPermissions() {
-        val permissions = mutableListOf<String>()
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
-            checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
-        ) {
-            permissions.add(Manifest.permission.POST_NOTIFICATIONS)
-        }
-        if (checkSelfPermission(Manifest.permission.ACTIVITY_RECOGNITION) != PackageManager.PERMISSION_GRANTED) {
-            permissions.add(Manifest.permission.ACTIVITY_RECOGNITION)
-        }
-        if (checkSelfPermission(Manifest.permission.BODY_SENSORS) != PackageManager.PERMISSION_GRANTED) {
-            permissions.add(Manifest.permission.BODY_SENSORS)
-        }
-        if (checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            permissions.add(Manifest.permission.ACCESS_COARSE_LOCATION)
-        }
-        if (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            permissions.add(Manifest.permission.ACCESS_FINE_LOCATION)
-        }
 
-        if (permissions.isNotEmpty()) {
-            ActivityCompat.requestPermissions(this, permissions.toTypedArray(), NOTIFICATION_PERMISSION_REQUEST_CODE)
-        }
-    }
 
     // starting the correct foreground services for starting inference
     private fun startInferenceServices(
