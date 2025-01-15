@@ -6,9 +6,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
-import android.provider.ContactsContract.Profile
 import android.util.Log
-import android.widget.Toast
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.annotation.RequiresApi
@@ -25,6 +23,7 @@ import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
+import com.epfl.ch.seizureguard.alert.SeizureDetectedParentScreen
 import com.epfl.ch.seizureguard.alert.SeizureDetectedScreen
 import com.epfl.ch.seizureguard.biometrics.BiometricAuthenticator
 import com.epfl.ch.seizureguard.dl.MetricsViewModel
@@ -43,7 +42,6 @@ import com.epfl.ch.seizureguard.profile.ProfileViewModelFactory
 import com.epfl.ch.seizureguard.seizure_event.SeizureDao
 import com.epfl.ch.seizureguard.seizure_event.SeizureDatabase
 import com.epfl.ch.seizureguard.seizure_event.SeizureEventViewModel
-import com.epfl.ch.seizureguard.seizure_detection.SeizureDetectionViewModel
 import com.epfl.ch.seizureguard.theme.AppTheme
 import com.epfl.ch.seizureguard.tools.onEmergencyCall
 import com.epfl.ch.seizureguard.wallet_manager.GoogleWalletToken
@@ -81,6 +79,8 @@ class MainActivity : FragmentActivity() {
             OnboardingViewModelFactory(this)
         )[OnboardingViewModel::class.java]
 
+        val isSeizureDetectedParent = intent?.getBooleanExtra("EXTRA_SEIZURE_DETECTED_PARENT", false) ?: false
+
         databaseRoom = initializeDatabase()
         setContent {
             val isSeizureDetected by seizureDetectionViewModel.isSeizureDetected.collectAsState()
@@ -100,68 +100,21 @@ class MainActivity : FragmentActivity() {
             
             AppTheme {
                 Box(modifier = Modifier.fillMaxSize()) {
-                    if(isSeizureDetected){
+                    if(isSeizureDetectedParent){
+                        val latitude = intent?.getDoubleExtra("EXTRA_LATITUDE", Double.NaN)
+                        val longitude = intent?.getDoubleExtra("EXTRA_LONGITUDE", Double.NaN)
                         val context = LocalContext.current
-                        SeizureDetectedScreen(
+                        SeizureDetectedParentScreen(
+                            latitude = latitude,
+                            longitude = longitude,
                             onDismiss = {
                                 seizureDetectionViewModel.onSeizureHandled()
                             },
                             onEmergencyCall = { onEmergencyCall(context) },
                             profileViewModel = profileViewModel
                         )
-                    }
-                    else{
-                        when (navigationState) {
-                            "Onboarding" -> OnboardingScreen(
-                                onFinish = {
-                                    isLoggedIn = true
-                                    onboardingViewModel.completeOnboarding()
-                                },
-                                profileViewModel = profileViewModel,
-                                onboardingViewModel = onboardingViewModel
-                            )
-                            "FirebaseLogin" -> FirebaseLoginScreen(
-                                profileViewModel = profileViewModel,
-                                onLoggedIn = {
-                                    isLoggedIn = true
-                                    onboardingViewModel.completeOnboarding()
-                                }
-                            )
-                            "Login" -> {
-                                val context = LocalContext.current
-                                LoginScreen(
-                                    onLoginSuccess = {
-                                        isLoggedIn = true
-                                    },
-                                    context = context,
-                                    activity = context as FragmentActivity,
-                                    biometricAuthenticator = BiometricAuthenticator(context),
-                                    profileViewModel = profileViewModel
-                                )
-                            }
-                            "MainScreen" -> MainScreen(
-                                onRunInference = { startInferenceServices(isTrainingEnabled, isDebugEnabled) },
-                                onPauseInference  = {
-                                    Intent(applicationContext, InferenceService::class.java).apply {
-                                        action = InferenceService.Actions.STOP.toString()
-                                    }
-                                },
-                                metrics = metrics,
-                                payState = walletViewModel.walletUiState.collectAsStateWithLifecycle().value,
-                                requestSavePass = ::requestSavePass,
-                                profileViewModel = profileViewModel,
-                                seizureEventViewModel = seizureEventViewModel,
-                                historyViewModel = historyViewModel,
-                                metricsViewModel = metricsViewModel,
-                                onLogoutClicked = {
-                                    profileViewModel.setAuthenticated(false)
-                                    isLoggedIn = false
-                                    onboardingViewModel.resetOnboarding(profileViewModel)
-                                }
-                            )
-                        }
-
-                        if (false) {
+                    }else{
+                        if(isSeizureDetected){
                             val context = LocalContext.current
                             SeizureDetectedScreen(
                                 onDismiss = {
@@ -171,8 +124,69 @@ class MainActivity : FragmentActivity() {
                                 profileViewModel = profileViewModel
                             )
                         }
-                    }
+                        else{
+                            when (navigationState) {
+                                "Onboarding" -> OnboardingScreen(
+                                    onFinish = {
+                                        isLoggedIn = true
+                                        onboardingViewModel.completeOnboarding()
+                                    },
+                                    profileViewModel = profileViewModel,
+                                    onboardingViewModel = onboardingViewModel
+                                )
+                                "FirebaseLogin" -> FirebaseLoginScreen(
+                                    profileViewModel = profileViewModel,
+                                    onLoggedIn = {
+                                        isLoggedIn = true
+                                        onboardingViewModel.completeOnboarding()
+                                    }
+                                )
+                                "Login" -> {
+                                    val context = LocalContext.current
+                                    LoginScreen(
+                                        onLoginSuccess = {
+                                            isLoggedIn = true
+                                        },
+                                        context = context,
+                                        activity = context as FragmentActivity,
+                                        biometricAuthenticator = BiometricAuthenticator(context),
+                                        profileViewModel = profileViewModel
+                                    )
+                                }
+                                "MainScreen" -> MainScreen(
+                                    onRunInference = { startInferenceServices(isTrainingEnabled, isDebugEnabled) },
+                                    onPauseInference  = {
+                                        Intent(applicationContext, InferenceService::class.java).apply {
+                                            action = InferenceService.Actions.STOP.toString()
+                                        }
+                                    },
+                                    metrics = metrics,
+                                    payState = walletViewModel.walletUiState.collectAsStateWithLifecycle().value,
+                                    requestSavePass = ::requestSavePass,
+                                    profileViewModel = profileViewModel,
+                                    seizureEventViewModel = seizureEventViewModel,
+                                    historyViewModel = historyViewModel,
+                                    metricsViewModel = metricsViewModel,
+                                    onLogoutClicked = {
+                                        profileViewModel.setAuthenticated(false)
+                                        isLoggedIn = false
+                                        onboardingViewModel.resetOnboarding(profileViewModel)
+                                    }
+                                )
+                            }
 
+                            if (false) {
+                                val context = LocalContext.current
+                                SeizureDetectedScreen(
+                                    onDismiss = {
+                                        seizureDetectionViewModel.onSeizureHandled()
+                                    },
+                                    onEmergencyCall = { onEmergencyCall(context) },
+                                    profileViewModel = profileViewModel
+                                )
+                            }
+                        }
+                    }
                 }
             }
         }

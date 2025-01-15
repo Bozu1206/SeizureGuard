@@ -17,5 +17,6 @@
     <string name="low_power_mode">"Low Power"</string>
     <string name="normal_power_mode">"Normal"</string>
     <string name="high_performance_mode">Performance</string>
+    <string name="marker_title_text">Seizure event location</string>
 
 </resources>
