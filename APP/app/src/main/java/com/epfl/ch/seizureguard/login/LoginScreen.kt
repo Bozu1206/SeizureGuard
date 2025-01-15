@@ -50,7 +50,10 @@ fun LoginScreen(
     var password by remember { mutableStateOf("") }
 
     val correctPassword = profile.pwd
-    val authMode = profile.auth_mode
+
+    val shouldUseBiometricsInitially = (profile.auth_mode == "biometric")
+    var useBiometric by remember { mutableStateOf(shouldUseBiometricsInitially) }
+    var biometricAttempts by remember { mutableStateOf(0) }
 
     Box(
         modifier = Modifier
@@ -103,7 +106,7 @@ fun LoginScreen(
                     .weight(1f),
                 contentAlignment = Alignment.BottomCenter
             ) {
-                if (authMode == "biometric") {
+                if (useBiometric && biometricAttempts < 3) {
                     LaunchedEffect(Unit) {
                         biometricAuthenticator.promptBiometricAuth(
                             title = "Please authenticate",
@@ -115,10 +118,16 @@ fun LoginScreen(
                             },
                             onError = { _, errorString ->
                                 Toast.makeText(context, errorString, Toast.LENGTH_SHORT).show()
+                                useBiometric = false
                             },
                             onFailed = {
-                                Toast.makeText(context, "Authentication failed", Toast.LENGTH_SHORT)
+                                Toast.makeText(context, "Authentication failed, you have ${3-biometricAttempts} tries left", Toast.LENGTH_SHORT)
                                     .show()
+                                if(biometricAttempts >= 3){
+                                    useBiometric = false
+                                }else{
+                                    biometricAttempts++
+                                }
                             }
                         )
                     }
