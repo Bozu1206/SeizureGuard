@@ -1,5 +1,7 @@
 package com.epfl.ch.seizureguard.alert
 
+import android.content.Context
+import android.location.Geocoder
 import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -28,6 +30,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -56,6 +59,7 @@ import com.google.maps.android.compose.MapType
 import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.rememberCameraPositionState
+import java.util.Locale
 
 @Composable
 fun SeizureDetectedParentScreen(
@@ -64,10 +68,31 @@ fun SeizureDetectedParentScreen(
     onDismiss: () -> Unit,
     onEmergencyCall: () -> Unit,
     profileViewModel: ProfileViewModel,
+    context: Context
 ) {
     Log.d("SeizureDetectedScreen", "Screen composing")
     var isLogging by remember { mutableStateOf(false) }
     var hasLogged by remember { mutableStateOf(false) }
+    var address by remember { mutableStateOf<String?>(null) }
+
+    // Fetch the address if latitude and longitude are not null
+    LaunchedEffect(latitude, longitude) {
+        if (latitude != null && longitude != null) {
+            address = try {
+                val geocoder = Geocoder(context, Locale.getDefault())
+                val addresses = geocoder.getFromLocation(latitude, longitude, 1)
+                if (!addresses.isNullOrEmpty()) {
+                    addresses[0].getAddressLine(0)
+                } else {
+                    null
+                }
+            } catch (e: Exception) {
+                Log.e("SeizureDetectedScreen", "Geocoding error: ${e.message}")
+                null
+            }
+        }
+    }
+
 
     // Fond sombre semi-transparent
     Box(
@@ -123,7 +148,7 @@ fun SeizureDetectedParentScreen(
                     Marker(      // the red marker that points the precise location on the map
                         state = markerState,
                         title = stringResource(R.string.marker_title_text),
-                        snippet =  "Latitude: ${mapCenter.latitude}, Longitude: ${mapCenter.longitude}",
+                        snippet = address ?: "Latitude: ${mapCenter.latitude}, Longitude: ${mapCenter.longitude}",
                     )
                 }
             }else{ // no location available
@@ -147,6 +172,16 @@ fun SeizureDetectedParentScreen(
                 .fillMaxSize()
                 .padding(top = 250.dp)
         ) {
+            if(address != null){
+                Text(
+                    text = "Address: $address",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onErrorContainer,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth(0.8f)
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+            }
 
             Text(
                 text = stringResource(id = R.string.guidelines),
