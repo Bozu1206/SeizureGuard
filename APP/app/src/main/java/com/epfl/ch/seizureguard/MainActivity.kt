@@ -86,12 +86,13 @@ class MainActivity : FragmentActivity() {
         showOnboarding: Boolean,
         firebaseLogin: Boolean,
         isAuthenticated: Boolean,
-        isLoggedIn: Boolean
+        isLoggedIn: Boolean,
+        skipAuthentication: Boolean
     ): String {
         return when {
             showOnboarding && !isAuthenticated && !firebaseLogin -> "Onboarding"
             showOnboarding && !isAuthenticated && firebaseLogin -> "FirebaseLogin"
-            isAuthenticated && !isLoggedIn -> "Login"
+            isAuthenticated && !isLoggedIn && !skipAuthentication -> "Login"
             else -> "MainScreen"
         }
     }
@@ -151,7 +152,8 @@ class MainActivity : FragmentActivity() {
             OnboardingViewModelFactory(this)
         )[OnboardingViewModel::class.java]
 
-        val isSeizureDetectedParent = intent?.getBooleanExtra("EXTRA_SEIZURE_DETECTED_PARENT", false) ?: false
+        val isSeizureDetectedParentExtra = intent?.getBooleanExtra("EXTRA_SEIZURE_DETECTED_PARENT", false) ?: false
+        val isSeizureDetectedExtra = intent?.getBooleanExtra("EXTRA_SEIZURE_DETECTED", false) ?: false
 
         databaseRoom = initializeDatabase()
         setContent {
@@ -162,17 +164,19 @@ class MainActivity : FragmentActivity() {
             val profile by profileViewModel.profileState.collectAsState()
             val isTrainingEnabled = profile.isTrainingEnabled
             val isDebugEnabled = profile.isDebugEnabled
+            val skipAuthentication: Boolean = isSeizureDetected || isSeizureDetectedParentExtra || isSeizureDetectedExtra
 
             val navigationState = determineNavigationState(
                 showOnboarding = showOnboarding,
                 firebaseLogin = firebaseLogin,
                 isAuthenticated = isAuthenticated,
-                isLoggedIn = isLoggedIn
+                isLoggedIn = isLoggedIn,
+                skipAuthentication = skipAuthentication
             )
 
             AppTheme {
                 Box(modifier = Modifier.fillMaxSize()) {
-                    if(isSeizureDetectedParent){
+                    if(isSeizureDetectedParentExtra){
                         val latitude = intent?.getDoubleExtra("EXTRA_LATITUDE", Double.NaN)
                         val longitude = intent?.getDoubleExtra("EXTRA_LONGITUDE", Double.NaN)
                         val context = LocalContext.current
@@ -186,7 +190,7 @@ class MainActivity : FragmentActivity() {
                             profileViewModel = profileViewModel
                         )
                     }else{
-                        if(isSeizureDetected){
+                        if(isSeizureDetected || isSeizureDetectedExtra){
                             val context = LocalContext.current
                             SeizureDetectedScreen(
                                 onDismiss = {
@@ -263,9 +267,6 @@ class MainActivity : FragmentActivity() {
             }
         }
     }
-
-
-
 
     // starting the correct foreground services for starting inference
     private fun startInferenceServices(
