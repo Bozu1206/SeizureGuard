@@ -215,6 +215,9 @@ class MainActivity : FragmentActivity() {
                                     onLoggedIn = {
                                         isLoggedIn = true
                                         onboardingViewModel.completeOnboarding()
+                                    },
+                                    onBackToOnboarding = {
+                                        onboardingViewModel.wantsToRegister()
                                     }
                                 )
                                 "Login" -> {
