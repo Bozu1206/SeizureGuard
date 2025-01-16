@@ -1,8 +1,9 @@
 package com.epfl.ch.seizureguard.onboarding
 
-import android.util.Log
 import android.widget.Toast
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,20 +17,20 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.ArrowBackIosNew
 import androidx.compose.material.icons.rounded.ArrowForwardIos
 import androidx.compose.material.icons.rounded.Login
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -42,15 +43,13 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.core.text.htmlEncode
-import androidx.navigation.NavController
 import com.epfl.ch.seizureguard.R
 import com.epfl.ch.seizureguard.profile.Profile
 import com.epfl.ch.seizureguard.profile.ProfileCreationForm
 import com.epfl.ch.seizureguard.profile.ProfileViewModel
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.launch
-import java.util.UUID
+import com.google.accompanist.pager.HorizontalPager
+import com.google.accompanist.pager.HorizontalPagerIndicator
+import com.google.accompanist.pager.rememberPagerState
 
 @Composable
 fun OnboardingScreen(
@@ -58,18 +57,21 @@ fun OnboardingScreen(
     profileViewModel: ProfileViewModel,
     onboardingViewModel: OnboardingViewModel
 ) {
-    var currentPage by remember { mutableStateOf(0) }
     var showBiometricDialog by remember { mutableStateOf(false) }
     val profile: Profile = Profile.empty()
-    val p by profileViewModel.profileState.collectAsState()
     val context = LocalContext.current
-    val coroutineScope = rememberCoroutineScope()
 
     val pages = listOf(
         "Welcome to SeizureGuard!",
         "How It Works?",
-        "Your Privacy Matters",
-        "Create Your Profile"
+        "Your Privacy Matters!",
+        "Tell us more about you!"
+    )
+
+    val currentPage by onboardingViewModel.currentPage.collectAsState()
+    
+    val pagerState = rememberPagerState(
+        initialPage = currentPage
     )
 
     val descriptions = listOf(
@@ -85,174 +87,175 @@ fun OnboardingScreen(
         R.drawable.ob4
     )
 
-    val modifier: Modifier
-    if (currentPage == pages.lastIndex) {
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
-    } else {
-        modifier = Modifier
-            .fillMaxSize()
-            .paint(
-                painterResource(id = R.drawable.obbg3),
-                contentScale = ContentScale.FillBounds
-            )
-            .padding(16.dp)
-    }
-
     Box(
-        modifier = modifier
-    ) {
-        Column(
-            modifier = Modifier
+        modifier = if (pagerState.currentPage == pages.lastIndex) {
+            Modifier
                 .fillMaxSize()
-                .padding(bottom = 80.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            if (currentPage < images.size) {
-                // Onboarding Content
-                Image(
-                    painter = painterResource(images[currentPage]),
-                    contentDescription = null,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(16.dp))
+                .padding(16.dp)
+        } else {
+            Modifier
+                .fillMaxSize()
+                .paint(
+                    painterResource(id = R.drawable.bg),
+                    contentScale = ContentScale.FillBounds
                 )
 
-                Spacer(modifier = Modifier.height(32.dp))
+                .padding(16.dp)
+        }
+    ) {
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            HorizontalPager(
+                count = pages.size,
+                state = pagerState,
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+            ) { page ->
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(bottom = 80.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    if (page < images.size) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(300.dp)
+                                .padding(horizontal = 16.dp)
+                        ) {
+                            Image(
+                                painter = painterResource(images[page]),
+                                contentDescription = null,
+                                contentScale = ContentScale.Fit,
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .clip(RoundedCornerShape(16.dp))
+                            )
+                        }
 
+                        Spacer(modifier = Modifier.height(64.dp))
+
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp),
+                            horizontalAlignment = Alignment.Start
+                        ) {
+                            Text(
+                                text = pages[page],
+                                style = MaterialTheme.typography.headlineMedium,
+                                fontWeight = FontWeight.Bold,
+                                textAlign = TextAlign.Left,
+                                modifier = Modifier.padding(bottom = 8.dp)
+                            )
+
+                            Text(
+                                text = descriptions[page],
+                                style = MaterialTheme.typography.bodyLarge
+                            )
+                        }
+                    } else {
+                        CreateHealthProfileScreen(
+                            profile = profile
+                        )
+                    }
+                }
+            }
+
+            if (pagerState.currentPage != pages.lastIndex) {
+                HorizontalPagerIndicator(
+                    pagerState = pagerState,
+                    modifier = Modifier
+                        .align(Alignment.CenterHorizontally)
+                        .padding(16.dp),
+                )
+            }
+
+            if (pagerState.currentPage == pages.lastIndex) {
                 Text(
-                    text = pages[currentPage],
-                    style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.Bold,
+                    text = "Already have an account?",
+                    color = Color.Gray,
+                    fontWeight = FontWeight.Light,
+                    textAlign = TextAlign.Center,
+                    fontSize = MaterialTheme.typography.bodyMedium.fontSize,
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
 
-                Text(
-                    text = descriptions[currentPage],
-                    style = MaterialTheme.typography.bodyLarge,
-                    modifier = Modifier.padding(horizontal = 16.dp)
-                )
-            } else {
-                // Profile Creation Screen (last page)
-                CreateHealthProfileScreen(profileViewModel = profileViewModel, profile = profile)
-            }
-        }
-
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-        ) {
-            Column(
-                verticalArrangement = Arrangement.SpaceBetween,
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .fillMaxWidth()
-            ) {
-
-                if (currentPage == pages.lastIndex) {
+                OutlinedButton(
+                    onClick = {
+                        onboardingViewModel.wantsToLogin()
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+                    shape = RoundedCornerShape(24.dp),
+                    border = BorderStroke(1.5.dp, Color.Black)
+                ) {
                     Text(
-                        text = "Already have an account?",
-                        color = Color.Gray,
-                        fontWeight = FontWeight.Light,
-                        textAlign = TextAlign.Center
+                        "Login",
+                        modifier = Modifier.padding(vertical = 4.dp),
+                        color = Color.Black
                     )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Icon(
+                        imageVector = Icons.Rounded.Login,
+                        contentDescription = "Login",
+                        modifier = Modifier.size(16.dp),
+                        tint = Color.Black
+                    )
+                }
+            }
 
+            Row(
+                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+                    .padding(vertical = 8.dp)
+            ) {
+                if (pagerState.currentPage == pages.lastIndex) {
                     Button(
                         onClick = {
-                            onboardingViewModel.wantsToLogin()
+                            if (!Profile.isComplete(profile = profile)) {
+                                Toast.makeText(
+                                    context,
+                                    "Please fill in all fields",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            } else {
+                                profileViewModel.registerUser(profile)
+                                profileViewModel.saveProfile()
+                                showBiometricDialog = true
+                            }
                         },
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(16.dp)
+                        shape = RoundedCornerShape(24.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color.Black,
+                            contentColor = Color.White
+                        )
                     ) {
-                        Text("Login")
+                        Text(
+                            "Finish",
+                            modifier = Modifier.padding(vertical = 4.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
                         Icon(
-                            imageVector = Icons.Rounded.Login,
-                            contentDescription = "Login",
+                            imageVector = Icons.Rounded.ArrowForwardIos,
+                            contentDescription = "Finish",
                             modifier = Modifier.size(16.dp)
                         )
                     }
                 }
-
-                // Navigation (Back/Next/Finish)
-                Row(
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 16.dp)
-                ) {
-                    if (currentPage > 0) {
-                        Button(
-                            onClick = { currentPage-- },
-                            modifier = Modifier.weight(1f),
-                            shape = RoundedCornerShape(16.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Rounded.ArrowBackIosNew,
-                                contentDescription = "Back",
-                                modifier = Modifier.size(16.dp)
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text("Back")
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.width(8.dp))
-
-                    if (currentPage < pages.lastIndex) {
-                        Button(
-                            onClick = { currentPage++ },
-                            modifier = Modifier.weight(1f),
-                            shape = RoundedCornerShape(16.dp)
-                        ) {
-                            Text("Next")
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Icon(
-                                imageVector = Icons.Rounded.ArrowForwardIos,
-                                contentDescription = "Next",
-                                modifier = Modifier.size(16.dp)
-                            )
-                        }
-                    } else {
-                        Button(
-                            onClick = {
-                                if (!Profile.isComplete(profile = profile)) {
-                                    // Show error message
-                                    Log.d("OnboardingScreen", "Profile is incomplete: $profile")
-                                    Toast.makeText(
-                                        context,
-                                        "Please fill in all fields",
-                                        Toast.LENGTH_SHORT
-                                    )
-                                        .show()
-                                } else {
-                                    Log.d("OnboardingScreen", "Profile is complete: $profile")
-                                    profileViewModel.registerUser(profile)
-                                    profileViewModel.saveProfile()
-                                    showBiometricDialog = true
-                                }
-                            },
-                            modifier = Modifier.weight(1f),
-                            shape = RoundedCornerShape(16.dp)
-                        ) {
-                            Text("Finish")
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Icon(
-                                imageVector = Icons.Rounded.ArrowForwardIos,
-                                contentDescription = "Finish",
-                                modifier = Modifier.size(16.dp)
-                            )
-                        }
-                    }
-                }
             }
         }
-
     }
 
-// Biometric Opt-In Dialog
     if (showBiometricDialog) {
         BiometricOptInDialog(
             onConfirm = {
@@ -261,7 +264,7 @@ fun OnboardingScreen(
             },
             onCancel = {
                 profileViewModel.saveAuthPreference(isBiometric = false)
-                showBiometricDialog = false // Dismiss dialog
+                showBiometricDialog = false
                 onFinish() // Complete onboarding
             }
         )
@@ -292,13 +295,12 @@ fun BiometricOptInDialog(
 
 
 @Composable
-fun CreateHealthProfileScreen(profileViewModel: ProfileViewModel, profile: Profile) {
+fun CreateHealthProfileScreen(profile: Profile) {
     Box(
         modifier = Modifier
             .fillMaxSize()
     ) {
         ProfileCreationForm(
-            profileViewModel = profileViewModel,
             profile = profile
         )
     }

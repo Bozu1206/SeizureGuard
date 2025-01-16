@@ -25,6 +25,9 @@ class OnboardingViewModel(private val context: Context) : ViewModel() {
     private val _firebaseLogin = MutableStateFlow(false)
     val firebaseLogin: StateFlow<Boolean> = _firebaseLogin
 
+    private val _currentPage = MutableStateFlow(0)
+    val currentPage: StateFlow<Int> = _currentPage
+
     init {
         checkOnboardingStatus()
     }
@@ -42,6 +45,7 @@ class OnboardingViewModel(private val context: Context) : ViewModel() {
 
     fun wantsToRegister() {
         _firebaseLogin.value = false
+        _currentPage.value = 3
     }
 
     fun completeOnboarding() {
@@ -63,6 +67,7 @@ class OnboardingViewModel(private val context: Context) : ViewModel() {
 
             wantsToRegister()
             profileViewModel.resetProfile()
+            _currentPage.value = 0
         }
     }
 }

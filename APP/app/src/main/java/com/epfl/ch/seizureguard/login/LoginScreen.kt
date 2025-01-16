@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -25,6 +26,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.paint
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -59,7 +61,7 @@ fun LoginScreen(
         modifier = Modifier
             .fillMaxSize()
             .paint(
-                painterResource(id = R.drawable.obbg3),
+                painterResource(id = R.drawable.bg),
                 contentScale = ContentScale.FillBounds
             )
             .padding(16.dp)
@@ -76,12 +78,27 @@ fun LoginScreen(
                     .weight(1f),
                 contentAlignment = Alignment.TopCenter
             ) {
-                Text(
-                    text = "Welcome back ${profile.name.split(" ")[0]}!",
-                    style = MaterialTheme.typography.headlineLarge,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 40.sp,
-                )
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = "Welcome back ${profile.name.split(" ")[0]}!",
+                        style = MaterialTheme.typography.headlineLarge,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 40.sp,
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Text(
+                        text = "SeizureGuard tries to keep your data safe. Please login.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Normal,
+                        fontSize = 16.sp,
+                        color = Color.Gray
+                    )
+                }
             }
 
 
@@ -121,11 +138,15 @@ fun LoginScreen(
                                 useBiometric = false
                             },
                             onFailed = {
-                                Toast.makeText(context, "Authentication failed, you have ${3-biometricAttempts} tries left", Toast.LENGTH_SHORT)
+                                Toast.makeText(
+                                    context,
+                                    "Authentication failed, you have ${3 - biometricAttempts} tries left",
+                                    Toast.LENGTH_SHORT
+                                )
                                     .show()
-                                if(biometricAttempts >= 3){
+                                if (biometricAttempts >= 3) {
                                     useBiometric = false
-                                }else{
+                                } else {
                                     biometricAttempts++
                                 }
                             }
@@ -140,13 +161,20 @@ fun LoginScreen(
                         Spacer(modifier = Modifier.height(8.dp))
 
                         Button(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(24.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color.Black,
+                                contentColor = Color.White
+                            ),
                             onClick = {
-                                if (password == correctPassword) onLoginSuccess()
+                                // Very basic password checking
+                                if (password == correctPassword)
+                                    onLoginSuccess()
                                 else {
                                     showLoginError = true
                                 }
                             },
-                            modifier = Modifier.fillMaxWidth()
                         ) {
                             Text(text = "Login")
                         }
