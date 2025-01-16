@@ -51,9 +51,7 @@ import kotlinx.coroutines.launch
 
 class MainActivity : FragmentActivity() {
     private lateinit var onboardingViewModel: OnboardingViewModel
-    val profileViewModel: ProfileViewModel by viewModels {
-        ProfileViewModelFactory(applicationContext, application = this.application)
-    }
+    lateinit var profileViewModel: ProfileViewModel
 
     private val seizureEventViewModel: SeizureEventViewModel by viewModels()
     private val historyViewModel: HistoryViewModel by viewModels()
@@ -72,7 +70,7 @@ class MainActivity : FragmentActivity() {
         (application as RunningApp).seizureDetectionViewModel
     }
 
-    private var permissionsGranted = false  // Track if all necessary permissions have been granted.
+    private var permissionsGranted = false    // Track if all necessary permissions have been granted.
 
     @RequiresApi(Build.VERSION_CODES.Q)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -141,8 +139,7 @@ class MainActivity : FragmentActivity() {
             if (permissionsGranted) {
                 onPermissionsGranted()
             } else {
-                Toast.makeText(this, "Please grant permissions to continue", Toast.LENGTH_LONG)
-                    .show()
+                Toast.makeText(this, "Please grant permissions to continue", Toast.LENGTH_LONG).show()
             }
         }
     }
@@ -152,11 +149,10 @@ class MainActivity : FragmentActivity() {
             this,
             OnboardingViewModelFactory(this)
         )[OnboardingViewModel::class.java]
+        profileViewModel = RunningApp.getInstance(application as RunningApp).profileViewModel
 
-        val isSeizureDetectedParentExtra =
-            intent?.getBooleanExtra("EXTRA_SEIZURE_DETECTED_PARENT", false) ?: false
-        val isSeizureDetectedExtra =
-            intent?.getBooleanExtra("EXTRA_SEIZURE_DETECTED", false) ?: false
+        val isSeizureDetectedParentExtra = intent?.getBooleanExtra("EXTRA_SEIZURE_DETECTED_PARENT", false) ?: false
+        val isSeizureDetectedExtra = intent?.getBooleanExtra("EXTRA_SEIZURE_DETECTED", false) ?: false
 
         databaseRoom = initializeDatabase()
         setContent {
@@ -167,8 +163,7 @@ class MainActivity : FragmentActivity() {
             val profile by profileViewModel.profileState.collectAsState()
             val isTrainingEnabled = profile.isTrainingEnabled
             val isDebugEnabled = profile.isDebugEnabled
-            val skipAuthentication: Boolean =
-                isSeizureDetected || isSeizureDetectedParentExtra || isSeizureDetectedExtra
+            val skipAuthentication: Boolean = isSeizureDetected || isSeizureDetectedParentExtra || isSeizureDetectedExtra
 
             val navigationState = determineNavigationState(
                 showOnboarding = showOnboarding,
@@ -180,7 +175,7 @@ class MainActivity : FragmentActivity() {
 
             AppTheme {
                 Box(modifier = Modifier.fillMaxSize()) {
-                    if (isSeizureDetectedParentExtra) {
+                    if(isSeizureDetectedParentExtra){
                         val latitude = intent?.getDoubleExtra("EXTRA_LATITUDE", Double.NaN)
                         val longitude = intent?.getDoubleExtra("EXTRA_LONGITUDE", Double.NaN)
                         val context = LocalContext.current
@@ -194,8 +189,8 @@ class MainActivity : FragmentActivity() {
                             profileViewModel = profileViewModel,
                             context = context
                         )
-                    } else {
-                        if (isSeizureDetected || isSeizureDetectedExtra) {
+                    }else{
+                        if(isSeizureDetected || isSeizureDetectedExtra){
                             val context = LocalContext.current
                             SeizureDetectedScreen(
                                 onDismiss = {
@@ -204,7 +199,8 @@ class MainActivity : FragmentActivity() {
                                 onEmergencyCall = { onEmergencyCall(context) },
                                 profileViewModel = profileViewModel
                             )
-                        } else {
+                        }
+                        else{
                             when (navigationState) {
                                 "Onboarding" -> OnboardingScreen(
                                     onFinish = {
@@ -214,18 +210,13 @@ class MainActivity : FragmentActivity() {
                                     profileViewModel = profileViewModel,
                                     onboardingViewModel = onboardingViewModel
                                 )
-
                                 "FirebaseLogin" -> FirebaseLoginScreen(
                                     profileViewModel = profileViewModel,
                                     onLoggedIn = {
                                         isLoggedIn = true
                                         onboardingViewModel.completeOnboarding()
-                                    },
-                                    onBackToOnboarding = {
-                                        onboardingViewModel.wantsToRegister()
                                     }
                                 )
-
                                 "Login" -> {
                                     val context = LocalContext.current
                                     LoginScreen(
@@ -238,35 +229,31 @@ class MainActivity : FragmentActivity() {
                                         profileViewModel = profileViewModel
                                     )
                                 }
-
-                                "MainScreen" -> MainScreen(
-                                    onRunInference = {
-                                        startInferenceServices(
-                                            isTrainingEnabled,
-                                            isDebugEnabled
-                                        )
-                                    },
-                                    onPauseInference = {
-                                        Intent(
-                                            applicationContext,
-                                            InferenceService::class.java
-                                        ).apply {
-                                            action = InferenceService.Actions.STOP.toString()
+                                "MainScreen" -> {
+                                    val context = LocalContext.current
+                                    MainScreen(
+                                        onRunInference = { startInferenceServices(isTrainingEnabled, isDebugEnabled) },
+                                        onPauseInference  = {
+                                            val stopIntent = Intent(context, InferenceService::class.java).apply {
+                                                action = InferenceService.Actions.STOP.toString()
+                                            }
+                                            context.startService(stopIntent)
+                                        },
+                                        metrics = metrics,
+                                        payState = walletViewModel.walletUiState.collectAsStateWithLifecycle().value,
+                                        requestSavePass = ::requestSavePass,
+                                        profileViewModel = profileViewModel,
+                                        seizureEventViewModel = seizureEventViewModel,
+                                        historyViewModel = historyViewModel,
+                                        metricsViewModel = metricsViewModel,
+                                        onLogoutClicked = {
+                                            profileViewModel.setAuthenticated(false)
+                                            isLoggedIn = false
+                                            onboardingViewModel.resetOnboarding(profileViewModel)
                                         }
-                                    },
-                                    metrics = metrics,
-                                    payState = walletViewModel.walletUiState.collectAsStateWithLifecycle().value,
-                                    requestSavePass = ::requestSavePass,
-                                    profileViewModel = profileViewModel,
-                                    seizureEventViewModel = seizureEventViewModel,
-                                    historyViewModel = historyViewModel,
-                                    metricsViewModel = metricsViewModel,
-                                    onLogoutClicked = {
-                                        profileViewModel.setAuthenticated(false)
-                                        isLoggedIn = false
-                                        onboardingViewModel.resetOnboarding(profileViewModel)
-                                    }
-                                )
+                                    )
+                                }
+
                             }
 
                             if (false) {
@@ -289,12 +276,8 @@ class MainActivity : FragmentActivity() {
     // starting the correct foreground services for starting inference
     private fun startInferenceServices(
         isTrainingEnabled: Boolean,
-        isDebugEnabled: Boolean
-    ) {
-        Log.d(
-            "startInferenceServices",
-            "isTrainingEnabled: $isTrainingEnabled ; isDebugEnabled: $isDebugEnabled"
-        )
+        isDebugEnabled: Boolean) {
+        Log.d("startInferenceServices", "isTrainingEnabled: $isTrainingEnabled ; isDebugEnabled: $isDebugEnabled")
         Intent(applicationContext, SampleBroadcastService::class.java).also {
             startService(it)
         }
@@ -321,7 +304,7 @@ class MainActivity : FragmentActivity() {
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-
+        
         if (requestCode == ProfileViewModel.EXPORT_JSON_REQUEST_CODE && resultCode == Activity.RESULT_OK) {
             profileViewModel.handleExportResult(this, data?.data)
         }

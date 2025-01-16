@@ -388,6 +388,7 @@ fun SettingsScreen(
                             Switch(
                                 checked = profile.isDebugEnabled,
                                 onCheckedChange = { isChecked ->
+                                    Toast.makeText(context, "Restart the app to correctly update debug mode", Toast.LENGTH_LONG).show()
                                     profileViewModel.saveDebugPreference(isChecked)
                                 },
                                 colors = SwitchDefaults.colors(
