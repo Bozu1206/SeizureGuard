@@ -51,9 +51,7 @@ import kotlinx.coroutines.launch
 
 class MainActivity : FragmentActivity() {
     private lateinit var onboardingViewModel: OnboardingViewModel
-    val profileViewModel: ProfileViewModel by viewModels {
-        ProfileViewModelFactory(applicationContext, application = this.application)
-    }
+    lateinit var profileViewModel: ProfileViewModel
 
     private val seizureEventViewModel: SeizureEventViewModel by viewModels()
     private val historyViewModel: HistoryViewModel by viewModels()
@@ -151,6 +149,7 @@ class MainActivity : FragmentActivity() {
             this,
             OnboardingViewModelFactory(this)
         )[OnboardingViewModel::class.java]
+        profileViewModel = RunningApp.getInstance(application as RunningApp).profileViewModel
 
         val isSeizureDetectedParentExtra = intent?.getBooleanExtra("EXTRA_SEIZURE_DETECTED_PARENT", false) ?: false
         val isSeizureDetectedExtra = intent?.getBooleanExtra("EXTRA_SEIZURE_DETECTED", false) ?: false
@@ -230,26 +229,31 @@ class MainActivity : FragmentActivity() {
                                         profileViewModel = profileViewModel
                                     )
                                 }
-                                "MainScreen" -> MainScreen(
-                                    onRunInference = { startInferenceServices(isTrainingEnabled, isDebugEnabled) },
-                                    onPauseInference  = {
-                                        Intent(applicationContext, InferenceService::class.java).apply {
-                                            action = InferenceService.Actions.STOP.toString()
+                                "MainScreen" -> {
+                                    val context = LocalContext.current
+                                    MainScreen(
+                                        onRunInference = { startInferenceServices(isTrainingEnabled, isDebugEnabled) },
+                                        onPauseInference  = {
+                                            val stopIntent = Intent(context, InferenceService::class.java).apply {
+                                                action = InferenceService.Actions.STOP.toString()
+                                            }
+                                            context.startService(stopIntent)
+                                        },
+                                        metrics = metrics,
+                                        payState = walletViewModel.walletUiState.collectAsStateWithLifecycle().value,
+                                        requestSavePass = ::requestSavePass,
+                                        profileViewModel = profileViewModel,
+                                        seizureEventViewModel = seizureEventViewModel,
+                                        historyViewModel = historyViewModel,
+                                        metricsViewModel = metricsViewModel,
+                                        onLogoutClicked = {
+                                            profileViewModel.setAuthenticated(false)
+                                            isLoggedIn = false
+                                            onboardingViewModel.resetOnboarding(profileViewModel)
                                         }
-                                    },
-                                    metrics = metrics,
-                                    payState = walletViewModel.walletUiState.collectAsStateWithLifecycle().value,
-                                    requestSavePass = ::requestSavePass,
-                                    profileViewModel = profileViewModel,
-                                    seizureEventViewModel = seizureEventViewModel,
-                                    historyViewModel = historyViewModel,
-                                    metricsViewModel = metricsViewModel,
-                                    onLogoutClicked = {
-                                        profileViewModel.setAuthenticated(false)
-                                        isLoggedIn = false
-                                        onboardingViewModel.resetOnboarding(profileViewModel)
-                                    }
-                                )
+                                    )
+                                }
+
                             }
 
                             if (false) {

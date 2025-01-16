@@ -4,10 +4,8 @@ import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -37,14 +35,16 @@ import com.epfl.ch.seizureguard.profile.ProfileViewModel
 @Composable
 fun EEGChart(
     isDebugEnabled : Boolean,
-    viewModel: EEGViewModel = viewModel(),
+    isInferenceRunning : Boolean,
+    eegViewModel: EEGViewModel = viewModel(),
+    profileViewModel: ProfileViewModel,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
-    val eegData by viewModel.eegData.collectAsState()
-    val pointsToShow by viewModel.pointsToShow.collectAsState()
-    val scrollOffset by viewModel.scrollOffset.collectAsState()
-    val samplesPerChannel by viewModel.samplesPerChannel.collectAsState()
+    val eegData by eegViewModel.eegData.collectAsState()
+    val pointsToShow by eegViewModel.pointsToShow.collectAsState()
+    val scrollOffset by eegViewModel.scrollOffset.collectAsState()
+    val samplesPerChannel by eegViewModel.samplesPerChannel.collectAsState()
 
     val sampleWidthRatio : Float = if(isDebugEnabled) 4f else 16f
 
@@ -55,9 +55,9 @@ fun EEGChart(
     val leftMargin = 250f
 
     DisposableEffect(Unit) {
-        viewModel.registerReceiver(context)
+        eegViewModel.registerReceiver(context)
         onDispose {
-            viewModel.unregisterReceiver(context)
+            eegViewModel.unregisterReceiver(context)
         }
     }
 
@@ -80,8 +80,10 @@ fun EEGChart(
                         onDragEnd = { isDragging = false },
                         onDrag = { change, dragAmount ->
                             change.consume()
-                            val graphWidth = canvasWidth - leftMargin
-                            viewModel.updateScrollOffset(dragAmount.x, graphWidth, sampleWidthRatio)
+                            if (isInferenceRunning) {
+                                val graphWidth = canvasWidth - leftMargin
+                                eegViewModel.updateScrollOffset(dragAmount.x, graphWidth, sampleWidthRatio)
+                            }
                         }
                     )
                 }
@@ -89,14 +91,14 @@ fun EEGChart(
             canvasWidth = size.width
             val graphWidth = canvasWidth - leftMargin
 
-            if (!isDragging && isAutoScrolling && eegData.isNotEmpty()) {
+            if (isInferenceRunning && !isDragging && isAutoScrolling && eegData.isNotEmpty()) {
                 val totalSamples = eegData[0].size / samplesPerChannel
                 val sampleWidth = graphWidth / sampleWidthRatio
                 val safetyMargin = sampleWidth / 2
                 val minScroll = -(totalSamples * sampleWidth) + graphWidth + safetyMargin
                 
                 if (scrollOffset > minScroll) {
-                    viewModel.updateScrollOffset(minScroll, graphWidth, sampleWidthRatio)
+                    eegViewModel.updateScrollOffset(minScroll, graphWidth, sampleWidthRatio)
                 }
             }
 
@@ -117,7 +119,7 @@ fun EEGChart(
                 bottom = canvasHeight
             ) {
                 translate(left = scrollOffset) {
-                    if (eegData.isNotEmpty()) {
+                    if (isInferenceRunning && eegData.isNotEmpty()) {
                         eegData.forEachIndexed { index, channelData ->
                             val yCenter = (index + 1) * spacingY
                             drawChannel(
