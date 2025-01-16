@@ -41,6 +41,8 @@ import com.google.android.gms.location.LocationRequest
 import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 
 class InferenceService : Service() {
 
@@ -97,13 +99,6 @@ class InferenceService : Service() {
             }
             pendingAction = null
 
-            loadCustomModel()
-            if (isDebugEnabled) {
-                registerSampleReceiver()
-            } else {
-                //bluetoothViewModel.enableEEGNotifications() // show the fixed notification for the service
-                startObservingLiveData() // starts observing the values read from BLE
-            }
         }
 
         override fun onServiceDisconnected(name: ComponentName?) {
@@ -197,6 +192,7 @@ class InferenceService : Service() {
         if (pendingAction == Actions.STOP.toString()) { // when  we receive the stop command from the ongoing notification
             Log.d("InferenceService", "Stopping service and BLE from onStartCommand")
             bluetoothViewModel.stopBLE()
+            profileViewModel.setInferenceRunning(false)
             stopForeground(STOP_FOREGROUND_REMOVE)
             stopSelf()
             return START_NOT_STICKY
@@ -224,6 +220,7 @@ class InferenceService : Service() {
                 fusedLocationProviderClient.requestLocationUpdates(locationRequest, locationCallback, Looper.getMainLooper())
             }
             sendOngoingInferenceNotification()
+            profileViewModel.setInferenceRunning(true)
         }
 
         // Extract flags from Intent
@@ -245,6 +242,14 @@ class InferenceService : Service() {
         if (modelManager == null) {
             Handler(mainLooper).postDelayed({ start() }, 1000)
         }
+        loadCustomModel()
+        if (isDebugEnabled) {
+            registerSampleReceiver()
+        } else {
+            //bluetoothViewModel.enableEEGNotifications() // show the fixed notification for the service
+            startObservingLiveData() // starts observing the values read from BLE
+        }
+        profileViewModel.setInferenceRunning(true)
     }
 
     /**
@@ -307,12 +312,6 @@ class InferenceService : Service() {
     private fun handleSample(sample: DataSample, context: Context) {
         repository.incrementSampleCount()
 
-        if (!isTrainingEnabled) {
-            Log.d("InferenceService", "Training is disabled")
-        } else {
-            Log.d("InferenceService", "Training is enabled")
-        }
-
         if (isPaused) {
             Log.d("InferenceService", "Inference paused, training in progress")
             return
@@ -324,6 +323,7 @@ class InferenceService : Service() {
         if (samples.size >= 100 && isTrainingEnabled) {
             Log.d("InferenceService", "Training triggered")
             isPaused = true
+            profileViewModel.setInferenceRunning(false)
             doTraining()
         }
 
