@@ -50,8 +50,10 @@ import androidx.compose.material3.Surface
 import android.content.Intent
 import android.content.Context
 import android.widget.Toast
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowDropDown
@@ -72,6 +74,7 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.navigation.NavController
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.epfl.ch.seizureguard.profile.ProfileRepository
@@ -252,7 +255,13 @@ fun SettingsScreen(
                         fontWeight = FontWeight.Bold
                     )
                 },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background,
+                    titleContentColor = MaterialTheme.colorScheme.onSurface,
+                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimary,
+                    actionIconContentColor = MaterialTheme.colorScheme.onSecondary
+                )
             )
         },
         content = { paddingValues ->
@@ -271,7 +280,7 @@ fun SettingsScreen(
                         title = "Biometric Login",
                         icon = Icons.Default.Lock,
                         tint = if (profile.isBiometricEnabled)
-                            MaterialTheme.colorScheme.primary
+                            Color(0xFF248a3d)
                         else
                             MaterialTheme.colorScheme.onSurfaceVariant,
                         trailing = {
@@ -279,7 +288,11 @@ fun SettingsScreen(
                                 checked = profile.isBiometricEnabled,
                                 onCheckedChange = { isChecked ->
                                     profileViewModel.saveAuthPreference(isChecked)
-                                }
+                                },
+                                colors = SwitchDefaults.colors(
+                                    checkedTrackColor = Color(0xFF248a3d),
+                                    checkedThumbColor = Color.White,
+                                )
                             )
                         }
                     )
@@ -297,7 +310,7 @@ fun SettingsScreen(
                             title = "Enable Model Training",
                             icon = Icons.Default.ModelTraining,
                             tint = if (profile.isTrainingEnabled)
-                                MaterialTheme.colorScheme.primary
+                                Color(0xFF248a3d)
                             else
                                 MaterialTheme.colorScheme.onSurfaceVariant,
                             trailing = {
@@ -305,7 +318,11 @@ fun SettingsScreen(
                                     checked = profile.isTrainingEnabled,
                                     onCheckedChange = { isChecked ->
                                         profileViewModel.saveTrainingPreference(isChecked)
-                                    }
+                                    },
+                                    colors = SwitchDefaults.colors(
+                                        checkedTrackColor = Color(0xFF248a3d),
+                                        checkedThumbColor = Color.White,
+                                    )
                                 )
                             }
                         )
@@ -334,42 +351,37 @@ fun SettingsScreen(
                         title = "Parent Mode",
                         onClick = { },
                         icon = Icons.Default.SupervisorAccount,
+                        tint = if (isParentMode)
+                            Color(0xFF248a3d)
+                        else
+                            MaterialTheme.colorScheme.onSurfaceVariant,
                         trailing = {
                             Switch(
                                 checked = isParentMode,
                                 onCheckedChange = { isChecked ->
                                     profileViewModel.saveParentPreference(isChecked)
-                                }
+                                },
+                                colors = SwitchDefaults.colors(
+                                    checkedTrackColor = Color(0xFF248a3d),
+                                    checkedThumbColor = Color.White,
+                                )
                             )
                         }
                     )
                 }
 
-                SettingsSection(title = "Data Management") {
+                SettingsSection(title = "Developer options") {
                     SettingsItem(
                         title = "Export Seizure History",
                         onClick = { showExportDialog = true },
                         icon = Icons.Default.Download,
                         trailing = null
                     )
-                }
-
-
-                SettingsSection(title = "About") {
-                    SettingsItem(
-                        title = "About SeizureGuard",
-                        onClick = { showAboutDialog = true },
-                        icon = Icons.Default.Info,
-                        trailing = null
-                    )
-                }
-
-                SettingsSection(title = "Developer options") {
                     SettingsItem(
                         title = "Debug Mode",
                         icon = Icons.Default.DeveloperBoard,
                         tint = if (profile.isDebugEnabled)
-                            MaterialTheme.colorScheme.primary
+                            Color(0xFF248a3d)
                         else
                             MaterialTheme.colorScheme.onSurfaceVariant,
                         trailing = {
@@ -377,7 +389,11 @@ fun SettingsScreen(
                                 checked = profile.isDebugEnabled,
                                 onCheckedChange = { isChecked ->
                                     profileViewModel.saveDebugPreference(isChecked)
-                                }
+                                },
+                                colors = SwitchDefaults.colors(
+                                    checkedTrackColor = Color(0xFF248a3d),
+                                    checkedThumbColor = Color.White,
+                                )
                             )
                         }
                     )
@@ -385,12 +401,19 @@ fun SettingsScreen(
 
                 Spacer(modifier = Modifier.weight(1f))
 
+                SettingsItem(
+                        title = "About SeizureGuard",
+                        onClick = { showAboutDialog = true },
+                        icon = Icons.Default.Info,
+                        trailing = null
+                    )
 
                 SettingsItem(
                     title = "Logout",
                     onClick = onLogoutClicked,
-                    icon = Icons.Default.Logout,
-                    tint = MaterialTheme.colorScheme.error
+                    icon = Icons.AutoMirrored.Filled.Logout,
+                    tint = MaterialTheme.colorScheme.error,
+                    background = MaterialTheme.colorScheme.errorContainer
                 )
             }
         }
@@ -415,38 +438,6 @@ private fun SettingsSection(
     }
 }
 
-@Composable
-private fun SettingsSwitch(
-    title: String,
-    checked: Boolean,
-    onCheckedChange: (Boolean) -> Unit,
-    icon: ImageVector? = null
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.bodyLarge,
-            fontSize = 16.sp,
-            modifier = Modifier.weight(1f)
-        )
-        Switch(
-            checked = checked,
-            onCheckedChange = onCheckedChange,
-            thumbContent = if (icon != null) {
-                {
-                    Icon(
-                        imageVector = icon,
-                        contentDescription = null,
-                        modifier = Modifier.size(SwitchDefaults.IconSize),
-                    )
-                }
-            } else null
-        )
-    }
-}
 
 @Composable
 private fun SettingsItem(
@@ -454,15 +445,16 @@ private fun SettingsItem(
     onClick: () -> Unit = {},
     icon: ImageVector? = null,
     tint: Color = MaterialTheme.colorScheme.primary,
-    trailing: @Composable (() -> Unit)? = null
+    trailing: @Composable (() -> Unit)? = null,
+    background: Color = MaterialTheme.colorScheme.primaryContainer
 ) {
     Surface(
         onClick = onClick,
         modifier = Modifier
             .fillMaxWidth()
             .height(56.dp),
-        color = MaterialTheme.colorScheme.surface,
-        tonalElevation = 2.dp,
+        color = background,
+        tonalElevation = 4.dp,
         shape = RoundedCornerShape(12.dp)
     ) {
         Row(

@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material3.Icon
@@ -34,6 +35,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -70,7 +72,6 @@ fun rememberPhotoPickerLauncher(
 }
 
 
-
 @Composable
 fun ProfilePicturePicker(profile: Profile) {
     val context = LocalContext.current
@@ -80,9 +81,6 @@ fun ProfilePicturePicker(profile: Profile) {
         if (newUri != null) {
             uri = newUri.toString()
             profile.uri = uri
-            Log.d("ProfileScreen", "New URI: $uri")
-        } else {
-            Log.d("ProfileScreen", "No image selected")
         }
     }
 
@@ -107,12 +105,10 @@ fun ProfilePicturePickerHelper(uri: String, onImagePick: () -> Unit) {
     ) {
         Box(
             modifier = Modifier
-                .size(120.dp)
+                .size(100.dp)
                 .clip(CircleShape)
                 .background(
-                    Color
-                        .hsl(266f, 0.92f, 0.95f)
-                        .copy(0.6f)
+                    Color.Gray.copy(0.1f)
                 )
                 .clickable {
                     onImagePick()
@@ -134,7 +130,7 @@ fun ProfilePicturePickerHelper(uri: String, onImagePick: () -> Unit) {
                 Icon(
                     imageVector = Icons.Rounded.Person,
                     contentDescription = "Default Profile Picture",
-                    tint = Color.hsl(270f, 0.61f, 0.24f),
+                    tint = Color.Black,
                     modifier = Modifier.size(65.dp)
                 )
             }

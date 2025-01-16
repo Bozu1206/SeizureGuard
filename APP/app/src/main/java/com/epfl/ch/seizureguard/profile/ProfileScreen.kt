@@ -568,7 +568,6 @@ fun EditProfile(
             profileScreenViewModel.updateProfileField("name", name)
             profileScreenViewModel.updateProfileField("email", email)
             profileScreenViewModel.updateProfileField("epi_type", type)
-
             profileScreenViewModel.saveProfile()
             onDismissRequest()
         },
@@ -577,6 +576,7 @@ fun EditProfile(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp)
+
         ) {
             Text(
                 text = "Edit your profile",

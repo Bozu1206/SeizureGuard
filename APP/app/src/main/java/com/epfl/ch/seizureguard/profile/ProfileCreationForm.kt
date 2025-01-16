@@ -2,6 +2,7 @@ package com.epfl.ch.seizureguard.profile
 
 import android.util.Log
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -16,6 +17,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
@@ -28,9 +30,36 @@ import androidx.compose.ui.unit.dp
 import com.epfl.ch.seizureguard.dl.metrics.Metrics
 import java.text.SimpleDateFormat
 import java.util.*
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.selection.TextSelectionColors
+import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.focus.FocusManager
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.input.key.onKeyEvent
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.ExperimentalTextApi
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Shadow
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
+import androidx.compose.ui.graphics.Paint
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.text.style.TextAlign
 
 @Composable
-fun ProfileCreationForm(profileViewModel: ProfileViewModel, profile: Profile) {
+fun ProfileCreationForm(profile: Profile) {
+    val focusManager = LocalFocusManager.current
     var userName by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var birthDate by remember { mutableStateOf("") }
@@ -45,16 +74,45 @@ fun ProfileCreationForm(profileViewModel: ProfileViewModel, profile: Profile) {
             .fillMaxWidth()
             .fillMaxHeight()
             .padding(16.dp)
+            .pointerInput(Unit) {
+                detectTapGestures(
+                    onTap = {
+                        focusManager.clearFocus()
+                    }
+                )
+            }
     ) {
-        Text(
-            text = "Create Your Profile",
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold,
+        val gradient = Brush.horizontalGradient(
+            colors = listOf(
+                Color(0xFFFF5722),
+                Color(0xFFFF9800),
+                Color(0xFFFFC107),
+            ),
+            startX = 0f,
+            endX = 900f
         )
+
+        Text(
+            text = buildAnnotatedString {
+                append("Tell us more about ")
+                withStyle(
+                    style = SpanStyle(
+                        brush = gradient,
+                        fontWeight = FontWeight.ExtraBold
+                    )
+                ) {
+                    append("yourself!")
+                }
+            },
+            style = MaterialTheme.typography.headlineLarge,
+            fontWeight = FontWeight.Bold
+        )
+
+        Spacer(modifier = Modifier.height(12.dp))
 
         ProfilePicturePicker(profile = profile)
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(24.dp))
 
         ProfileTextField(
             value = userName,
@@ -104,52 +162,104 @@ fun ProfileCreationForm(profileViewModel: ProfileViewModel, profile: Profile) {
             onValueChange = { password = it; profile.pwd = it }
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(8.dp))
 
-        // Emergency Contact
-        // ContactPicker(context = LocalContext.current, profileViewModel = profileViewModel)
+        // TODO: Medication selector
     }
 }
 
 @Composable
+private fun textFieldModifier() = Modifier
+    .fillMaxWidth()
+    .height(58.dp)
+    .padding(horizontal = 2.dp)
+    .shadow(
+        elevation = 8.dp,
+        shape = RoundedCornerShape(16.dp),
+        spotColor = Color.Black.copy(alpha = 0.2f)
+    )
+    .background(Color.White, RoundedCornerShape(16.dp))
+
+@Composable
+fun customTextFieldColors() = OutlinedTextFieldDefaults.colors(
+    unfocusedBorderColor = Color.Transparent,
+    unfocusedContainerColor = Color.White,
+    focusedContainerColor = Color.White,
+    focusedBorderColor = Color.Transparent,
+    unfocusedLabelColor = Color.Gray,
+    focusedLabelColor = Color.Black,
+    unfocusedTextColor = Color.Black,
+    focusedTextColor = Color.Black,
+    cursorColor = Color.Black,
+    selectionColors = TextSelectionColors(
+        handleColor = Color.Black,
+        backgroundColor = Color.Black.copy(alpha = 0.2f)
+    ),
+    disabledTextColor = Color.Black,
+    disabledBorderColor = Color.Transparent,
+    disabledPlaceholderColor = Color.Gray,
+    disabledLabelColor = Color.Gray,
+    disabledContainerColor = Color.White
+)
+
+@Composable
 fun ProfileTextField(
-    value: String, onValueChange: (String) -> Unit, label: String, modifier: Modifier = Modifier
+    value: String,
+    onValueChange: (String) -> Unit,
+    label: String,
+    modifier: Modifier = Modifier
 ) {
+    val focusManager = LocalFocusManager.current
+
     OutlinedTextField(
         value = value,
         onValueChange = onValueChange,
-        label = { Text(label) },
-        modifier = modifier.fillMaxWidth(),
+        placeholder = { Text("Enter your $label", color = Color.Gray) },
+        modifier = textFieldModifier(),
         shape = RoundedCornerShape(16.dp),
-        colors = customTextFieldColors()
+        colors = customTextFieldColors(),
+        textStyle = LocalTextStyle.current.copy(
+            color = Color.Black
+        ),
+        trailingIcon = {
+            when (label) {
+                "Name" -> Icon(Icons.Default.Person, contentDescription = "Name", tint = Color.Black)
+                "Email" -> Icon(Icons.Default.Email, contentDescription = "Email", tint = Color.Black)
+            }
+        },
+        singleLine = true,
+        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+        keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() })
     )
 }
 
 @Composable
-fun BirthDateField(
-    birthDate: String, onClick: () -> Unit
-) {
+fun BirthDateField(birthDate: String, onClick: () -> Unit) {
     OutlinedTextField(
         value = birthDate,
         onValueChange = {},
-        label = { Text("Date of Birth") },
+        placeholder = { Text("Date of Birth") },
         readOnly = true,
         trailingIcon = {
-            IconButton(onClick = { onClick() }) {
+            IconButton(onClick = onClick) {
                 Icon(
                     imageVector = Icons.Rounded.DateRange,
                     contentDescription = "Select date",
-                    tint = Color.hsl(270f, 0.61f, 0.24f)
+                    tint = Color.Black,
                 )
             }
         },
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(64.dp)
-            .clickable { onClick() }, // Ensures the entire TextField is clickable
+        modifier = textFieldModifier()
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null
+            ) { onClick() },
         colors = customTextFieldColors(),
         enabled = false,
-        shape = RoundedCornerShape(16.dp)
+        shape = RoundedCornerShape(16.dp),
+        textStyle = LocalTextStyle.current.copy(
+            color = Color.Black
+        )
     )
 }
 
@@ -183,45 +293,30 @@ fun convertMillisToDate(millis: Long): String {
 }
 
 @Composable
-fun customTextFieldColors() = OutlinedTextFieldDefaults.colors(
-    unfocusedBorderColor = Color.Transparent,
-    unfocusedContainerColor = Color.hsl(266f, 0.92f, 0.95f).copy(0.6f),
-    focusedBorderColor = Color.hsl(272f, 0.61f, 0.34f),
-    unfocusedLabelColor = Color.hsl(272f, 0.61f, 0.34f),
-    focusedLabelColor = Color.hsl(272f, 0.61f, 0.34f),
-    unfocusedTextColor = Color.hsl(270f, 0.61f, 0.24f),
-    focusedTextColor = Color.hsl(270f, 0.61f, 0.24f),
-    disabledTextColor = Color.hsl(270f, 0.61f, 0.24f),
-    disabledBorderColor = Color.Transparent,
-    disabledPlaceholderColor = Color.hsl(272f, 0.61f, 0.34f),
-    disabledLabelColor = Color.hsl(272f, 0.61f, 0.34f),
-    disabledContainerColor = Color.hsl(266f, 0.92f, 0.95f).copy(0.6f),
-)
-
-
-@Composable
 fun PasswordTextField(password: String, onValueChange: (String) -> Unit) {
     var passwordVisible by rememberSaveable { mutableStateOf(false) }
+
     OutlinedTextField(
         value = password,
         onValueChange = onValueChange,
-        label = { Text("Password") },
+        placeholder = { Text("Password",  color = Color.Gray) },
+        modifier = textFieldModifier(),
         singleLine = true,
         visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
         trailingIcon = {
-            val image = if (passwordVisible) Icons.Filled.Visibility
-            else Icons.Filled.VisibilityOff
-
+            val image = if (passwordVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff
             val description = if (passwordVisible) "Hide password" else "Show password"
-
             IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                Icon(imageVector = image, description)
+                Icon(imageVector = image, description, tint = Color.Black)
             }
         },
         colors = customTextFieldColors(),
-        modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
+        textStyle = LocalTextStyle.current.copy(
+            color = Color.Black
+        ),
+
     )
 }
 
@@ -236,38 +331,61 @@ fun EpilepsyTypeField(
     var selectedText by remember { mutableStateOf(value) }
     var dropDownWidth by remember { mutableStateOf(0) }
 
-    val icon = if (expanded) Icons.Filled.ArrowDropDown
-    else Icons.Filled.ArrowDropDown
-
     Column {
         OutlinedTextField(
             value = selectedText,
-            onValueChange = onValueChange,
-            modifier = Modifier
-                .fillMaxWidth()
-                .onSizeChanged {
-                    dropDownWidth = it.width
-                },
-            label = { Text("Epilepsy Type") },
+            onValueChange = { },
+            modifier = textFieldModifier()
+                .clickable { expanded = true }
+                .onSizeChanged { dropDownWidth = it.width },
+            placeholder = { Text(label) },
             trailingIcon = {
-                Icon(icon, "contentDescription", Modifier.clickable { expanded = !expanded })
+                Icon(
+                    Icons.Filled.ArrowDropDown,
+                    contentDescription = "Open menu",
+                    tint = Color.Black
+                )
             },
             colors = customTextFieldColors(),
             shape = RoundedCornerShape(16.dp),
+            readOnly = true,
+            enabled = false
         )
-        DropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false },
+
+        Box(
             modifier = Modifier
-                .width(with(LocalDensity.current) { dropDownWidth.toDp() })
-                .background(Color.White),
+                .background(Color.White, RoundedCornerShape(16.dp))
+                .offset(y = 4.dp)
         ) {
-            suggestions.forEach { label ->
-                DropdownMenuItem(
-                    onClick = {
-                        selectedText = label; onValueChange(selectedText); expanded = false
-                    },
-                    text = { Text(label) })
+            DropdownMenu(
+                shadowElevation = 0.dp,
+                containerColor = Color.Transparent,
+                expanded = expanded,
+                onDismissRequest = { expanded = false },
+                modifier = Modifier
+                    .width(with(LocalDensity.current) { dropDownWidth.toDp() })
+                    .clip(RoundedCornerShape(16.dp))
+                    .border(1.dp, Color.Black, RoundedCornerShape(16.dp))
+                    .background(Color.White)
+            ) {
+                suggestions.forEach { label ->
+                    DropdownMenuItem(
+                        onClick = {
+                            selectedText = label
+                            onValueChange(selectedText)
+                            expanded = false
+                        },
+                        text = {
+
+                            Text(
+                                text = label,
+                                color = Color.Black,
+                                modifier = Modifier.padding(horizontal = 8.dp)
+                            )
+                        },
+                        modifier = Modifier.background(Color.White)
+                    )
+                }
             }
         }
     }

@@ -178,10 +178,13 @@ dependencies {
     implementation('com.auth0:java-jwt:4.4.0')
 
     // Location
-    implementation("com.google.android.gms:play-services-location:21.0.1")
+    implementation("com.google.android.gms:play-services-location:21.3.0")
     implementation("com.google.maps.android:maps-compose:4.3.0")
 
     implementation "androidx.lifecycle:lifecycle-livedata-ktx:2.8.7"
+
+    implementation "com.google.accompanist:accompanist-pager:0.32.0"
+    implementation "com.google.accompanist:accompanist-pager-indicators:0.32.0"
 }
 
 downloadKotlinDLModels {
