@@ -56,6 +56,12 @@ class ProfileViewModel(context: Context, application: Application) : AndroidView
     private val _tokensList = MutableStateFlow<List<String>>(emptyList())
     val tokensList: StateFlow<List<String>> = _tokensList
 
+    private val _isInferenceRunning = MutableStateFlow(false)
+    val isInferenceRunning: StateFlow<Boolean> = _isInferenceRunning
+    fun setInferenceRunning(newValue : Boolean){
+        _isInferenceRunning.value = newValue
+    }
+
     fun requestTraining() {
         val intent = Intent(getApplication(), InferenceService::class.java).apply {
             action = "ACTION_START_TRAINING"

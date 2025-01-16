@@ -71,6 +71,7 @@ fun InferenceHomePage(
                                                 (LocalContext.current.applicationContext as RunningApp)))
 ) {
     val profile by profileViewModel.profileState.collectAsState()
+    val isInferenceRunning by profileViewModel.isInferenceRunning.collectAsState()
 
     val context = LocalContext.current
 
@@ -94,8 +95,6 @@ fun InferenceHomePage(
     LaunchedEffect(Unit) {
         metricsViewModel.loadMetrics()
     }
-
-    var isInferenceRunning by rememberSaveable { mutableStateOf(false) }
 
     Column(
         modifier = modifier
@@ -122,14 +121,17 @@ fun InferenceHomePage(
                         .padding(vertical = 16.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    EEGChart(debugMode)
+                    EEGChart(
+                        debugMode,
+                        isInferenceRunning = isInferenceRunning,
+                        profileViewModel = profileViewModel
+                    )
                     InferenceOverlay(
                         debugMode,
                         isConnected,
                         context,
                         isInferenceRunning = isInferenceRunning,
                         onStartInference = {
-                            isInferenceRunning = true
                             onPerformInference()
                         }
                     )
@@ -140,12 +142,10 @@ fun InferenceHomePage(
                     isConnected,
                     isInferenceRunning,
                     onPerformInference = {
-                        isInferenceRunning = true
                         onPerformInference()
                     },
                     onPauseInference = {
                         onPauseInference()
-                        isInferenceRunning = false
                     },
                     onScanDevices = { bluetoothViewModel.scanLeDevice() },
                     bluetoothViewModel = bluetoothViewModel
