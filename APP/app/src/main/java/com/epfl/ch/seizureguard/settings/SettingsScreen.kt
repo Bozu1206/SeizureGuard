@@ -165,23 +165,33 @@ fun SettingsScreen(
             onDismissRequest = { showExportDialog = false },
             title = { Text("Export Data") },
             text = {
-                Text("Do you want to export your seizure history as JSON?")
+                if (profile.pastSeizures.isEmpty()) {
+                    Text("No seizure history to export")
+                } else {
+                    Text("Do you want to export your seizure history as JSON?")
+                }
             },
             confirmButton = {
                 TextButton(
                     onClick = {
-                        profileViewModel.exportSeizures(context)
-                        showExportDialog = false
+                        if (profile.pastSeizures.isNotEmpty()) {
+                            profileViewModel.exportSeizures(context)
+                        }
+                            showExportDialog = false
                     }
                 ) {
-                    Text("Export")
+                    if (profile.pastSeizures.isNotEmpty()) {
+                        Text("Export")
+                    } else {
+                        Text("Cancel")
+                    }
                 }
             },
             dismissButton = {
                 TextButton(
                     onClick = { showExportDialog = false }
                 ) {
-                    Text("Cancel")
+                    if (profile.pastSeizures.isNotEmpty()) Text("Cancel")
                 }
             }
         )
@@ -303,7 +313,8 @@ fun SettingsScreen(
                         icon = Icons.Default.Key
                     )
                 }
-                if(!isParentMode){
+
+                if (!isParentMode) {
                     // Section "Model Training"
                     SettingsSection(title = "Power Options") {
                         SettingsItem(
@@ -370,6 +381,8 @@ fun SettingsScreen(
                     )
                 }
 
+
+
                 SettingsSection(title = "Developer options") {
                     SettingsItem(
                         title = "Export Seizure History",
@@ -388,7 +401,11 @@ fun SettingsScreen(
                             Switch(
                                 checked = profile.isDebugEnabled,
                                 onCheckedChange = { isChecked ->
-                                    Toast.makeText(context, "Restart the app to correctly update debug mode", Toast.LENGTH_LONG).show()
+                                    Toast.makeText(
+                                        context,
+                                        "Restart the app to correctly update debug mode",
+                                        Toast.LENGTH_LONG
+                                    ).show()
                                     profileViewModel.saveDebugPreference(isChecked)
                                 },
                                 colors = SwitchDefaults.colors(
@@ -402,20 +419,22 @@ fun SettingsScreen(
 
                 Spacer(modifier = Modifier.weight(1f))
 
-                SettingsItem(
+                SettingsSection("") {
+                    SettingsItem(
                         title = "About SeizureGuard",
                         onClick = { showAboutDialog = true },
                         icon = Icons.Default.Info,
                         trailing = null
                     )
-
-                SettingsItem(
-                    title = "Logout",
-                    onClick = onLogoutClicked,
-                    icon = Icons.AutoMirrored.Filled.Logout,
-                    tint = MaterialTheme.colorScheme.error,
-                    background = MaterialTheme.colorScheme.errorContainer
-                )
+                    SettingsItem(
+                        title = "Logout",
+                        onClick = onLogoutClicked,
+                        icon = Icons.AutoMirrored.Filled.Logout,
+                        tint = MaterialTheme.colorScheme.error,
+                        background = MaterialTheme.colorScheme.errorContainer.copy(0.6f),
+                        weight = FontWeight.Bold
+                    )
+                }
             }
         }
     )
@@ -430,6 +449,7 @@ private fun SettingsSection(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
+        Spacer(modifier = Modifier.height(8.dp))
         Text(
             text = title,
             style = MaterialTheme.typography.headlineSmall,
@@ -447,7 +467,8 @@ private fun SettingsItem(
     icon: ImageVector? = null,
     tint: Color = MaterialTheme.colorScheme.primary,
     trailing: @Composable (() -> Unit)? = null,
-    background: Color = MaterialTheme.colorScheme.primaryContainer
+    background: Color = MaterialTheme.colorScheme.primaryContainer,
+    weight: FontWeight = FontWeight.Normal
 ) {
     Surface(
         onClick = onClick,
@@ -478,7 +499,8 @@ private fun SettingsItem(
                 }
                 Text(
                     text = title,
-                    style = MaterialTheme.typography.bodyLarge
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = weight,
                 )
             }
             trailing?.invoke() ?: Icon(
@@ -489,6 +511,7 @@ private fun SettingsItem(
         }
     }
 }
+
 @Composable
 fun SettingsDropdownItem(
     title: String,

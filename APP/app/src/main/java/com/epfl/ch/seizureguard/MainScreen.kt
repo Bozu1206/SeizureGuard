@@ -8,31 +8,30 @@ import com.epfl.ch.seizureguard.navigation.AppContent
 import com.epfl.ch.seizureguard.seizure_event.SeizureEventViewModel
 import com.epfl.ch.seizureguard.wallet_manager.GoogleWalletToken
 import com.epfl.ch.seizureguard.medical_card.WalletUiState
+import com.epfl.ch.seizureguard.medical_card.WalletViewModel
 import com.epfl.ch.seizureguard.profile.ProfileViewModel
 
 @Composable
 fun MainScreen(
     onRunInference: () -> Unit,
     onPauseInference: () -> Unit,
-    metrics: Metrics,
     payState: WalletUiState,
     profileViewModel: ProfileViewModel,
-    historyViewModel: HistoryViewModel,
+    walletViewModel: WalletViewModel,
     seizureEventViewModel: SeizureEventViewModel,
     requestSavePass: (GoogleWalletToken.PassRequest) -> Unit,
     metricsViewModel: MetricsViewModel,
     onLogoutClicked: () -> Unit
 ) {
     AppContent(
-        metrics = metrics,
         onRunInference = onRunInference,
         onPauseInference = onPauseInference,
         payState = payState,
         requestSavePass = requestSavePass,
         profileViewModel = profileViewModel,
         seizureEventViewModel = seizureEventViewModel,
-        historyViewModel = historyViewModel,
         metricsViewModel = metricsViewModel,
+        walletViewModel = walletViewModel,
         onLogoutClicked = onLogoutClicked
     )
 }

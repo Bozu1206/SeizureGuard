@@ -37,7 +37,6 @@ fun EEGChart(
     isDebugEnabled : Boolean,
     isInferenceRunning : Boolean,
     eegViewModel: EEGViewModel = viewModel(),
-    profileViewModel: ProfileViewModel,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -74,13 +73,22 @@ fun EEGChart(
                 .pointerInput(Unit) {
                     detectDragGestures(
                         onDragStart = {
-                            isDragging = true
-                            isAutoScrolling = false
+                            val graphWidth = canvasWidth - leftMargin
+                            val totalSamples = if (eegData.isNotEmpty()) {
+                                eegData[0].size / samplesPerChannel
+                            } else 0
+                            val sampleWidth = graphWidth / sampleWidthRatio
+                            val totalWidth = totalSamples * sampleWidth
+
+                            if (totalWidth > graphWidth) {
+                                isDragging = true
+                                isAutoScrolling = false
+                            }
                         },
                         onDragEnd = { isDragging = false },
                         onDrag = { change, dragAmount ->
                             change.consume()
-                            if (isInferenceRunning) {
+                            if (isInferenceRunning && isDragging) {
                                 val graphWidth = canvasWidth - leftMargin
                                 eegViewModel.updateScrollOffset(dragAmount.x, graphWidth, sampleWidthRatio)
                             }

@@ -22,8 +22,10 @@ data class Profile(
     var pastSeizures: List<SeizureEvent> = emptyList(),
     var defaultsMetrics: Metrics = Metrics(),
     var latestMetrics: Metrics = defaultsMetrics,
-    var medications: List<String> = emptyList()
+    var medications: List<String> = emptyList(),
+    var medicalNotes: List<Notes> = emptyList()
 ) {
+
     companion object {
         fun isComplete(profile: Profile): Boolean {
             return with(profile) {
@@ -38,4 +40,10 @@ data class EmergencyContact(
     val name: String = "",
     val phone: String = "",
     val photoUri: String? = null
+)
+
+data class Notes(
+    val date: String = "",
+    val title: String = "",
+    val content: String = ""
 )

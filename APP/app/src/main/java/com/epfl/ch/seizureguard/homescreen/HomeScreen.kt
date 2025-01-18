@@ -1,6 +1,7 @@
 package com.epfl.ch.seizureguard.homescreen
 
 import android.content.Context
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -26,6 +27,7 @@ import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Lightbulb
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MaterialTheme.colorScheme
@@ -39,13 +41,18 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -57,11 +64,11 @@ import com.epfl.ch.seizureguard.seizure_event.LogSeizureEventModal
 import com.epfl.ch.seizureguard.seizure_event.SeizureEventViewModel
 import com.epfl.ch.seizureguard.tools.onEmergencyCall
 import com.epfl.ch.seizureguard.theme.AppTheme
-import com.google.firebase.crashlytics.buildtools.reloc.org.apache.http.client.utils.DateUtils.formatDate
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import com.epfl.ch.seizureguard.seizure_event.SeizureEvent
+import androidx.compose.material3.Scaffold
 
 private fun formatDate(timestamp: Long): String {
     val sdf = SimpleDateFormat("MMM dd, yyyy HH:mm", Locale.getDefault())
@@ -70,38 +77,61 @@ private fun formatDate(timestamp: Long): String {
 
 @Composable
 fun HomeScreen(
-    homeScreenViewModel: HomeScreenViewModel = viewModel(),
-    historyViewModel: HistoryViewModel,
     seizureEventViewModel: SeizureEventViewModel,
     profileViewModel: ProfileViewModel,
-    navController: NavController
 ) {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
-    ) {
-        Column(
+    Scaffold(
+        bottomBar = {
+            QuickActionsSection(
+                context = LocalContext.current,
+                profileViewModel = profileViewModel,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(colorScheme.background)
+            )
+        }
+    ) { paddingValues ->
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .verticalScroll(rememberScrollState()),
-            horizontalAlignment = Alignment.CenterHorizontally
+                .padding(16.dp)
         ) {
-            WelcomeSection(profileViewModel = profileViewModel)
-
-            DailyTipsSection()
-
-            HealthMetricsSection(profileViewModel = profileViewModel)
-
-            RecentActivitySection(profileViewModel = profileViewModel)
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(paddingValues),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                WelcomeSection(profileViewModel = profileViewModel)
+                Spacer(modifier = Modifier.height(8.dp))
+                DailyTipsSection()
+                Spacer(modifier = Modifier.height(8.dp))
+                HealthMetricsSection(profileViewModel = profileViewModel)
+                Spacer(modifier = Modifier.height(8.dp))
+                RecentActivitySection(profileViewModel = profileViewModel)
+            }
         }
+    }
 
-        QuickActionsSection(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(bottom = 16.dp),
-            context = LocalContext.current,
-            profileViewModel = profileViewModel
+    val showSeizureLogging by seizureEventViewModel.showSeizureLoggingDialog.collectAsState()
+    val showGuidelines by seizureEventViewModel.showGuidelinesDialog.collectAsState()
+
+    if (showSeizureLogging) {
+        LogSeizureEventModal(
+            onDismiss = { seizureEventViewModel.hideSeizureLoggingDialog() },
+            onClick = {
+                seizureEventViewModel.hideSeizureLoggingDialog()
+                profileViewModel.addSeizure(it)
+            }
+        )
+    }
+
+    if (showGuidelines) {
+        GuidelinesModal(
+            onDismiss = {
+                seizureEventViewModel.hideGuidelinesDialog()
+            }
         )
     }
 }
@@ -111,12 +141,32 @@ fun HomeScreen(
 fun WelcomeSection(profileViewModel: ProfileViewModel) {
     val profile = profileViewModel.profileState.collectAsState()
 
+    val gradient = Brush.horizontalGradient(
+        colors = listOf(
+            Color(0xFFFF5722),
+            Color(0xFFFFC107),
+            Color(0xFFFF9800),
+        ),
+        startX = 0f,
+        endX = 900f
+    )
+
     Column(
         modifier = Modifier.fillMaxWidth()
     ) {
         Row {
             Text(
-                text = "Welcome, ${profile.value.name.split(" ")[0]}!",
+                text = buildAnnotatedString {
+                    append("Welcome, ")
+                    withStyle(
+                        style = SpanStyle(
+                            brush = gradient,
+                            fontWeight = FontWeight.ExtraBold
+                        )
+                    ) {
+                        append("${profile.value.name.split(" ")[0]}!")
+                    }
+                },
                 style = MaterialTheme.typography.headlineLarge,
                 fontWeight = FontWeight.Bold
             )
@@ -133,16 +183,19 @@ fun WelcomeSection(profileViewModel: ProfileViewModel) {
 fun HealthMetricsSection(profileViewModel: ProfileViewModel) {
     val profile = profileViewModel.profileState.collectAsState()
     val numbersOfSeizureLastWeek =
-        profile.value.pastSeizures.count { it.timestamp > System.currentTimeMillis() - 7 * 24 * 60 * 60 * 1000 }
+        profile.value.pastSeizures.count {
+            // Count number of seizure in the past week
+            it.timestamp > System.currentTimeMillis() - 7 * 24 * 60 * 60 * 1000
+        }
 
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(16.dp)
+            .padding(8.dp)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceAround
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
             MetricCard(
                 title = "Seizures",
@@ -157,31 +210,74 @@ fun HealthMetricsSection(profileViewModel: ProfileViewModel) {
 
 @Composable
 fun MetricCard(title: String, value: String, unit: String) {
+    Box(
+        modifier = Modifier
+            .shadow(
+                elevation = 8.dp,
+                shape = RoundedCornerShape(16.dp),
+                spotColor = Color.Black.copy(alpha = 0.3f)
+            )
+            .background(colorScheme.surface, RoundedCornerShape(16.dp))
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier
+                .width(100.dp)
+                .padding(12.dp)
+        ) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Bold,
+                color = colorScheme.onBackground
+            )
+            Text(
+                text = value,
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold,
+                color = colorScheme.onBackground
+            )
+            Text(
+                text = unit,
+                style = MaterialTheme.typography.labelSmall,
+                color = colorScheme.onBackground.copy(alpha = 0.6f)
+            )
+        }
+    }
+}
+
+@Composable
+fun QuickActionButton(icon: ImageVector, label: String, onClick: () -> Unit) {
+    val buttonColors = when (label) {
+        "Emergency" -> Color(0xFFFF5252)
+        "Log Event" -> Color(0xFFFF9800)
+        else -> Color(0xFF4CAF50)
+    }
+
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
-            .background(
-                colorScheme.primary.copy(alpha = 0.1f),
-                shape = RoundedCornerShape(8.dp)
-            )
-            .padding(12.dp)
+            .clickable(onClick = onClick)
+            .padding(8.dp)
     ) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.Bold
-        )
-        Text(
-            text = value,
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold,
-            color = colorScheme.primary
-        )
-        Text(
-            text = unit,
-            style = MaterialTheme.typography.labelSmall,
-            color = colorScheme.onSurface.copy(alpha = 0.6f)
-        )
+        Box(
+            modifier = Modifier
+                .size(56.dp)
+                .background(
+                    color = buttonColors.copy(alpha = 0.1f),
+                    shape = CircleShape
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = label,
+                modifier = Modifier
+                    .size(24.dp),
+                tint = buttonColors
+            )
+        }
+        Spacer(modifier = Modifier.height(16.dp))
     }
 }
 
@@ -195,7 +291,8 @@ fun QuickActionsSection(
     var showGuidelines by remember { mutableStateOf(false) }
 
     Column(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier
+            .fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Row(
@@ -213,9 +310,7 @@ fun QuickActionsSection(
             }
 
             if (showGuidelines) {
-                GuidelinesModal(
-                    onDismiss = { showGuidelines = false }
-                )
+                GuidelinesModal(onDismiss = { showGuidelines = false })
             }
 
             if (showLogEventModal) {
@@ -228,35 +323,6 @@ fun QuickActionsSection(
                 )
             }
         }
-    }
-}
-
-
-@Composable
-fun QuickActionButton(icon: ImageVector, label: String, onClick: () -> Unit) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier
-            .clickable(onClick = onClick)
-            .padding(8.dp)
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = label,
-            modifier = Modifier
-                .size(48.dp)
-                .background(
-                    colorScheme.primary.copy(alpha = 0.2f),
-                    shape = CircleShape
-                )
-                .padding(12.dp)
-        )
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.Bold
-        )
     }
 }
 
@@ -367,22 +433,19 @@ fun RecentActivitySection(profileViewModel: ProfileViewModel) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(16.dp)
+            .padding(horizontal = 4.dp)
     ) {
         Text(
-            text = "Recent Activity",
+            text = "Last seizures",
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold
         )
-        
-        Spacer(modifier = Modifier.height(8.dp))
-        
+
         if (recentSeizures.isEmpty()) {
             EmptyStateCard()
         } else {
             recentSeizures.forEach { seizure ->
                 RecentActivityCard(seizure = seizure)
-                Spacer(modifier = Modifier.height(8.dp))
             }
         }
     }
@@ -391,11 +454,20 @@ fun RecentActivitySection(profileViewModel: ProfileViewModel) {
 @Composable
 fun RecentActivityCard(seizure: SeizureEvent) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 6.dp, horizontal = 4.dp)
+            .shadow(
+                elevation = 8.dp,
+                shape = CardDefaults.shape,
+                spotColor = Color.Black.copy(alpha = 0.4f)
+            ),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-        )
+            containerColor = colorScheme.surface,
+
+        ),
+        elevation = CardDefaults.cardElevation(0.dp, 0.dp, 0.dp, 0.dp, 0.dp),
     ) {
         Row(
             modifier = Modifier
@@ -413,10 +485,10 @@ fun RecentActivityCard(seizure: SeizureEvent) {
                 Text(
                     text = formatDate(seizure.timestamp),
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = colorScheme.onSurfaceVariant
                 )
             }
-            
+
             Column(horizontalAlignment = Alignment.End) {
                 Text(
                     text = seizure.type,
@@ -441,14 +513,16 @@ fun DailyTipsSection() {
         "Track your triggers in the app"
     )
     val currentTip = remember { tips.random() }
+    val yellow = Color(0xFFFFC107)
 
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(12.dp),
+            .padding(4.dp),
         colors = CardDefaults.cardColors(
-            containerColor = colorScheme.primaryContainer
-        )
+            containerColor = yellow.copy(0.1f)
+        ),
+        border = BorderStroke(0.5.dp, yellow)
     ) {
         Row(
             modifier = Modifier
@@ -459,12 +533,12 @@ fun DailyTipsSection() {
             Icon(
                 imageVector = Icons.Default.Lightbulb,
                 contentDescription = null,
-                tint = colorScheme.primary,
+                tint = yellow,
                 modifier = Modifier.size(32.dp)
             )
-            
+
             Spacer(modifier = Modifier.width(16.dp))
-            
+
             Column {
                 Text(
                     text = "Daily Tip",
@@ -474,7 +548,7 @@ fun DailyTipsSection() {
                 Text(
                     text = currentTip,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                    color = colorScheme.onPrimaryContainer
                 )
             }
         }
@@ -487,7 +561,7 @@ fun EmptyStateCard() {
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+            containerColor = colorScheme.surfaceVariant.copy(alpha = 0.3f)
         )
     ) {
         Column(
@@ -509,6 +583,7 @@ fun EmptyStateCard() {
                 textAlign = TextAlign.Center
             )
         }
+
     }
 }
 

@@ -28,7 +28,6 @@ import com.epfl.ch.seizureguard.alert.SeizureDetectedParentScreen
 import com.epfl.ch.seizureguard.alert.SeizureDetectedScreen
 import com.epfl.ch.seizureguard.biometrics.BiometricAuthenticator
 import com.epfl.ch.seizureguard.dl.MetricsViewModel
-import com.epfl.ch.seizureguard.dl.metrics.Metrics
 import com.epfl.ch.seizureguard.dl.utils.SampleBroadcastService
 import com.epfl.ch.seizureguard.firebase.FirebaseLoginScreen
 import com.epfl.ch.seizureguard.history.HistoryViewModel
@@ -39,7 +38,6 @@ import com.epfl.ch.seizureguard.onboarding.OnboardingScreen
 import com.epfl.ch.seizureguard.onboarding.OnboardingViewModel
 import com.epfl.ch.seizureguard.onboarding.OnboardingViewModelFactory
 import com.epfl.ch.seizureguard.profile.ProfileViewModel
-import com.epfl.ch.seizureguard.profile.ProfileViewModelFactory
 import com.epfl.ch.seizureguard.seizure_event.SeizureDao
 import com.epfl.ch.seizureguard.seizure_event.SeizureDatabase
 import com.epfl.ch.seizureguard.seizure_event.SeizureEventViewModel
@@ -57,8 +55,7 @@ class MainActivity : FragmentActivity() {
     private val historyViewModel: HistoryViewModel by viewModels()
     private val metricsViewModel: MetricsViewModel by viewModels()
 
-    private var metrics by mutableStateOf(Metrics(-1.0, -1.0, -1.0, -1.0, -1.0))
-    private var isLoggedIn by mutableStateOf(false)
+    private var isLoggedIn by mutableStateOf(true)
 
     private val walletViewModel: WalletViewModel by viewModels()
     private val addToGoogleWalletRequestCode = 1000
@@ -70,7 +67,8 @@ class MainActivity : FragmentActivity() {
         (application as RunningApp).seizureDetectionViewModel
     }
 
-    private var permissionsGranted = false    // Track if all necessary permissions have been granted.
+    // Track if all necessary permissions have been granted.
+    private var permissionsGranted = false
 
     @RequiresApi(Build.VERSION_CODES.Q)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -123,7 +121,7 @@ class MainActivity : FragmentActivity() {
                 NOTIFICATION_PERMISSION_REQUEST_CODE
             )
         } else {
-            onPermissionsGranted()  // All permissions are already granted.
+            onPermissionsGranted() // All permissions are already granted.
         }
     }
 
@@ -242,12 +240,11 @@ class MainActivity : FragmentActivity() {
                                             }
                                             context.startService(stopIntent)
                                         },
-                                        metrics = metrics,
+                                        walletViewModel = walletViewModel,
                                         payState = walletViewModel.walletUiState.collectAsStateWithLifecycle().value,
                                         requestSavePass = ::requestSavePass,
                                         profileViewModel = profileViewModel,
                                         seizureEventViewModel = seizureEventViewModel,
-                                        historyViewModel = historyViewModel,
                                         metricsViewModel = metricsViewModel,
                                         onLogoutClicked = {
                                             profileViewModel.setAuthenticated(false)
@@ -259,7 +256,7 @@ class MainActivity : FragmentActivity() {
 
                             }
 
-                            if (false) {
+                            if (isSeizureDetected) {
                                 val context = LocalContext.current
                                 SeizureDetectedScreen(
                                     onDismiss = {
@@ -276,7 +273,7 @@ class MainActivity : FragmentActivity() {
         }
     }
 
-    // starting the correct foreground services for starting inference
+    // Starting the correct foreground services for starting inference
     private fun startInferenceServices(
         isTrainingEnabled: Boolean,
         isDebugEnabled: Boolean) {
@@ -307,7 +304,7 @@ class MainActivity : FragmentActivity() {
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-        
+
         if (requestCode == ProfileViewModel.EXPORT_JSON_REQUEST_CODE && resultCode == Activity.RESULT_OK) {
             profileViewModel.handleExportResult(this, data?.data)
         }

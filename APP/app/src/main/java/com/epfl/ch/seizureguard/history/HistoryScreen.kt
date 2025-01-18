@@ -3,6 +3,7 @@ package com.epfl.ch.seizureguard.history
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -21,8 +22,10 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.DeleteSweep
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.RemoveCircle
+import androidx.compose.material.icons.filled.ShowChart
 import androidx.compose.material.icons.outlined.History
 import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -43,6 +46,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Color.Companion.Black
@@ -59,12 +63,15 @@ import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import androidx.navigation.NavController
+import androidx.compose.ui.graphics.Brush
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun HistoryScreen(
     modifier: Modifier = Modifier,
-    profileViewModel: ProfileViewModel
+    profileViewModel: ProfileViewModel,
+    navController: NavController
 ) {
     var editingSeizure by remember { mutableStateOf<SeizureEvent?>(null) }
     val profile by profileViewModel.profileState.collectAsState()
@@ -73,11 +80,31 @@ fun HistoryScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    Text(
-                        text = "Seizure History",
-                        style = MaterialTheme.typography.headlineLarge,
-                        fontWeight = FontWeight.Bold
-                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "History",
+                            style = MaterialTheme.typography.headlineLarge,
+                            fontWeight = FontWeight.Bold
+                        )
+
+                        androidx.compose.material3.IconButton(
+                            modifier = Modifier
+                                .padding(horizontal = 16.dp, vertical = 8.dp)
+                                .size(48.dp),
+                            onClick = { navController.navigate("seizure_stats") }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.ShowChart,
+                                contentDescription = "View Statistics",
+                                tint = Color(0xFFFF9800),
+                                modifier = Modifier.size(32.dp)
+                            )
+                        }
+                    }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.background
@@ -163,41 +190,32 @@ private fun SeizureCard(
     modifier: Modifier = Modifier
 ) {
     val isDark = isSystemInDarkTheme()
-    
-    val severityColor = when (seizure.severity) {
-        1 -> Color(0xFF4CAF50)  // Vert - Léger
-        2 -> Color(0xFF2196F3)  // Bleu - Modéré
-        3 -> Color(0xFFFFA726)  // Orange - Sévère
-        4 -> Color(0xFFE53935)  // Rouge - Très sévère
-        else -> Color(0xFF9C27B0)  // Violet - Critique
-    }
 
+    val severityColor = when (seizure.severity) {
+        1 -> Color(0xFF4CAF50)
+        2 -> Color(0xFF009688)
+        3 -> Color(0xFFFFA726)
+        else -> Color(0xFFE53935)
+    }
     val cardColor = if (isDark) {
         when (seizure.severity) {
-            1 -> Color(0xFF1B2D1B)  // Fond vert sombre
-            2 -> Color(0xFF1B2632)  // Fond bleu sombre
-            3 -> Color(0xFF2D2319)  // Fond orange sombre
-            4 -> Color(0xFF2D1B1B)  // Fond rouge sombre
-            else -> Color(0xFF2D1B2D)  // Fond violet sombre
+            1 -> Color(0x80345A34)
+            2 -> Color(0x33009688)
+            3 -> Color(0x33A05E20)
+            else -> Color(0x688F3636)
         }
     } else {
         when (seizure.severity) {
-            1 -> Color(0xFFE8F5E9)  // Fond vert clair
-            2 -> Color(0xFFE3F2FD)  // Fond bleu clair
-            3 -> Color(0xFFFFF3E0)  // Fond orange clair
-            4 -> Color(0xFFFFEBEE)  // Fond rouge clair
-            else -> Color(0xFFF3E5F5)  // Fond violet clair
+            1 -> Color(0x339DDF9F)
+            2 -> Color(0x338FF8EF)
+            3 -> Color(0x33F7A52C)
+            else -> Color(0x33B38990)
         }
     }
 
     Surface(
         modifier = modifier
-            .fillMaxWidth()
-            .shadow(
-                elevation = if (isDark) 2.dp else 1.dp,
-                shape = RoundedCornerShape(16.dp),
-                spotColor = severityColor.copy(alpha = 0.4f)
-            ),
+            .fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
         color = cardColor,
         tonalElevation = if (isDark) 2.dp else 0.dp
@@ -216,7 +234,7 @@ private fun SeizureCard(
             Divider(
                 modifier = Modifier
                     .padding(vertical = 8.dp)
-                    .alpha(if (isDark) 0.2f else 0.1f),
+                    .alpha(0.2f),
                 color = severityColor
             )
 
@@ -255,12 +273,12 @@ private fun SeizureCardHeader(
             IconButton(
                 onClick = onEdit,
                 icon = Icons.Default.Edit,
-                tint = textColor.copy(0.5f)
+                tint = textColor
             )
             IconButton(
                 onClick = onDelete,
-                icon = Icons.Default.RemoveCircle,
-                tint = textColor.copy(0.5f)
+                icon = Icons.Default.DeleteSweep,
+                tint = textColor
             )
         }
     }

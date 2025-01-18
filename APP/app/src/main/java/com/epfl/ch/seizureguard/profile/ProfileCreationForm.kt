@@ -34,6 +34,7 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.selection.TextSelectionColors
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.ui.draw.shadow
@@ -171,10 +172,10 @@ fun ProfileCreationForm(profile: Profile) {
 @Composable
 private fun textFieldModifier() = Modifier
     .fillMaxWidth()
-    .height(58.dp)
+    .height(56.dp)
     .padding(horizontal = 2.dp)
     .shadow(
-        elevation = 8.dp,
+        elevation = 10.dp,
         shape = RoundedCornerShape(16.dp),
         spotColor = Color.Black.copy(alpha = 0.2f)
     )
@@ -390,3 +391,5 @@ fun EpilepsyTypeField(
         }
     }
 }
+
+

@@ -5,35 +5,37 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.provider.ContactsContract
-import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.wrapContentWidth
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.Divider
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Notes
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -48,30 +50,34 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
-import com.epfl.ch.seizureguard.tools.onEmergencyCall
+import com.epfl.ch.seizureguard.medical_card.WalletUiState
+import com.epfl.ch.seizureguard.medical_card.WalletViewModel
 import com.epfl.ch.seizureguard.theme.AppTheme
+import com.epfl.ch.seizureguard.tools.onEmergencyCall
 import com.epfl.ch.seizureguard.wallet_manager.GoogleWalletToken
 import com.google.wallet.button.ButtonType
 import com.google.wallet.button.WalletButton
-import kotlinx.coroutines.delay
 
 @Composable
 fun ProfileScreen(
     profileViewModel: ProfileViewModel = viewModel(),
     navController: NavController,
+    walletViewModel: WalletViewModel,
     requestSavePass: (GoogleWalletToken.PassRequest) -> Unit
 ) {
     val context = LocalContext.current
@@ -86,10 +92,9 @@ fun ProfileScreen(
             modifier = Modifier.fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            UserProfileSection(profileViewModel, requestSavePass)
+            UserProfileSection(profileViewModel, requestSavePass, walletViewModel, navController)
 
             Spacer(modifier = Modifier.height(24.dp))
-
             // Emergency Contacts Section
             EmergencyContactsSection(context, profileViewModel = profileViewModel)
         }
@@ -99,27 +104,35 @@ fun ProfileScreen(
 @Composable
 fun UserProfileSection(
     profileScreenViewModel: ProfileViewModel,
-    onWalletButtonClick: (GoogleWalletToken.PassRequest) -> Unit
+    onWalletButtonClick: (GoogleWalletToken.PassRequest) -> Unit,
+    walletViewModel: WalletViewModel,
+    navController: NavController
 ) {
     val profile by profileScreenViewModel.profileState.collectAsState()
     val context: Context = LocalContext.current
     var showProfileSettings by remember { mutableStateOf(false) }
+    var isLoading by remember { mutableStateOf(false) }
 
     val photoPickerLauncher = rememberPhotoPickerLauncher(context, profile.uid) { newUri ->
         if (newUri != null) {
-            profileScreenViewModel.updateProfileField("uri", newUri.toString())
+            isLoading = true
+            profileScreenViewModel.updateProfileImage(newUri) {
+                isLoading = false
+            }
         }
     }
 
     Card(
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+            containerColor = if (isSystemInDarkTheme())
+                MaterialTheme.colorScheme.secondaryContainer
+            else MaterialTheme.colorScheme.background,
         ),
         modifier = Modifier
             .shadow(
-                elevation = 4.dp,
+                elevation = 12.dp,
                 shape = RoundedCornerShape(24.dp),
-                spotColor = MaterialTheme.colorScheme.onSurface
+                spotColor = Color.Black.copy(alpha = 0.6f)
             )
             .clip(RoundedCornerShape(24.dp))
             .fillMaxWidth()
@@ -127,19 +140,19 @@ fun UserProfileSection(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(16.dp)
         ) {
-            // Header avec photo et infos basiques
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(150.dp),
                 horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // Photo de profil
-                Box(
+                Card(
                     modifier = Modifier
-                        .size(80.dp)
-                        .clip(CircleShape)
+                        .width(150.dp)
+                        .fillMaxHeight()
+                        .clip(RoundedCornerShape(20.dp))
                         .clickable {
                             val intent = Intent(Intent.ACTION_PICK).apply {
                                 type = "image/*"
@@ -147,111 +160,191 @@ fun UserProfileSection(
                             photoPickerLauncher.launch(intent)
                         }
                 ) {
-                    if (profile.uri.isNotEmpty()) {
-                        AsyncImage(
-                            model = Uri.parse(profile.uri),
-                            contentDescription = "Profile Picture",
-                            modifier = Modifier.fillMaxSize(),
-                            contentScale = ContentScale.Crop,
-                        )
-                    } else {
-                        Box(
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        if (profile.uri.isNotEmpty() && !isLoading) {
+                            Box(modifier = Modifier.fillMaxSize()) {
+                                AsyncImage(
+                                    model = profile.uri,
+                                    contentDescription = "Profile Picture",
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentScale = ContentScale.Crop,
+                                )
+
+
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .background(
+                                            Brush.verticalGradient(
+                                                colors = listOf(
+                                                    Color.Transparent,
+                                                    Color.Black.copy(alpha = 0.1f)
+                                                ),
+                                                startY = 0f,
+                                                endY = Float.POSITIVE_INFINITY
+                                            )
+                                        )
+                                )
+
+                                Text(
+                                    text = profile.name.split(" ")[0],
+                                    style = MaterialTheme.typography.titleLarge,
+                                    color = Color.White,
+                                    fontWeight = FontWeight.Bold,
+                                    modifier = Modifier
+                                        .align(Alignment.BottomStart)
+                                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                                )
+                            }
+                        } else if (!isLoading) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Rounded.Person,
+                                    contentDescription = "Profile Picture",
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(36.dp)
+                                )
+                            }
+                        }
+
+                        if (isLoading) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .background(Color.Black.copy(alpha = 0.7f)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                CircularProgressIndicator(
+                                    color = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(48.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+                Card(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = if (!isSystemInDarkTheme()) MaterialTheme.colorScheme.background else MaterialTheme.colorScheme.secondaryContainer
+                    ),
+                    shape = RoundedCornerShape(4.dp)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize(),
+                        verticalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(
                             modifier = Modifier
-                                .fillMaxSize()
-                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
-                            contentAlignment = Alignment.Center
+                                .fillMaxWidth()
                         ) {
-                            Icon(
-                                imageVector = Icons.Rounded.Person,
-                                contentDescription = "Profile Picture",
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(36.dp)
+                            Text(
+                                text = "Your information",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Spacer(modifier = Modifier.weight(1f))
+                            IconButton(
+                                onClick = { showProfileSettings = !showProfileSettings },
+                                modifier = Modifier
+                                    .size(20.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Edit,
+                                    contentDescription = "Edit Profile",
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                        }
+
+                        Divider(
+                            modifier = Modifier
+                                .fillMaxWidth(),
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f),
+                            thickness = 1.dp
+                        )
+
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .weight(1f),
+                            verticalArrangement = Arrangement.SpaceEvenly
+                        ) {
+                            InfoRow("Email", profile.email)
+                            InfoRow("Birth Date", profile.birthdate)
+                            InfoRow("Epilepsy Type", profile.epi_type)
+                            InfoRow(
+                                "Medication",
+                                if (profile.medications.isEmpty()) "Lorazepam"
+                                else profile.medications.joinToString(", ")
                             )
                         }
                     }
                 }
-
-                // Informations de base
-                Column(
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text(
-                        text = profile.name,
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold
-                    )
-                    
-                    Text(
-                        text = profile.email,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
-                    )
-                }
-                
-                IconButton(
-                    onClick = { showProfileSettings = !showProfileSettings }
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Edit,
-                        contentDescription = "Edit Profile",
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                }
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Medical Info Section
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(
-                        MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                        RoundedCornerShape(16.dp)
-                    )
-                    .padding(16.dp)
-            ) {
-                MedicalInfoRow(
-                    label = "Birth Date",
-                    value = profile.birthdate
-                )
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                MedicalInfoRow(
-                    label = "Epilepsy Type",
-                    value = profile.epi_type
-                )
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                MedicalInfoRow(
-                    label = "Medication",
-                    value = if (profile.medications.isEmpty()) "None"
-                           else profile.medications.joinToString(", ")
+            if (walletViewModel.walletUiState.value !is WalletUiState.PassAdded) {
+                WalletButton(
+                    type = ButtonType.Add,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp),
+                    onClick = {
+                        val request = GoogleWalletToken.PassRequest(
+                            uid = profile.uid,
+                            patientName = profile.name,
+                            emergencyContact = profileScreenViewModel.profileState.value.emergencyContacts.firstOrNull()?.phone
+                                ?: "",
+                            seizureType = profile.epi_type,
+                            medication = "Lorazepam",
+                            birthdate = profile.birthdate,
+                        )
+                        onWalletButtonClick(request)
+                    }
                 )
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Google Wallet Button
-            WalletButton(
-                type = ButtonType.Add,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
-                onClick = {
-                    val request = GoogleWalletToken.PassRequest(
-                        uid = profile.uid,
-                        patientName = profile.name,
-                        emergencyContact = profileScreenViewModel.profileState.value.emergencyContacts.firstOrNull()?.phone ?: "",
-                        seizureType = profile.epi_type,
-                        medication = "",
-                        birthdate = profile.birthdate,
-                    )
-                    onWalletButtonClick(request)
-                }
+            val gradient = Brush.horizontalGradient(
+                colors = listOf(
+                    Color(0xE2FF5722),
+                    Color(0xBAFF9800),
+                ),
+                startX = 0f,
+                endX = 900f
             )
+
+            Button(
+                onClick = { navController.navigate("medical_notes") },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp)
+                    .background(gradient, shape = ButtonDefaults.shape)
+                    .height(38.dp),
+                shape = ButtonDefaults.shape,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color.Transparent
+                )
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Notes,
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Medical Notes", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+            }
         }
     }
 
@@ -267,7 +360,7 @@ fun UserProfileSection(
 }
 
 @Composable
-private fun MedicalInfoRow(
+private fun InfoRow(
     label: String,
     value: String,
     modifier: Modifier = Modifier
@@ -280,25 +373,19 @@ private fun MedicalInfoRow(
         Text(
             text = label,
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
         )
-        if (label == "Medication" && value != "None") {
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                Text(
-                    text = value,
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.SemiBold
-                )
-            }
-        } else {
-            Text(
-                text = value,
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.SemiBold
-            )
-        }
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            textAlign = TextAlign.End,
+            modifier = Modifier
+                .padding(start = 8.dp)
+                .weight(1f)
+        )
     }
 }
 
@@ -309,25 +396,17 @@ fun EmergencyContactsSection(context: Context, profileViewModel: ProfileViewMode
     val activity = LocalContext.current as Activity
     val contactPicker = getContactPicker(context, profileViewModel)
 
-    Card(
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant,
-        ),
+    Column(
         modifier = Modifier
             .fillMaxWidth()
-            .shadow(
-                elevation = 4.dp,
-                shape = RoundedCornerShape(24.dp),
-                spotColor = MaterialTheme.colorScheme.onSurface
-            )
-            .clip(RoundedCornerShape(24.dp))
+            .padding(horizontal = 4.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp)
+                .padding(vertical = 8.dp, horizontal = 12.dp)
         ) {
-            // Header
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -335,58 +414,120 @@ fun EmergencyContactsSection(context: Context, profileViewModel: ProfileViewMode
             ) {
                 Text(
                     text = "Emergency Contacts",
-                    style = MaterialTheme.typography.titleMedium,
+                    style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold
                 )
-                
-                Text(
-                    text = "${emergencyContacts.size}/5",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
-                )
+                Card(
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.primary
+                    ),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text(
+                        text = "${emergencyContacts.size}/3",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onPrimary,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                    )
+                }
             }
+        }
 
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // Contacts List
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth()
-            ) {
-                if (emergencyContacts.isEmpty()) {
-                    Box(
+        Column(
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            emergencyContacts.forEach { contact ->
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .shadow(
+                            elevation = 6.dp,
+                            shape = RoundedCornerShape(16.dp),
+                            spotColor = Color.Black.copy(alpha = 0.3f)
+                        ),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surface
+                    ),
+                    shape = RoundedCornerShape(16.dp)
+                ) {
+                    Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(vertical = 24.dp),
-                        contentAlignment = Alignment.Center
+                            .padding(16.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(
-                            text = "No emergency contacts yet",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
-                        )
-                    }
-                } else {
-                    LazyColumn(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        items(emergencyContacts) { contact ->
-                            EmergencyContactCard(
-                                name = contact.name,
-                                phone = contact.phone,
-                                picture = contact.photoUri?.let { Uri.parse(it) },
-                                profileViewModel = profileViewModel
-                            )
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(16.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(48.dp)
+                                    .clip(CircleShape)
+                                    .background(
+                                        brush = Brush.linearGradient(
+                                            colors = listOf(
+                                                MaterialTheme.colorScheme.primary,
+                                                MaterialTheme.colorScheme.primary.copy(alpha = 0.7f)
+                                            )
+                                        )
+                                    ),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Person,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onPrimary,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                            }
+                            Column {
+                                Text(
+                                    text = contact.name,
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                                Text(
+                                    text = contact.phone,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                        }
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            IconButton(
+                                onClick = { onEmergencyCall(context, contact.phone) }
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Phone,
+                                    contentDescription = "Call contact",
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                            IconButton(
+                                onClick = {
+                                    profileViewModel.updateEmergencyContacts(
+                                        contact,
+                                        isAdding = false
+                                    )
+                                }
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Delete,
+                                    contentDescription = "Remove contact",
+                                    tint = MaterialTheme.colorScheme.error
+                                )
+                            }
                         }
                     }
                 }
             }
+        }
 
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Add Contact Button
+        if (emergencyContacts.size < 3) {
             Button(
                 onClick = {
                     if (hasContactPermission(context)) {
@@ -398,18 +539,18 @@ fun EmergencyContactsSection(context: Context, profileViewModel: ProfileViewMode
                         requestContactPermission(context, activity)
                     }
                 },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .alpha(if (emergencyContacts.size >= 5) 0.5f else 1f),
-                enabled = emergencyContacts.size < 5
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary
+                )
             ) {
                 Icon(
                     imageVector = Icons.Rounded.Add,
-                    contentDescription = null,
+                    contentDescription = "Add contact",
                     modifier = Modifier.size(20.dp)
                 )
                 Spacer(modifier = Modifier.width(8.dp))
-                Text(text = "Add Contact")
+                Text("Add Contact")
             }
         }
     }
@@ -520,38 +661,6 @@ fun EmergencyContactCard(
     }
 }
 
-@Composable
-fun UploadMedicalDataSection(navController: NavController) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Button(
-            onClick = { navController.navigate("medicalCardForm") },
-            modifier = Modifier.fillMaxWidth(0.8f)
-        ) {
-            Text(text = "Create Medical Card")
-        }
-
-        Button(
-            onClick = { /*TODO*/ },
-            modifier = Modifier.fillMaxWidth(0.8f)
-        ) {
-            Text(text = "Upload Medical History")
-        }
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        Text(
-            text = "Uploading your medical history helps improve emergency response.",
-            style = MaterialTheme.typography.labelSmall,
-            textAlign = TextAlign.Center,
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-            modifier = Modifier.padding(horizontal = 16.dp)
-        )
-    }
-}
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EditProfile(
@@ -618,7 +727,6 @@ fun EditProfile(
     }
 }
 
-
 @Preview(showBackground = true)
 @Composable
 fun ProfileScreenPreview() {
@@ -626,6 +734,9 @@ fun ProfileScreenPreview() {
         ProfileScreen(
             viewModel(),
             navController = NavController(context = LocalContext.current),
-            {})
+            viewModel(),
+            { }
+        )
+
     }
 }

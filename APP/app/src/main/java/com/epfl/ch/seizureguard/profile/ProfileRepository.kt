@@ -61,6 +61,7 @@ object Keys {
     val LATEST_METRICS = stringPreferencesKey("latest_metrics")
     val LOCAL_MODEL_PATH = stringPreferencesKey("local_model_path")
     val MEDICATIONS = stringPreferencesKey("medications")
+    val MEDICAL_NOTES = stringPreferencesKey("medical_notes")
 }
 
 class ProfileRepository private constructor(
@@ -175,6 +176,7 @@ class ProfileRepository private constructor(
                 preferences[Keys.DEF_METRICS] = gson.toJson(profile.defaultsMetrics)
                 preferences[Keys.LATEST_METRICS] = gson.toJson(profile.latestMetrics)
                 preferences[Keys.MEDICATIONS] = gson.toJson(profile.medications)
+                preferences[Keys.MEDICAL_NOTES] = gson.toJson(profile.medicalNotes)
             }
             Log.d("ProfileRepository", "Profile saved to preferences successfully: $profile")
         } catch (e: Exception) {
@@ -224,6 +226,14 @@ class ProfileRepository private constructor(
             emptyList()
         }
 
+        val medicalNotesJson = preferences[Keys.MEDICAL_NOTES] ?: "[]"
+        val medicalNotes: List<Notes> = try {
+            gson.fromJson(medicalNotesJson, object : TypeToken<List<Notes>>() {}.type) ?: emptyList()
+        } catch (e: Exception) {
+            Log.e("ProfileRepository", "Failed to parse medicalNotes: ${e.message}", e)
+            emptyList()
+        }
+
         return Profile(
             uid = preferences[Keys.USER_ID] ?: "",
             name = preferences[Keys.USER_NAME] ?: "",
@@ -241,7 +251,8 @@ class ProfileRepository private constructor(
             pastSeizures = pastSeizures,
             defaultsMetrics = defMetrics,
             latestMetrics = latestMetrics,
-            medications = medications
+            medications = medications,
+            medicalNotes = medicalNotes
         )
     }
 
@@ -357,10 +368,7 @@ class ProfileRepository private constructor(
                 else -> currentProfile
             }
 
-            // Sauvegarder le profil complet dans les préférences
             saveProfileToPreferences(updatedProfile)
-            
-            // Sauvegarder dans Firestore aussi
             saveProfileToFirestore(updatedProfile)
 
             Log.d("ProfileRepository", "Updated field $key with value $value")
