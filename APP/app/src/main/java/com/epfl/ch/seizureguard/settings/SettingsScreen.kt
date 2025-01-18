@@ -293,6 +293,7 @@ fun SettingsScreen(
                             Color(0xFF248a3d)
                         else
                             MaterialTheme.colorScheme.onSurfaceVariant,
+                        caption = "Use fingerprint or face recognition to secure your app",
                         trailing = {
                             Switch(
                                 checked = profile.isBiometricEnabled,
@@ -324,6 +325,7 @@ fun SettingsScreen(
                                 Color(0xFF248a3d)
                             else
                                 MaterialTheme.colorScheme.onSurfaceVariant,
+                            caption = "Allow the app to learn from your seizure patterns",
                             trailing = {
                                 Switch(
                                     checked = profile.isTrainingEnabled,
@@ -344,6 +346,7 @@ fun SettingsScreen(
                                 MaterialTheme.colorScheme.primary
                             else
                                 MaterialTheme.colorScheme.onSurfaceVariant,
+                            caption = "Adjust power consumption and detection accuracy",
                             options = listOf(
                                 context.getString(R.string.low_power_mode),
                                 context.getString(R.string.normal_power_mode),
@@ -360,12 +363,12 @@ fun SettingsScreen(
                 SettingsSection(title = "Parent Mode") {
                     SettingsItem(
                         title = "Parent Mode",
-                        onClick = { },
                         icon = Icons.Default.SupervisorAccount,
                         tint = if (isParentMode)
                             Color(0xFF248a3d)
                         else
                             MaterialTheme.colorScheme.onSurfaceVariant,
+                        caption = "Enable monitoring and control features for caregivers",
                         trailing = {
                             Switch(
                                 checked = isParentMode,
@@ -397,6 +400,7 @@ fun SettingsScreen(
                             Color(0xFF248a3d)
                         else
                             MaterialTheme.colorScheme.onSurfaceVariant,
+                        caption = "Show additional information for troubleshooting",
                         trailing = {
                             Switch(
                                 checked = profile.isDebugEnabled,
@@ -468,45 +472,56 @@ private fun SettingsItem(
     tint: Color = MaterialTheme.colorScheme.primary,
     trailing: @Composable (() -> Unit)? = null,
     background: Color = MaterialTheme.colorScheme.primaryContainer,
-    weight: FontWeight = FontWeight.Normal
+    weight: FontWeight = FontWeight.Normal,
+    caption: String? = null
 ) {
-    Surface(
-        onClick = onClick,
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(56.dp),
-        color = background,
-        tonalElevation = 4.dp,
-        shape = RoundedCornerShape(12.dp)
-    ) {
-        Row(
+    Column {
+        Surface(
+            onClick = onClick,
             modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+                .fillMaxWidth()
+                .height(56.dp),
+            color = background,
+            tonalElevation = 4.dp,
+            shape = RoundedCornerShape(12.dp)
         ) {
             Row(
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                if (icon != null) {
-                    Icon(
-                        imageVector = icon,
-                        contentDescription = null,
-                        tint = tint
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    if (icon != null) {
+                        Icon(
+                            imageVector = icon,
+                            contentDescription = null,
+                            tint = tint
+                        )
+                    }
+                    Text(
+                        text = title,
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = weight,
                     )
                 }
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = weight,
+                trailing?.invoke() ?: Icon(
+                    imageVector = Icons.Default.ChevronRight,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-            trailing?.invoke() ?: Icon(
-                imageVector = Icons.Default.ChevronRight,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant
+        }
+        if (caption != null) {
+            Text(
+                text = caption,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(start = 16.dp, top = 4.dp)
             )
         }
     }
@@ -517,6 +532,7 @@ fun SettingsDropdownItem(
     title: String,
     icon: ImageVector? = null,
     tint: Color = MaterialTheme.colorScheme.primary,
+    caption: String? = null,
     options: List<String>,
     selectedOption: String,
     onOptionSelected: (String) -> Unit
@@ -563,6 +579,7 @@ fun SettingsDropdownItem(
         },
         icon = icon,
         tint = tint,
+        caption = caption,
         trailing = trailing
     )
 }
