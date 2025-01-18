@@ -17,6 +17,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderColors
+import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
@@ -27,10 +29,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.epfl.ch.seizureguard.profile.ProfileTextField
 import com.epfl.ch.seizureguard.profile.ProfileViewModel
 import com.google.accompanist.flowlayout.FlowRow
 
@@ -47,18 +51,23 @@ data class DefaultState(
 fun LogSeizureEventModal(
     onDismiss: () -> Unit,
     onClick: (SeizureEvent) -> Unit,
-    label: String = "Log A Seizure",
+    label: String = "Log a Seizure",
     default: DefaultState = DefaultState()
 ) {
     var selectedOption by remember { mutableStateOf(default.type) }
     var duration by remember { mutableStateOf(default.duration.toString()) }
     var severity by remember { mutableStateOf(default.severity.toFloat()) }
-    var selectedTriggers = remember { mutableStateListOf(*default.triggers.toTypedArray()) }
+    val selectedTriggers = remember { mutableStateListOf(*default.triggers.toTypedArray()) }
 
 
     val options = listOf("Focal", "Generalized", "Unknown")
     val triggerOptions = listOf("Stress", "Lack of Sleep", "Flashing Lights", "Other")
 
+    val sliderColor = when {
+        severity <= 2f -> Color(0xFF4CAF50)
+        severity <= 3f -> Color(0xFFFF9800)
+        else -> Color(0xFFFF5252)
+    }
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -99,11 +108,17 @@ fun LogSeizureEventModal(
                     onValueChange = { severity = it },
                     valueRange = 1f..5f,
                     steps = 3,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = SliderDefaults.colors(
+                        thumbColor = sliderColor,
+                        activeTrackColor = sliderColor,
+                        inactiveTrackColor = sliderColor.copy(alpha = 0.3f)
+                    )
                 )
                 Text(
                     text = "Selected Severity: ${severity.toInt()}",
-                    style = MaterialTheme.typography.bodySmall
+                    style = MaterialTheme.typography.bodySmall,
+                    color = sliderColor
                 )
             }
 
@@ -154,7 +169,7 @@ fun DropdownField(
             label = { Text(label) },
             readOnly = true,
             modifier = Modifier
-                .menuAnchor() // Anchor the dropdown to the field
+                .menuAnchor()
                 .fillMaxWidth()
         )
 
@@ -220,7 +235,6 @@ data class SeizureEvent(
     var timestamp: Long = 0
 )
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Preview(showBackground = true)
 @Composable
 fun PreviewLogSeizureEventModal() {
@@ -228,6 +242,6 @@ fun PreviewLogSeizureEventModal() {
         onDismiss = {},
         onClick = { /* Handle SeizureEvent */ },
         label = "Preview Log Seizure",
-        default = DefaultState() // Replace with appropriate default values
+        default = DefaultState()
     )
 }

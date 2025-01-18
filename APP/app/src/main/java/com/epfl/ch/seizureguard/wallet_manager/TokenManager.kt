@@ -1,7 +1,7 @@
 package com.epfl.ch.seizureguard.wallet_manager
+import com.epfl.ch.seizureguard.BuildConfig
 import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
-import com.epfl.ch.seizureguard.BuildConfig
 import java.security.KeyFactory
 import java.security.interfaces.RSAPrivateKey
 import java.security.spec.PKCS8EncodedKeySpec
@@ -69,7 +69,7 @@ fun generateToken(
             "value" to "ISSUER_ID.OBJECT_ID",
             "alternateText" to ""
         ),
-        "hexBackgroundColor" to "#05b3b4",
+        "hexBackgroundColor" to "#ffffff",
     )
 
     val privateKey = BuildConfig.PRIVATE_KEY

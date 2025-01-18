@@ -33,6 +33,10 @@ import androidx.core.app.ActivityCompat
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
 import com.google.firebase.messaging.FirebaseMessaging
+import com.epfl.ch.seizureguard.widgets.SeizureWidgetUpdater
+import com.epfl.ch.seizureguard.widgets.SeizureCountWidget
+import com.google.firebase.storage.FirebaseStorage
+import kotlinx.coroutines.tasks.await
 
 class ProfileViewModel(context: Context, application: Application) : AndroidViewModel(application) {
     private val repository: ProfileRepository by lazy {
@@ -58,7 +62,7 @@ class ProfileViewModel(context: Context, application: Application) : AndroidView
 
     private val _isInferenceRunning = MutableStateFlow(false)
     val isInferenceRunning: StateFlow<Boolean> = _isInferenceRunning
-    fun setInferenceRunning(newValue : Boolean){
+    fun setInferenceRunning(newValue: Boolean) {
         _isInferenceRunning.value = newValue
     }
 
@@ -73,27 +77,15 @@ class ProfileViewModel(context: Context, application: Application) : AndroidView
     fun updateMetricsFromUI(metrics: Metrics) {
         viewModelScope.launch {
             try {
-                // 1. Mettre à jour les métriques dans le repository
                 repository.updateMetrics(metrics)
-
-                // 2. Mettre à jour le state local avec les nouvelles métriques
                 _profileState.update { currentProfile ->
                     currentProfile.copy(latestMetrics = metrics)
                 }
-
-                // 3. Attendre que le state soit mis à jour
                 val updatedProfile = _profileState.value
 
-                // 4. Vérifier que les métriques sont bien mises à jour
-                Log.d("ProfileViewModel", "Updating profile with metrics: ${updatedProfile.latestMetrics}")
-
-                // 5. Sauvegarder dans Firebase et les préférences
                 repository.saveProfileToFirestore(updatedProfile)
                 repository.saveProfileToPreferences(updatedProfile)
-
-                Log.d("ProfileViewModel", "Metrics updated and saved successfully: $metrics")
-            } catch (e: Exception) {
-                Log.e("ProfileViewModel", "Error updating metrics", e)
+            } catch (_: Exception) {
             }
         }
     }
@@ -118,7 +110,7 @@ class ProfileViewModel(context: Context, application: Application) : AndroidView
         Log.d("ProfileViewModel", "Loaded profile: $profile")
     }
 
-    fun loadProfileFromEmail(email: String, password: String, onLoggedIn: () -> Unit) {
+    fun loadProfileFromEmail(email: String, password: String, onComplete: (Profile?) -> Unit) {
         viewModelScope.launch {
             try {
                 val profile = repository.loadProfileFromFirestore(email, password)
@@ -126,13 +118,15 @@ class ProfileViewModel(context: Context, application: Application) : AndroidView
                     _profileState.value = profile
                     repository.saveProfileToPreferences(profile)
                     setAuthenticated(true)
-                    onLoggedIn()
                     Log.d("ProfileViewModel", "Profile loaded and saved: $profile")
+                    onComplete(profile)
                 } else {
                     Log.d("ProfileViewModel", "No matching profile found for email: $email")
+                    onComplete(null)
                 }
             } catch (e: Exception) {
                 Log.e("ProfileViewModel", "Failed to load profile from Firestore", e)
+                onComplete(null)
             }
         }
     }
@@ -141,17 +135,9 @@ class ProfileViewModel(context: Context, application: Application) : AndroidView
     fun saveProfile() = viewModelScope.launch {
         try {
             val profile = _profileState.value
-            Log.d("ProfileViewModel", "Starting to save profile: $profile")
-            
-            // Sauvegarder dans les préférences
             repository.saveProfileToPreferences(profile)
-            Log.d("ProfileViewModel", "Profile saved to preferences")
-            
-            // Sauvegarder dans Firebase
             repository.saveProfileToFirestore(profile)
-            Log.d("ProfileViewModel", "Profile saved to Firestore")
-            
-            Log.d("ProfileViewModel", "Profile saved successfully with all fields.")
+            SeizureWidgetUpdater.updateWidgets(getApplication())
         } catch (e: Exception) {
             Log.e("ProfileViewModel", "Error saving profile", e)
         }
@@ -204,34 +190,37 @@ class ProfileViewModel(context: Context, application: Application) : AndroidView
 
     fun addSeizure(seizure: SeizureEvent) {
         viewModelScope.launch {
-            val profile = _profileState.value
-            val updatedProfile = profile.copy(pastSeizures = profile.pastSeizures + seizure)
-            _profileState.value = updatedProfile
-            repository.addSeizure(profile.uid, seizure)
+            val currentProfile = _profileState.value
+            val updatedSeizures = currentProfile.pastSeizures + seizure
+            _profileState.value = currentProfile.copy(pastSeizures = updatedSeizures)
             saveProfile()
+
+            SeizureCountWidget.updateWidget(getApplication())
         }
     }
 
     fun removeSeizure(seizure: SeizureEvent) {
         viewModelScope.launch {
-            val profile = _profileState.value
-            val updatedProfile =
-                profile.copy(pastSeizures = profile.pastSeizures.filter { it.timestamp != seizure.timestamp })
-            _profileState.value = updatedProfile
-            repository.removeSeizure(profile.uid, seizure.timestamp)
+            val currentProfile = _profileState.value
+            val updatedSeizures = currentProfile.pastSeizures.filter { it != seizure }
+            _profileState.value = currentProfile.copy(pastSeizures = updatedSeizures)
             saveProfile()
+
+            SeizureCountWidget.updateWidget(getApplication())
         }
     }
 
     fun editSeizure(newSeizure: SeizureEvent, oldSeizure: SeizureEvent) {
         viewModelScope.launch {
             val profile = _profileState.value
-            val updatedProfile =
-                profile.copy(pastSeizures = profile.pastSeizures.map { if (it.timestamp == oldSeizure.timestamp) newSeizure else it })
+            val updatedProfile = profile.copy(pastSeizures = profile.pastSeizures.map {
+                if (it.timestamp == oldSeizure.timestamp) newSeizure else it
+            })
             _profileState.value = updatedProfile
             repository.removeSeizure(profile.uid, oldSeizure.timestamp)
             repository.addSeizure(profile.uid, newSeizure)
             saveProfile()
+            SeizureWidgetUpdater.updateWidgets(getApplication())
         }
     }
 
@@ -262,7 +251,6 @@ class ProfileViewModel(context: Context, application: Application) : AndroidView
 
     fun updateProfileField(key: String, value: String) {
         viewModelScope.launch {
-            // Mettre à jour le state
             _profileState.update { currentProfile ->
                 when (key) {
                     "name" -> currentProfile.copy(name = value)
@@ -276,20 +264,14 @@ class ProfileViewModel(context: Context, application: Application) : AndroidView
                 }
             }
 
-            // Sauvegarder dans les préférences
             repository.updateProfileField(key, value)
-            
-            // Sauvegarder le profil complet
             saveProfile()
-            
-            Log.d("ProfileViewModel", "Profile field updated and saved: $key = $value")
         }
     }
 
     fun updateMultipleFieldsAndSave(updates: Map<String, String>) {
         viewModelScope.launch {
             try {
-                // Mettre à jour le state avec toutes les modifications
                 _profileState.update { currentProfile ->
                     var updatedProfile = currentProfile
                     updates.forEach { (key, value) ->
@@ -303,17 +285,9 @@ class ProfileViewModel(context: Context, application: Application) : AndroidView
                     updatedProfile
                 }
 
-                Log.d("ProfileViewModel", "State updated with new values: $updates")
-                
-                // Attendre que le state soit mis à jour
                 val updatedProfile = _profileState.value
-                Log.d("ProfileViewModel", "Current profile state: $updatedProfile")
-
-                // Sauvegarder explicitement dans les deux endroits
                 repository.saveProfileToPreferences(updatedProfile)
                 repository.saveProfileToFirestore(updatedProfile)
-                
-                Log.d("ProfileViewModel", "Multiple fields updated and saved successfully")
             } catch (e: Exception) {
                 Log.e("ProfileViewModel", "Error updating multiple fields", e)
             }
@@ -379,7 +353,7 @@ class ProfileViewModel(context: Context, application: Application) : AndroidView
                 currentProfile.copy(pwd = newPassword)
             }
             repository.updateProfileField("pwd", newPassword)
-            saveProfile() // Sauvegarder dans Firestore aussi
+            saveProfile()
             Log.d("ProfileViewModel", "Password updated successfully")
         }
     }
@@ -481,13 +455,18 @@ class ProfileViewModel(context: Context, application: Application) : AndroidView
         FirebaseMessaging.getInstance().token
             .addOnCompleteListener { task ->
                 if (!task.isSuccessful) {
-                    Log.w("ProfileViewModel", "Fetching FCM registration token failed", task.exception)
+                    Log.w(
+                        "ProfileViewModel",
+                        "Fetching FCM registration token failed",
+                        task.exception
+                    )
                     return@addOnCompleteListener
                 }
                 // Get the new FCM registration token
                 val profile = _profileState.value
                 val token = task.result
                 Log.d("ProfileViewModel", "FCM Token retrieved: $token")
+
                 // If the token is not null or empty, store it in Firestore
                 if (!token.isNullOrEmpty()) {
                     viewModelScope.launch {
@@ -546,6 +525,67 @@ class ProfileViewModel(context: Context, application: Application) : AndroidView
                 Log.d("ProfileViewModel", "Notification sent to ${tokens.size} device(s).")
             } catch (e: Exception) {
                 Log.e("ProfileViewModel", "Error sending notifications", e)
+            }
+        }
+    }
+
+    fun updateProfileImage(newUri: Uri, onComplete: () -> Unit = {}) {
+        viewModelScope.launch {
+            try {
+                val storageRef = FirebaseStorage.getInstance().reference
+                    .child("profile_images")
+                    .child(profileState.value.uid + ".jpg")
+
+                val uploadTask = storageRef.putFile(newUri)
+                uploadTask.await()
+
+                val downloadUrl = storageRef.downloadUrl.await()
+
+                _profileState.update { currentProfile ->
+                    currentProfile.copy(uri = downloadUrl.toString())
+                }
+
+                saveProfile()
+                onComplete()
+            } catch (e: Exception) {
+                Log.e("ProfileViewModel", "Error updating profile image", e)
+                onComplete()
+            }
+        }
+    }
+
+    fun addNote(note: Notes) {
+        viewModelScope.launch {
+            try {
+                val updatedNotes = _profileState.value.medicalNotes.toMutableList()
+                updatedNotes.add(note)
+                
+                _profileState.value = _profileState.value.copy(
+                    medicalNotes = updatedNotes
+                )
+                
+                repository.saveProfileToPreferences(_profileState.value)
+                repository.saveProfileToFirestore(_profileState.value)
+            } catch (e: Exception) {
+                Log.e("ProfileViewModel", "Error adding note: ${e.message}")
+            }
+        }
+    }
+
+    fun deleteNote(note: Notes) {
+        viewModelScope.launch {
+            try {
+                val updatedNotes = _profileState.value.medicalNotes.filter { it != note }
+                
+                _profileState.value = _profileState.value.copy(
+                    medicalNotes = updatedNotes
+                )
+                
+                repository.saveProfileToPreferences(_profileState.value)
+                repository.saveProfileToFirestore(_profileState.value)
+                
+            } catch (e: Exception) {
+                Log.e("ProfileViewModel", "Error deleting note: ${e.message}")
             }
         }
     }

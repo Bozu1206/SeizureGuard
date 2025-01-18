@@ -1,5 +1,7 @@
 package com.epfl.ch.seizureguard.onboarding
 
+import android.annotation.SuppressLint
+import android.view.Gravity
 import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
@@ -51,6 +53,7 @@ import com.google.accompanist.pager.HorizontalPager
 import com.google.accompanist.pager.HorizontalPagerIndicator
 import com.google.accompanist.pager.rememberPagerState
 
+@SuppressLint("ShowToast")
 @Composable
 fun OnboardingScreen(
     onFinish: () -> Unit,

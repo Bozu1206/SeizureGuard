@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">SeizureGuard</string>
+    <string name="guidelines">
+        1. Restez calme et assurez la sécurité de la personne.\n
+        2. Chronométrez la crise si possible.\n
+        3. Ne retenez pas la personne et ne mettez rien dans sa bouche.\n
+        4. Placez-la sur le côté pour dégager les voies respiratoires.\n
+        5. Éloignez les objets dangereux.\n
+        6. Restez avec la personne jusqu\'à ce qu\'elle soit complètement rétablie.\n
+        7. Appelez les secours si la crise dure plus de 5 minutes ou se répète.\n
+    </string>
+    <string name="add_google_wallet_success">Parfait\n</string>
+    <string name="fixed_foregroung_notification_channel_id">notification de service en premier plan</string>
+    <string name="seizure_notification_id">crise détectée</string>
+    <string name="about">SeizureGuard est une application innovante conçue pour détecter et surveiller les crises d\'épilepsie à l\'aide de signaux EEG. Elle offre une surveillance en temps réel, des alertes d\'urgence et un suivi détaillé de l\'historique des crises.</string>
+    <string name="authors"><![CDATA[Francesco Poluzzi et François Dumoncel EE-490(g): Laboratoire de développement d\'applications pour smartphones \nSuperviseur: Ansaloni Giovanni & Amirhossein Shahbazinia]]></string>
+    <string name="low_power_mode">Économie d\'énergie</string>
+    <string name="normal_power_mode">Normal</string>
+    <string name="high_performance_mode">Performance</string>
+    <string name="marker_title_text">Localisation de la crise</string>
+</resources> 
