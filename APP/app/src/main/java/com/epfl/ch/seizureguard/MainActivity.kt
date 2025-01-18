@@ -52,10 +52,9 @@ class MainActivity : FragmentActivity() {
     lateinit var profileViewModel: ProfileViewModel
 
     private val seizureEventViewModel: SeizureEventViewModel by viewModels()
-    private val historyViewModel: HistoryViewModel by viewModels()
     private val metricsViewModel: MetricsViewModel by viewModels()
 
-    private var isLoggedIn by mutableStateOf(true)
+    private var isLoggedIn by mutableStateOf(false)
 
     private val walletViewModel: WalletViewModel by viewModels()
     private val addToGoogleWalletRequestCode = 1000

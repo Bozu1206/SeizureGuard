@@ -56,6 +56,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import com.epfl.ch.seizureguard.R
 import com.epfl.ch.seizureguard.RunningApp
 import com.epfl.ch.seizureguard.profile.ProfileViewModelFactory
+import kotlin.math.abs
 import kotlin.math.round
 
 private val CardShape = RoundedCornerShape(16.dp)
@@ -476,12 +477,11 @@ private fun MetricItem(
     icon: ImageVector,
     modifier: Modifier = Modifier
 ) {
-    val eps = 0.001
-    val tint: Color
-    if (value.toDouble() - 1 <= eps) {
-        tint = Color(0xFF4CAF50)
+    val eps = 0.1
+    val tint: Color = if (abs(value.toDouble() - 1) <= eps) {
+        Color(0xFF4CAF50)
     } else {
-        tint = Color(0xFFDB3535)
+        Color(0xFFDB3535)
     }
 
     Card(
