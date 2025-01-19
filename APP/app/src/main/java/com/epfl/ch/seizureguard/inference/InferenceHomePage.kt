@@ -50,6 +50,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.res.stringResource
 import com.epfl.ch.seizureguard.R
 import com.epfl.ch.seizureguard.RunningApp
 import com.epfl.ch.seizureguard.profile.ProfileViewModelFactory
@@ -79,19 +80,23 @@ fun InferenceHomePage(
     val isInferenceRunning by profileViewModel.isInferenceRunning.collectAsState()
 
     val context = LocalContext.current
-
     val runningApp = context.applicationContext as RunningApp
     val bluetoothViewModel = runningApp.bluetoothViewModel
 
     val debugMode = profile.isDebugEnabled
-
-    // is the BLE device connected?
+    // Is the BLE device connected?
     val isConnected by bluetoothViewModel.isConnected.observeAsState(initial = false)
+
+    // Retrieve power-mode value from strings
     val powerModeValue = when (profile.powerMode) {
-        context.getString(R.string.low_power_mode) -> context.resources.getInteger(R.integer.low_power_config)
-        context.getString(R.string.normal_power_mode) -> context.resources.getInteger(R.integer.normal_power_config)
-        context.getString(R.string.high_performance_mode) -> context.resources.getInteger(R.integer.high_performance_config)
-        else -> context.resources.getInteger(R.integer.normal_power_config)
+        context.getString(R.string.low_power_mode) ->
+            context.resources.getInteger(R.integer.low_power_config)
+        context.getString(R.string.normal_power_mode) ->
+            context.resources.getInteger(R.integer.normal_power_config)
+        context.getString(R.string.high_performance_mode) ->
+            context.resources.getInteger(R.integer.high_performance_config)
+        else ->
+            context.resources.getInteger(R.integer.normal_power_config)
     }
 
     bluetoothViewModel.setPowerMode(powerModeValue.toByte())
@@ -145,15 +150,11 @@ fun InferenceHomePage(
                 }
 
                 ActionButtonsSection(
-                    debugMode,
-                    isConnected,
-                    isInferenceRunning,
-                    onPerformInference = {
-                        onPerformInference()
-                    },
-                    onPauseInference = {
-                        onPauseInference()
-                    },
+                    debugMode = debugMode,
+                    isConnected = isConnected,
+                    isInferenceRunning = isInferenceRunning,
+                    onPerformInference = { onPerformInference() },
+                    onPauseInference = { onPauseInference() },
                     onScanDevices = { bluetoothViewModel.scanLeDevice() },
                     bluetoothViewModel = bluetoothViewModel
                 )
@@ -165,7 +166,7 @@ fun InferenceHomePage(
 @Composable
 private fun DashboardHeader() {
     Text(
-        text = "Dashboard",
+        text = stringResource(R.string.dashboard_title),
         style = MaterialTheme.typography.headlineLarge.copy(fontWeight = FontWeight.Bold),
         modifier = Modifier.padding(bottom = DefaultPadding),
         textAlign = TextAlign.Start
@@ -193,13 +194,20 @@ private fun ActionButtonsSection(
 ) {
     val context = LocalContext.current
 
+    // Pre-capture string resources that will be used inside lambdas:
+    val noDeviceConnectedText = stringResource(R.string.no_device_connected)
+    val inferenceRunningText = stringResource(R.string.inference_running)
+    val performInferenceText = stringResource(R.string.perform_inference)
+    val scanningForDevicesText = stringResource(R.string.scanning_for_devices)
+    val connectedDeviceFormat = stringResource(R.string.connected_device)
+    val lookForDevicesText = stringResource(R.string.look_for_devices)
+
     Box(
         modifier = Modifier.fillMaxWidth(),
         contentAlignment = Alignment.BottomCenter
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
+            modifier = Modifier.fillMaxWidth()
         ) {
             val buttonHeight = 48.dp
             Row(
@@ -208,8 +216,11 @@ private fun ActionButtonsSection(
                     .padding(bottom = SmallPadding),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                val inferenceButtonText =
-                    if (isInferenceRunning) "Inference Running" else "Perform Inference"
+                val inferenceButtonText = if (isInferenceRunning) {
+                    inferenceRunningText
+                } else {
+                    performInferenceText
+                }
 
                 ActionButtonInference(
                     onClick = {
@@ -217,13 +228,15 @@ private fun ActionButtonsSection(
                             onPauseInference()
                         } else {
                             if (!debugMode && !isConnected) {
-                                Toast.makeText(context, "No device connected!", Toast.LENGTH_LONG)
-                                    .show()
+                                Toast.makeText(
+                                    context,
+                                    noDeviceConnectedText,
+                                    Toast.LENGTH_LONG
+                                ).show()
                             } else {
                                 onPerformInference()
                             }
                         }
-
                     },
                     icon = if (isInferenceRunning) Icons.Default.Autorenew else Icons.Default.PlayArrow,
                     text = inferenceButtonText,
@@ -241,14 +254,16 @@ private fun ActionButtonsSection(
                             onPauseInference()
                         } else {
                             if (!debugMode && !isConnected) {
-                                Toast.makeText(context, "No device connected!", Toast.LENGTH_LONG)
-                                    .show()
+                                Toast.makeText(
+                                    context,
+                                    noDeviceConnectedText,
+                                    Toast.LENGTH_LONG
+                                ).show()
                             } else {
                                 onPerformInference()
                             }
                         }
                     },
-                    // Match the height of the button
                     modifier = Modifier.height(buttonHeight)
                 )
             }
@@ -259,8 +274,12 @@ private fun ActionButtonsSection(
                     .padding(bottom = SmallPadding),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                val scanButtonText =
-                    if (isConnected) "Connected to ${bluetoothViewModel.myDeviceName}" else "Look for Devices"
+                val scanButtonText = if (isConnected) {
+                    // "Connected to %1$s"
+                    String.format(connectedDeviceFormat, bluetoothViewModel.myDeviceName)
+                } else {
+                    lookForDevicesText
+                }
                 val scanButtonColors = if (isConnected) {
                     ButtonDefaults.buttonColors(containerColor = Color(0xFF3EFD46))
                 } else {
@@ -270,8 +289,7 @@ private fun ActionButtonsSection(
                     onClick = {
                         if (!isConnected) {
                             onScanDevices()
-                            Toast.makeText(context, "Scanning for devices", Toast.LENGTH_SHORT)
-                                .show()
+                            Toast.makeText(context, scanningForDevicesText, Toast.LENGTH_SHORT).show()
                         }
                     },
                     icon = if (isConnected) Icons.Default.BluetoothConnected else Icons.Default.BluetoothDisabled,
@@ -279,7 +297,7 @@ private fun ActionButtonsSection(
                     modifier = Modifier
                         .weight(1f)
                         .height(buttonHeight),
-                    buttonColors = scanButtonColors // Apply conditional colors
+                    buttonColors = scanButtonColors
                 )
                 Spacer(modifier = Modifier.width(8.dp))
 
@@ -308,8 +326,10 @@ private fun ActionButtonInference(
         animationSpec = infiniteRepeatable(
             animation = tween(durationMillis = 2000, easing = LinearEasing),
             repeatMode = RepeatMode.Restart
-        ), label = "Rotating arrow"
+        ),
+        label = "Rotating arrow"
     )
+
     Button(
         onClick = onClick,
         shape = CardShape,
@@ -344,13 +364,13 @@ private fun ActionButtonBLE(
     Button(
         onClick = onClick,
         shape = CardShape,
-        colors = buttonColors, // Apply the custom colors
+        colors = buttonColors,
         modifier = modifier.fillMaxWidth()
     ) {
         Icon(
             imageVector = icon,
             contentDescription = text,
-            modifier = Modifier.size(18.dp) // Adjusted size for better visibility
+            modifier = Modifier.size(18.dp)
         )
         Spacer(modifier = Modifier.width(SmallPadding))
         Text(
@@ -368,9 +388,11 @@ fun BentoMetricsCard(
 ) {
     var showExtra by remember { mutableStateOf(false) }
     val context = LocalContext.current
-
     val sampleCount by profileViewModel.sampleCount.collectAsState()
     val isTrainReady by profileViewModel.isTrainReady.collectAsState()
+
+    // Pre-capture string resource for training toast
+    val trainingHasStartedText = stringResource(R.string.training_has_started)
 
     val canTrain by remember(sampleCount, isTrainReady) {
         derivedStateOf { sampleCount >= 100 && isTrainReady }
@@ -381,7 +403,7 @@ fun BentoMetricsCard(
         canTrain = canTrain,
         onTrainClick = {
             profileViewModel.requestTraining()
-            Toast.makeText(context, "Training has started", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, trainingHasStartedText, Toast.LENGTH_SHORT).show()
         },
         onShowDetails = { showExtra = true },
         profileViewModel = profileViewModel
@@ -394,7 +416,6 @@ fun BentoMetricsCard(
         )
     }
 }
-
 
 @Composable
 private fun MetricsCardContent(
@@ -432,16 +453,14 @@ private fun MetricsCardContent(
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
                 MetricItem(
-                    title = "Accuracy",
+                    title = stringResource(R.string.accuracy),
                     value = metrics.accuracy.toString(),
                     modifier = Modifier.weight(1f),
                     icon = Icons.Default.Adjust
                 )
-
                 Spacer(modifier = Modifier.width(24.dp))
-
                 MetricItem(
-                    title = "F1 Score",
+                    title = stringResource(R.string.f1_score),
                     value = metrics.f1.toString(),
                     modifier = Modifier
                         .weight(1f)
@@ -449,8 +468,6 @@ private fun MetricsCardContent(
                     icon = Icons.Default.TaskAlt
                 )
             }
-
-
 
             if (profile.isTrainingEnabled) {
                 Spacer(modifier = Modifier.height(DefaultPadding))
@@ -460,7 +477,10 @@ private fun MetricsCardContent(
                     modifier = Modifier.fillMaxWidth(),
                     shape = CardShape,
                 ) {
-                    Text("Train Model", color = MaterialTheme.colorScheme.onPrimary)
+                    Text(
+                        text = stringResource(R.string.train_model),
+                        color = MaterialTheme.colorScheme.onPrimary
+                    )
                 }
             }
         }
@@ -493,9 +513,7 @@ private fun MetricItem(
                 .fillMaxWidth()
                 .padding(DefaultPadding)
         ) {
-            Row(
-                horizontalArrangement = Arrangement.SpaceBetween,
-            ) {
+            Row(horizontalArrangement = Arrangement.SpaceBetween) {
                 Text(
                     text = title,
                     style = MaterialTheme.typography.bodyMedium,
@@ -535,20 +553,19 @@ private fun MetricsDetailsSheet(
                 .padding(DefaultPadding)
         ) {
             Text(
-                text = "Metrics Details",
+                text = stringResource(R.string.metrics_details),
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.padding(bottom = SmallPadding)
             )
 
-            MetricDetailRow("Precision", metrics.precision.toString())
-            MetricDetailRow("Recall", metrics.recall.toString())
+            MetricDetailRow(stringResource(R.string.precision), metrics.precision.toString())
+            MetricDetailRow(stringResource(R.string.recall), metrics.recall.toString())
 
             Spacer(modifier = Modifier.height(SmallPadding))
 
             Text(
-                text = "The F1-Score is computed as the harmonic mean of precision and recall: " +
-                        "f1 = 2 * (precision * recall) / (precision + recall)",
+                text = stringResource(R.string.f1_score_explanation),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -583,11 +600,15 @@ private fun MetricDetailRow(
 private fun HandleBluetoothSetup(bluetoothViewModel: BluetoothViewModel) {
     val context = LocalContext.current
 
+    // Capture strings for lambdas
+    val bluetoothNotEnabledText = stringResource(R.string.bluetooth_not_enabled)
+    val bluetoothNotSupportedText = stringResource(R.string.bluetooth_not_supported)
+
     val resultLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
     ) { result ->
         if (result.resultCode != Activity.RESULT_OK) {
-            Toast.makeText(context, "Bluetooth is not enabled!", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, bluetoothNotEnabledText, Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -596,9 +617,8 @@ private fun HandleBluetoothSetup(bluetoothViewModel: BluetoothViewModel) {
     LaunchedEffect(Unit) {
         when {
             bluetoothViewModel.bluetoothAdapter == null -> {
-                Toast.makeText(context, "Bluetooth not supported", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, bluetoothNotSupportedText, Toast.LENGTH_SHORT).show()
             }
-
             !bluetoothViewModel.bluetoothAdapter.isEnabled -> {
                 val enableBtIntent = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
                 resultLauncher.launch(enableBtIntent)
@@ -632,11 +652,9 @@ private fun RequestBluetoothPermissions() {
                 Manifest.permission.ACCESS_FINE_LOCATION,
                 Manifest.permission.ACCESS_COARSE_LOCATION
             )
-
             val needsPermissions = requiredPermissions.any {
                 ContextCompat.checkSelfPermission(context, it) != PackageManager.PERMISSION_GRANTED
             }
-
             if (needsPermissions) {
                 permissionLauncher.launch(requiredPermissions)
             }
@@ -645,14 +663,18 @@ private fun RequestBluetoothPermissions() {
 }
 
 @Composable
-fun InferenceOverlay( // big clickable box with the plots
+fun InferenceOverlay(
     debugMode: Boolean,
     isConnected: Boolean,
     context: Context,
-
     isInferenceRunning: Boolean,
     onStartInference: () -> Unit
 ) {
+    // Pre-capture string resources for the overlay
+    val noDeviceConnectedText = stringResource(R.string.no_device_connected)
+    val startInferenceText = stringResource(R.string.start_inference)
+    val tapToBeginText = stringResource(R.string.tap_anywhere_to_begin_monitoring)
+
     if (!isInferenceRunning) {
         Box(
             modifier = Modifier
@@ -660,9 +682,9 @@ fun InferenceOverlay( // big clickable box with the plots
                 .clip(RoundedCornerShape(20.dp))
                 .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.9f))
                 .clickable {
-                    if (!debugMode && !isConnected) { // if no EEG device connected
+                    if (!debugMode && !isConnected) {
                         Toast
-                            .makeText(context, "No device connected!", Toast.LENGTH_LONG)
+                            .makeText(context, noDeviceConnectedText, Toast.LENGTH_LONG)
                             .show()
                     } else {
                         onStartInference()
@@ -677,7 +699,7 @@ fun InferenceOverlay( // big clickable box with the plots
             ) {
                 Icon(
                     imageVector = Icons.Default.PlayArrow,
-                    contentDescription = "Start Inference",
+                    contentDescription = startInferenceText,
                     modifier = Modifier
                         .size(64.dp)
                         .padding(bottom = 16.dp),
@@ -685,7 +707,7 @@ fun InferenceOverlay( // big clickable box with the plots
                 )
 
                 Text(
-                    text = "Start Inference",
+                    text = startInferenceText,
                     style = MaterialTheme.typography.headlineSmall,
                     color = MaterialTheme.colorScheme.primary,
                     fontWeight = FontWeight.Bold
@@ -694,7 +716,7 @@ fun InferenceOverlay( // big clickable box with the plots
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Text(
-                    text = "Tap anywhere to begin monitoring",
+                    text = tapToBeginText,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                     textAlign = TextAlign.Center
@@ -710,11 +732,17 @@ fun DeviceConnectionIcon(
     buttonColors: ButtonColors = ButtonDefaults.buttonColors(),
     modifier: Modifier = Modifier
 ) {
-    val icon =
-        if (isConnected) Icons.Default.BluetoothConnected else Icons.Default.BluetoothDisabled
+    val icon = if (isConnected) Icons.Default.BluetoothConnected else Icons.Default.BluetoothDisabled
+    // Pre-capture the contentDescription
+    val contentDescription = if (isConnected) {
+        stringResource(R.string.device_connected)
+    } else {
+        stringResource(R.string.device_disconnected)
+    }
+
     Icon(
         imageVector = icon,
-        contentDescription = if (isConnected) "Device Connected" else "Device Disconnected",
+        contentDescription = contentDescription,
         modifier = modifier.aspectRatio(1f),
         tint = buttonColors.containerColor
     )
@@ -728,13 +756,20 @@ fun InferenceRunningIcon(
     modifier: Modifier = Modifier
 ) {
     val icon = if (isInferenceRunning) Icons.Default.Pause else Icons.Default.PlayArrow
+    // Pre-capture the contentDescription
+    val contentDescription = if (isInferenceRunning) {
+        stringResource(R.string.inference_running_cd)
+    } else {
+        stringResource(R.string.inference_not_running_cd)
+    }
+
     IconButton(
         onClick = onClick,
         modifier = modifier.aspectRatio(1f)
     ) {
         Icon(
             imageVector = icon,
-            contentDescription = if (isInferenceRunning) "Inference running" else "Inference not running",
+            contentDescription = contentDescription,
             tint = buttonColors.containerColor,
             modifier = modifier.fillMaxSize()
         )

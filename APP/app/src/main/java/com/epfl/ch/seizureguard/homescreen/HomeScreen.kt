@@ -64,9 +64,14 @@ import java.util.Date
 import java.util.Locale
 import com.epfl.ch.seizureguard.seizure_event.SeizureEvent
 import androidx.compose.material3.Scaffold
+import androidx.compose.ui.res.stringResource
+import com.epfl.ch.seizureguard.R
 
+@Composable
 private fun formatDate(timestamp: Long): String {
-    val sdf = SimpleDateFormat("MMM dd, yyyy HH:mm", Locale.getDefault())
+    // Retrieve the pattern from resources in a non-Composable function:
+    val pattern = LocalContext.current.getString(R.string.date_time_pattern)
+    val sdf = SimpleDateFormat(pattern, Locale.getDefault())
     return sdf.format(Date(timestamp))
 }
 
@@ -131,10 +136,13 @@ fun HomeScreen(
     }
 }
 
-
 @Composable
 fun WelcomeSection(profileViewModel: ProfileViewModel) {
     val profile = profileViewModel.profileState.collectAsState()
+
+    // Capture string resources:
+    val welcomeText = stringResource(R.string.welcome_text)
+    val overviewText = stringResource(R.string.overview_of_health)
 
     val gradient = Brush.horizontalGradient(
         colors = listOf(
@@ -152,7 +160,8 @@ fun WelcomeSection(profileViewModel: ProfileViewModel) {
         Row {
             Text(
                 text = buildAnnotatedString {
-                    append("Welcome, ")
+                    // "Welcome, " + userName
+                    append(welcomeText)
                     withStyle(
                         style = SpanStyle(
                             brush = gradient,
@@ -168,7 +177,7 @@ fun WelcomeSection(profileViewModel: ProfileViewModel) {
         }
 
         Text(
-            text = "Here's an overview of your health status",
+            text = overviewText,
             style = MaterialTheme.typography.bodyLarge,
         )
     }
@@ -176,10 +185,18 @@ fun WelcomeSection(profileViewModel: ProfileViewModel) {
 
 @Composable
 fun HealthMetricsSection(profileViewModel: ProfileViewModel) {
+    // Capture string resources:
+    val seizuresLabel = stringResource(R.string.seizures_label)
+    val lastWeekText = stringResource(R.string.last_week)
+    val heartRateText = stringResource(R.string.heart_rate)
+    val bpmText = stringResource(R.string.bpm)
+    val sleepLabel = stringResource(R.string.sleep_label)
+    val hoursPerNight = stringResource(R.string.hours_per_night)
+
     val profile = profileViewModel.profileState.collectAsState()
     val numbersOfSeizureLastWeek =
         profile.value.pastSeizures.count {
-            // Count number of seizure in the past week
+            // Count number of seizures in the past week
             it.timestamp > System.currentTimeMillis() - 7 * 24 * 60 * 60 * 1000
         }
 
@@ -192,13 +209,14 @@ fun HealthMetricsSection(profileViewModel: ProfileViewModel) {
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
+            // Example: "Seizures" / "last week"
             MetricCard(
-                title = "Seizures",
+                title = seizuresLabel,
                 value = numbersOfSeizureLastWeek.toString(),
-                unit = "last week"
+                unit = lastWeekText
             )
-            MetricCard(title = "Heart Rate", value = "76", unit = "bpm")
-            MetricCard(title = "Sleep", value = "6.5", unit = "hrs/night")
+            MetricCard(title = heartRateText, value = "76", unit = bpmText)
+            MetricCard(title = sleepLabel, value = "6.5", unit = hoursPerNight)
         }
     }
 }
@@ -243,9 +261,13 @@ fun MetricCard(title: String, value: String, unit: String) {
 
 @Composable
 fun QuickActionButton(icon: ImageVector, label: String, onClick: () -> Unit) {
+    // Typically we handle coloring based on label; let's localize the label logic as well:
+    // We'll keep the color logic but also map them to stringResource usage externally.
     val buttonColors = when (label) {
-        "Emergency" -> Color(0xFFFF5252)
-        "Log Event" -> Color(0xFFFF9800)
+        // "Emergency"
+        stringResource(R.string.emergency) -> Color(0xFFFF5252)
+        // "Log Event"
+        stringResource(R.string.log_event) -> Color(0xFFFF9800)
         else -> Color(0xFF4CAF50)
     }
 
@@ -282,25 +304,29 @@ fun QuickActionsSection(
     profileViewModel: ProfileViewModel,
     modifier: Modifier = Modifier
 ) {
+    // Capture string resources:
+    val emergencyText = stringResource(R.string.emergency)
+    val logEventText = stringResource(R.string.log_event)
+    val guidelinesText = stringResource(R.string.guidelines_label)
+
     var showLogEventModal by remember { mutableStateOf(false) }
     var showGuidelines by remember { mutableStateOf(false) }
 
     Column(
-        modifier = modifier
-            .fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Row(
             horizontalArrangement = Arrangement.SpaceEvenly,
             modifier = Modifier.fillMaxWidth()
         ) {
-            QuickActionButton(icon = Icons.Default.Call, label = "Emergency") {
+            QuickActionButton(icon = Icons.Default.Call, label = emergencyText) {
                 onEmergencyCall(context)
             }
-            QuickActionButton(icon = Icons.Default.Add, label = "Log Event") {
+            QuickActionButton(icon = Icons.Default.Add, label = logEventText) {
                 showLogEventModal = true
             }
-            QuickActionButton(icon = Icons.Default.Info, label = "Guidelines") {
+            QuickActionButton(icon = Icons.Default.Info, label = guidelinesText) {
                 showGuidelines = true
             }
 
@@ -323,6 +349,16 @@ fun QuickActionsSection(
 
 @Composable
 fun GraphSection() {
+    val seizureTrendsText = stringResource(R.string.seizure_trends)
+    // Example day labels (no string-array; define individually):
+    val monLabel = stringResource(R.string.mon)
+    val tueLabel = stringResource(R.string.tue)
+    val wedLabel = stringResource(R.string.wed)
+    val thuLabel = stringResource(R.string.thu)
+    val friLabel = stringResource(R.string.fri)
+    val satLabel = stringResource(R.string.sat)
+    val sunLabel = stringResource(R.string.sun)
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -333,15 +369,16 @@ fun GraphSection() {
             .padding(16.dp)
     ) {
         Text(
-            text = "Seizure Trends",
+            text = seizureTrendsText,
             style = MaterialTheme.typography.bodyMedium,
             fontWeight = FontWeight.Bold,
             modifier = Modifier.padding(bottom = 8.dp)
         )
 
+        // Pass the localized day labels to the graph:
         SeizureTrendGraph(
-            dataPoints = listOf(3, 2, 4, 5, 1, 0, 2), // Dummy example
-            labels = listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
+            dataPoints = listOf(3, 2, 4, 5, 1, 0, 2),
+            labels = listOf(monLabel, tueLabel, wedLabel, thuLabel, friLabel, satLabel, sunLabel)
         )
     }
 }
@@ -420,6 +457,7 @@ fun SeizureTrendGraph(dataPoints: List<Int>, labels: List<String>) {
 
 @Composable
 fun RecentActivitySection(profileViewModel: ProfileViewModel) {
+    val lastSeizuresText = stringResource(R.string.last_seizures)
     val profile = profileViewModel.profileState.collectAsState()
     val recentSeizures = profile.value.pastSeizures
         .sortedByDescending { it.timestamp }
@@ -431,7 +469,7 @@ fun RecentActivitySection(profileViewModel: ProfileViewModel) {
             .padding(horizontal = 4.dp)
     ) {
         Text(
-            text = "Last seizures",
+            text = lastSeizuresText,
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold
         )
@@ -448,6 +486,9 @@ fun RecentActivitySection(profileViewModel: ProfileViewModel) {
 
 @Composable
 fun RecentActivityCard(seizure: SeizureEvent) {
+    // Localize string for "Seizure Event"
+    val seizureEventText = stringResource(R.string.seizure_event)
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -459,8 +500,7 @@ fun RecentActivityCard(seizure: SeizureEvent) {
             ),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
-            containerColor = colorScheme.surface,
-
+            containerColor = colorScheme.surface
         ),
         elevation = CardDefaults.cardElevation(0.dp, 0.dp, 0.dp, 0.dp, 0.dp),
     ) {
@@ -473,7 +513,7 @@ fun RecentActivityCard(seizure: SeizureEvent) {
         ) {
             Column {
                 Text(
-                    text = "Seizure Event",
+                    text = seizureEventText,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
@@ -501,12 +541,15 @@ fun RecentActivityCard(seizure: SeizureEvent) {
 
 @Composable
 fun DailyTipsSection() {
-    val tips = listOf(
-        "Remember to take your medication regularly",
-        "Ensure you get enough sleep",
-        "Stay hydrated throughout the day",
-        "Track your triggers in the app"
-    )
+    // Localize all tips individually
+    val tip1 = stringResource(R.string.tip_1)
+    val tip2 = stringResource(R.string.tip_2)
+    val tip3 = stringResource(R.string.tip_3)
+    val tip4 = stringResource(R.string.tip_4)
+    val dailyTipText = stringResource(R.string.daily_tip)
+
+    // Build a list from them
+    val tips = listOf(tip1, tip2, tip3, tip4)
     val currentTip = remember { tips.random() }
     val yellow = Color(0xFFFFC107)
 
@@ -536,7 +579,7 @@ fun DailyTipsSection() {
 
             Column {
                 Text(
-                    text = "Daily Tip",
+                    text = dailyTipText,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
@@ -552,6 +595,9 @@ fun DailyTipsSection() {
 
 @Composable
 fun EmptyStateCard() {
+    val noActivityText = stringResource(R.string.no_recent_activity)
+    val appearHereText = stringResource(R.string.recent_seizure_events_will_appear_here)
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
@@ -566,21 +612,21 @@ fun EmptyStateCard() {
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                text = "No Recent Activity",
+                text = noActivityText,
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "Your recent seizure events will appear here",
+                text = appearHereText,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center
             )
         }
-
     }
 }
+
 
 @Preview(showBackground = true)
 @Composable

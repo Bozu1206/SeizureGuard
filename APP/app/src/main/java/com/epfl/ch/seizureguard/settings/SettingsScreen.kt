@@ -83,12 +83,12 @@ fun SettingsScreen(
                 confirmPassword = ""
                 showError = false
             },
-            title = { Text("Change Password") },
+            title = { Text(stringResource(R.string.change_password)) },
             text = {
                 Column {
                     if (showError) {
                         Text(
-                            text = "Passwords do not match",
+                            text = stringResource(R.string.passwords_do_not_match),
                             color = MaterialTheme.colorScheme.error,
                             modifier = Modifier.padding(bottom = 8.dp)
                         )
@@ -96,7 +96,7 @@ fun SettingsScreen(
                     OutlinedTextField(
                         value = newPassword,
                         onValueChange = { newPassword = it },
-                        label = { Text("New Password") },
+                        label = { Text(stringResource(R.string.new_password)) },
                         singleLine = true,
                         visualTransformation = PasswordVisualTransformation(),
                         modifier = Modifier.fillMaxWidth()
@@ -105,7 +105,7 @@ fun SettingsScreen(
                     OutlinedTextField(
                         value = confirmPassword,
                         onValueChange = { confirmPassword = it },
-                        label = { Text("Confirm Password") },
+                        label = { Text(stringResource(R.string.confirm_password)) },
                         singleLine = true,
                         visualTransformation = PasswordVisualTransformation(),
                         modifier = Modifier.fillMaxWidth()
@@ -124,7 +124,7 @@ fun SettingsScreen(
                         showError = true
                     }
                 }) {
-                    Text("Confirm")
+                    Text(stringResource(R.string.confirm))
                 }
             },
             dismissButton = {
@@ -134,7 +134,7 @@ fun SettingsScreen(
                     confirmPassword = ""
                     showError = false
                 }) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.cancel))
                 }
             }
         )
@@ -143,12 +143,12 @@ fun SettingsScreen(
     if (showExportDialog) {
         AlertDialog(
             onDismissRequest = { showExportDialog = false },
-            title = { Text("Export Data") },
+            title = { Text(stringResource(R.string.export_data)) },
             text = {
                 if (profile.pastSeizures.isEmpty()) {
-                    Text("No seizure history to export")
+                    Text(stringResource(R.string.no_seizure_history_to_export))
                 } else {
-                    Text("Do you want to export your seizure history as JSON?")
+                    Text(stringResource(R.string.do_you_want_to_export_your_seizure_history_as_json))
                 }
             },
             confirmButton = {
@@ -157,13 +157,13 @@ fun SettingsScreen(
                         if (profile.pastSeizures.isNotEmpty()) {
                             profileViewModel.exportSeizures(context)
                         }
-                            showExportDialog = false
+                        showExportDialog = false
                     }
                 ) {
                     if (profile.pastSeizures.isNotEmpty()) {
-                        Text("Export")
+                        Text(stringResource(R.string.export))
                     } else {
-                        Text("Cancel")
+                        Text(stringResource(R.string.cancel))
                     }
                 }
             },
@@ -171,7 +171,7 @@ fun SettingsScreen(
                 TextButton(
                     onClick = { showExportDialog = false }
                 ) {
-                    if (profile.pastSeizures.isNotEmpty()) Text("Cancel")
+                    if (profile.pastSeizures.isNotEmpty()) Text(stringResource(R.string.cancel))
                 }
             }
         )
@@ -182,7 +182,7 @@ fun SettingsScreen(
             onDismissRequest = { showAboutDialog = false },
             title = {
                 Text(
-                    text = "About SeizureGuard",
+                    text = stringResource(R.string.about_seizureguard),
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold
                 )
@@ -194,7 +194,7 @@ fun SettingsScreen(
                         .padding(vertical = 8.dp)
                 ) {
                     Text(
-                        text = "Version 1.0.0",
+                        text = stringResource(R.string.version_1_0_0),
                         style = MaterialTheme.typography.bodyLarge,
                         fontWeight = FontWeight.Medium
                     )
@@ -209,7 +209,7 @@ fun SettingsScreen(
                     Spacer(modifier = Modifier.height(16.dp))
 
                     Text(
-                        text = "Developed by:",
+                        text = stringResource(R.string.developed_by),
                         style = MaterialTheme.typography.bodyLarge,
                         fontWeight = FontWeight.Bold
                     )
@@ -221,7 +221,7 @@ fun SettingsScreen(
                     Spacer(modifier = Modifier.height(16.dp))
 
                     Text(
-                        text = "© 2024 EPFL. All rights reserved.",
+                        text = stringResource(R.string.copyright),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -229,7 +229,7 @@ fun SettingsScreen(
             },
             confirmButton = {
                 TextButton(onClick = { showAboutDialog = false }) {
-                    Text("Close")
+                    Text(stringResource(R.string.close))
                 }
             }
         )
@@ -240,7 +240,7 @@ fun SettingsScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = "Settings",
+                        text = stringResource(R.string.settings),
                         style = MaterialTheme.typography.headlineLarge,
                         fontWeight = FontWeight.Bold
                     )
@@ -265,15 +265,15 @@ fun SettingsScreen(
                 horizontalAlignment = Alignment.Start
             ) {
                 // Section "Security"
-                SettingsSection(title = "Security") {
+                SettingsSection(title = stringResource(R.string.security)) {
                     SettingsItem(
-                        title = "Biometric Login",
+                        title = stringResource(R.string.biometric_login),
                         icon = Icons.Default.Lock,
                         tint = if (profile.isBiometricEnabled)
                             Color(0xFF248a3d)
                         else
                             MaterialTheme.colorScheme.onSurfaceVariant,
-                        caption = "Use fingerprint or face recognition to secure your app",
+                        caption = stringResource(R.string.use_fingerprint_or_face_recognition_to_secure_your_app),
                         trailing = {
                             Switch(
                                 checked = profile.isBiometricEnabled,
@@ -289,23 +289,23 @@ fun SettingsScreen(
                     )
 
                     SettingsItem(
-                        title = "Change Password",
+                        title = stringResource(R.string.change_password),
                         onClick = { showPasswordDialog = true },
                         icon = Icons.Default.Key
                     )
                 }
 
                 if (!isParentMode) {
-                    // Section "Model Training"
-                    SettingsSection(title = "Power Options") {
+                    // Section "Power Options"
+                    SettingsSection(title = stringResource(R.string.power_options)) {
                         SettingsItem(
-                            title = "Enable Model Training",
+                            title = stringResource(R.string.enable_model_training),
                             icon = Icons.Default.ModelTraining,
                             tint = if (profile.isTrainingEnabled)
                                 Color(0xFF248a3d)
                             else
                                 MaterialTheme.colorScheme.onSurfaceVariant,
-                            caption = "Allow the app to learn from your seizure patterns",
+                            caption = stringResource(R.string.allow_the_app_to_learn_from_your_seizure_patterns),
                             trailing = {
                                 Switch(
                                     checked = profile.isTrainingEnabled,
@@ -320,13 +320,13 @@ fun SettingsScreen(
                             }
                         )
                         SettingsDropdownItem(
-                            title = "Power Mode",
+                            title = stringResource(R.string.power_mode),
                             icon = Icons.Default.Power,
                             tint = if (profile.isTrainingEnabled)
                                 MaterialTheme.colorScheme.primary
                             else
                                 MaterialTheme.colorScheme.onSurfaceVariant,
-                            caption = "Adjust power consumption and detection accuracy",
+                            caption = stringResource(R.string.adjust_power_consumption_and_detection_accuracy),
                             options = listOf(
                                 context.getString(R.string.low_power_mode),
                                 context.getString(R.string.normal_power_mode),
@@ -340,15 +340,15 @@ fun SettingsScreen(
                     }
                 }
 
-                SettingsSection(title = "Parent Mode") {
+                SettingsSection(title = stringResource(R.string.parent_mode)) {
                     SettingsItem(
-                        title = "Parent Mode",
+                        title = stringResource(R.string.parent_mode),
                         icon = Icons.Default.SupervisorAccount,
                         tint = if (isParentMode)
                             Color(0xFF248a3d)
                         else
                             MaterialTheme.colorScheme.onSurfaceVariant,
-                        caption = "Enable monitoring and control features for caregivers",
+                        caption = stringResource(R.string.enable_monitoring_and_control_features_for_caregivers),
                         trailing = {
                             Switch(
                                 checked = isParentMode,
@@ -364,30 +364,29 @@ fun SettingsScreen(
                     )
                 }
 
-
-
-                SettingsSection(title = "Developer options") {
+                SettingsSection(title = stringResource(R.string.developer_options)) {
                     SettingsItem(
-                        title = "Export Seizure History",
+                        title = stringResource(R.string.export_seizure_history),
                         onClick = { showExportDialog = true },
                         icon = Icons.Default.Download,
                         trailing = null
                     )
                     SettingsItem(
-                        title = "Debug Mode",
+                        title = stringResource(R.string.debug_mode),
                         icon = Icons.Default.DeveloperBoard,
                         tint = if (profile.isDebugEnabled)
                             Color(0xFF248a3d)
                         else
                             MaterialTheme.colorScheme.onSurfaceVariant,
-                        caption = "Show additional information for troubleshooting",
+                        caption = stringResource(R.string.show_additional_information_for_troubleshooting),
                         trailing = {
+                            val restartAppString = stringResource(R.string.restart_app_to_correctly_update_debug_mode)
                             Switch(
                                 checked = profile.isDebugEnabled,
                                 onCheckedChange = { isChecked ->
                                     Toast.makeText(
                                         context,
-                                        "Restart the app to correctly update debug mode",
+                                        restartAppString,
                                         Toast.LENGTH_LONG
                                     ).show()
                                     profileViewModel.saveDebugPreference(isChecked)
@@ -405,13 +404,13 @@ fun SettingsScreen(
 
                 SettingsSection("") {
                     SettingsItem(
-                        title = "About SeizureGuard",
+                        title = stringResource(R.string.about_seizureguard),
                         onClick = { showAboutDialog = true },
                         icon = Icons.Default.Info,
                         trailing = null
                     )
                     SettingsItem(
-                        title = "Logout",
+                        title = stringResource(R.string.logout),
                         onClick = onLogoutClicked,
                         icon = Icons.AutoMirrored.Filled.Logout,
                         tint = MaterialTheme.colorScheme.error,
