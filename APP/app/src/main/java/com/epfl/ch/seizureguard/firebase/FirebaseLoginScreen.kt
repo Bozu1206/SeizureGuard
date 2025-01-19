@@ -46,7 +46,6 @@ import com.epfl.ch.seizureguard.profile.ProfileViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import androidx.compose.runtime.rememberCoroutineScope
-import kotlinx.coroutines.CoroutineScope
 
 @Composable
 fun FirebaseLoginScreen(

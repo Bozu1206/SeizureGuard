@@ -3,7 +3,6 @@ package com.epfl.ch.seizureguard.dl
 import ai.onnxruntime.*
 import android.content.Context
 import android.util.Log
-import com.epfl.ch.seizureguard.RunningApp
 import com.epfl.ch.seizureguard.dl.metrics.ComputeMetrics.computeMetrics
 import com.epfl.ch.seizureguard.dl.metrics.Metrics
 import com.epfl.ch.seizureguard.dl.utils.utils.floatArrayToFloatBuffer

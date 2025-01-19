@@ -47,18 +47,16 @@ class RunningApp : Application(), ViewModelStoreOwner {
             ViewModelProvider.AndroidViewModelFactory.getInstance(this)
         )[BluetoothViewModel::class.java]
         ProcessLifecycleOwner.get().lifecycle.addObserver(appLifecycleObserver)
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(
-                getString(R.string.fixed_foregroung_notification_channel_id),
-                "Inference Service",
-                NotificationManager.IMPORTANCE_HIGH
-            ).apply {
-                description = "Permanent notification during foreground operation"
-            }
-            val notificationManager = getSystemService(NotificationManager::class.java)
-            notificationManager.createNotificationChannel(channel)
+        val channel = NotificationChannel(
+            getString(R.string.fixed_foregroung_notification_channel_id),
+            "Inference Service",
+            NotificationManager.IMPORTANCE_HIGH
+        ).apply {
+            description = "Permanent notification during foreground operation"
         }
+        val notificationManager = getSystemService(NotificationManager::class.java)
+        notificationManager.createNotificationChannel(channel)
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val soundUri =
                 RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM) // Use alarm sound

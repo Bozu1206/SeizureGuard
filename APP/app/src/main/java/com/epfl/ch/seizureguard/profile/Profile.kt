@@ -2,7 +2,6 @@
 package com.epfl.ch.seizureguard.profile
 
 import com.epfl.ch.seizureguard.dl.metrics.Metrics
-import com.epfl.ch.seizureguard.seizure_event.SeizureEntity
 import com.epfl.ch.seizureguard.seizure_event.SeizureEvent
 
 data class Profile(

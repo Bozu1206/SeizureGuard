@@ -23,8 +23,6 @@ import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.Observer
 import com.epfl.ch.seizureguard.MainActivity
 import com.epfl.ch.seizureguard.R
@@ -41,8 +39,6 @@ import com.google.android.gms.location.LocationRequest
 import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
 
 class InferenceService : Service() {
 
@@ -75,12 +71,12 @@ class InferenceService : Service() {
     var location : Location? = null
 
     private lateinit var fusedLocationProviderClient: FusedLocationProviderClient
-    val locationRequest = LocationRequest.create().apply {
+    private val locationRequest = LocationRequest.create().apply {
         interval = 5000 // 5 seconds
         fastestInterval = 2000 // 2 seconds
         priority = Priority.PRIORITY_HIGH_ACCURACY
     }
-    val locationCallback = object : LocationCallback() {
+    private val locationCallback = object : LocationCallback() {
         override fun onLocationResult(locationResult: LocationResult) {
             location = locationResult.lastLocation
             Log.d("locationCallback", "Location Updated")
@@ -341,7 +337,7 @@ class InferenceService : Service() {
                 } else {
                     Log.d("InferenceService", "app is in background, sending notification")
                     sendSeizureDetectedNotification()
-                    profileViewModel.sendNotificationToMyDevices("Seizure Detected!", "A device in this profile detected an epileptic seizure", location)
+                    profileViewModel.sendNotificationToMyDevices("Seizure Detected!", location)
                 }
             }
         }

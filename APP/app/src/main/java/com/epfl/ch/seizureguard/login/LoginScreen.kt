@@ -38,7 +38,6 @@ import com.epfl.ch.seizureguard.biometrics.BiometricAuthenticator
 import com.epfl.ch.seizureguard.profile.PasswordTextField
 import com.epfl.ch.seizureguard.profile.ProfileViewModel
 
-
 @Composable
 fun LoginScreen(
     onLoginSuccess: () -> Unit,

@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Call
@@ -47,7 +46,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.epfl.ch.seizureguard.R
 import com.epfl.ch.seizureguard.profile.ProfileViewModel
 import com.epfl.ch.seizureguard.seizure_event.LogSeizureEventModal
-import com.epfl.ch.seizureguard.seizure_event.SeizureEventViewModel
 
 @Composable
 fun SeizureDetectedScreen(

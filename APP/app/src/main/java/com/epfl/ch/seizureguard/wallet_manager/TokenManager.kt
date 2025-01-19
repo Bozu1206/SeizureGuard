@@ -1,4 +1,5 @@
 package com.epfl.ch.seizureguard.wallet_manager
+
 import com.epfl.ch.seizureguard.BuildConfig
 import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
