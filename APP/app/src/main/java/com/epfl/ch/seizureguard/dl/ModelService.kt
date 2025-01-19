@@ -27,7 +27,6 @@ class ModelService() : Service() {
         isDebugEnabled = intent?.getBooleanExtra("IS_DEBUG_ENABLED", false) ?: false
         // 2) Create the modelManager with the correct debug flag
         modelManager = makeOrtTrainerAndCopyAssets()
-        Log.d("ModelService", "modelManager created: $modelManager (debug=$isDebugEnabled)")
 
         return binder
     }

@@ -72,7 +72,6 @@ class EEGViewModel : ViewModel() {
         try {
             _samplesPerChannel.value = sample.data.size / 18
             _pointsToShow.value = sample.data.size / 18
-            Log.d("updateEEGData","samplesPerChannel = ${samplesPerChannel.value}")
             selectedChannels.forEachIndexed { bufferIndex, channelIndex ->
                 val buffer = buffers[bufferIndex]
                 

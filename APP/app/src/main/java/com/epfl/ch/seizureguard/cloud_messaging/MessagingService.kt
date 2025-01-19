@@ -48,7 +48,6 @@ class MessagingService : FirebaseMessagingService() {
      */
     override fun onNewToken(token: String) {
         super.onNewToken(token)
-        Log.d("MyFirebaseMsgService", "Refreshed token: $token")
         serviceScope.launch {
             try {
                 repository.storeFcmToken(profile.uid, token)
@@ -65,7 +64,6 @@ class MessagingService : FirebaseMessagingService() {
     override fun onMessageReceived(remoteMessage: RemoteMessage) {
         super.onMessageReceived(remoteMessage)
         if (!profileViewModel.parentMode.value) { // do not listen for notifications in non-parent mode
-            Log.d("MyFirebaseMsgService", "Ignoring notification due to parentMode being false.")
             return
         }
         val data = remoteMessage.data
@@ -89,7 +87,6 @@ class MessagingService : FirebaseMessagingService() {
                         this.latitude = latitude
                         this.longitude = longitude
                     }
-                    Log.d("MyFirebaseMsgService", "Parsed location from notification: Latitude${extractedLocation.latitude}, Longitude: ${extractedLocation.longitude}")
                 }else{
                     Log.d("MyFirebaseMsgService", "Impossible to parse location")
 

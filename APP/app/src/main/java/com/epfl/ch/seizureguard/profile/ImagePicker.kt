@@ -108,7 +108,6 @@ fun ProfilePicturePickerHelper(uri: String, onImagePick: () -> Unit) {
 
             contentAlignment = Alignment.Center
         ) {
-            Log.d("ProfilePicturePicker", "URI: $uri")
             if (uri.isNotEmpty()) {
                 AsyncImage(
                     model = Uri.parse(uri),
