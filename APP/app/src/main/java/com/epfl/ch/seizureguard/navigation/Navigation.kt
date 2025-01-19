@@ -1,7 +1,5 @@
 package com.epfl.ch.seizureguard.navigation
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DateRange
@@ -22,7 +20,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
@@ -36,20 +33,13 @@ import com.epfl.ch.seizureguard.history.HistoryScreen
 import com.epfl.ch.seizureguard.homescreen.HomeScreen
 import com.epfl.ch.seizureguard.profile.ProfileScreen
 import com.epfl.ch.seizureguard.wallet_manager.GoogleWalletToken
-import com.epfl.ch.seizureguard.dl.metrics.Metrics
-import com.epfl.ch.seizureguard.history.HistoryViewModel
 import com.epfl.ch.seizureguard.inference.InferenceHomePage
 import com.epfl.ch.seizureguard.medical_card.MedicalCardScreen
 import com.epfl.ch.seizureguard.seizure_event.SeizureEventViewModel
 import com.epfl.ch.seizureguard.settings.SettingsScreen
 import com.epfl.ch.seizureguard.medical_card.WalletUiState
 import com.epfl.ch.seizureguard.profile.ProfileViewModel
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.layout.Box
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
 import com.epfl.ch.seizureguard.medical_card.WalletViewModel
 import com.epfl.ch.seizureguard.profile.MedicalNotesScreen
 import com.epfl.ch.seizureguard.history.SeizureStatsScreen

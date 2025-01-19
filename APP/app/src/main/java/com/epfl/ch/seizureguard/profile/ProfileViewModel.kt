@@ -1,7 +1,6 @@
 // ProfileViewModel.kt
 package com.epfl.ch.seizureguard.profile
 
-import android.Manifest
 import android.app.Application
 import android.content.Context
 import android.content.Intent
@@ -26,12 +25,8 @@ import java.util.UUID
 import com.google.gson.GsonBuilder
 import android.widget.Toast
 import android.app.Activity
-import android.content.pm.PackageManager
 import android.location.Location
 import android.net.Uri
-import androidx.core.app.ActivityCompat
-import com.google.android.gms.location.LocationServices
-import com.google.android.gms.location.Priority
 import com.google.firebase.messaging.FirebaseMessaging
 import com.epfl.ch.seizureguard.widgets.SeizureWidgetUpdater
 import com.epfl.ch.seizureguard.widgets.SeizureCountWidget
@@ -56,9 +51,6 @@ class ProfileViewModel(context: Context, application: Application) : AndroidView
 
     val latestMetrics: StateFlow<Metrics> = repository.latestMetrics
         .stateIn(viewModelScope, SharingStarted.Eagerly, Metrics())
-
-    private val _tokensList = MutableStateFlow<List<String>>(emptyList())
-    val tokensList: StateFlow<List<String>> = _tokensList
 
     private val _isInferenceRunning = MutableStateFlow(false)
     val isInferenceRunning: StateFlow<Boolean> = _isInferenceRunning
@@ -422,35 +414,6 @@ class ProfileViewModel(context: Context, application: Application) : AndroidView
         }
     }
 
-    fun updateMedications(medications: List<String>) {
-        viewModelScope.launch {
-            try {
-                _profileState.update { currentProfile ->
-                    currentProfile.copy(medications = medications)
-                }
-                repository.updateMedications(medications)
-                saveProfile()
-                Log.d("ProfileViewModel", "Medications updated successfully: $medications")
-            } catch (e: Exception) {
-                Log.e("ProfileViewModel", "Error updating medications", e)
-            }
-        }
-    }
-
-    fun addMedication(medication: String) {
-        viewModelScope.launch {
-            val currentMedications = _profileState.value.medications
-            updateMedications(currentMedications + medication)
-        }
-    }
-
-    fun removeMedication(medication: String) {
-        viewModelScope.launch {
-            val currentMedications = _profileState.value.medications
-            updateMedications(currentMedications - medication)
-        }
-    }
-
     fun retrieveAndStoreFcmToken() {
         FirebaseMessaging.getInstance().token
             .addOnCompleteListener { task ->
@@ -481,22 +444,8 @@ class ProfileViewModel(context: Context, application: Application) : AndroidView
             }
     }
 
-    fun fetchAllFcmTokens() {
-        viewModelScope.launch {
-            try {
-                val profile = _profileState.value
-                val tokens = repository.getAllFcmTokens(profile.uid)
-                _tokensList.value = tokens
-                Log.d("ProfileViewModel", "Successfully retrieved tokens: $tokens")
-            } catch (e: Exception) {
-                Log.e("ProfileViewModel", "Error fetching all FCM tokens", e)
-            }
-        }
-    }
-
     fun sendNotificationToMyDevices(
         title: String,
-        body: String,
         location: Location?
     ) {
         val uid = _profileState.value.uid

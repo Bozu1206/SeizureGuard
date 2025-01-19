@@ -44,9 +44,8 @@ class SampleBroadcastService : Service() {
         if(isDebugEnabled){ // DEBUG mode
             Log.d("SampleBroadcastService", "Service created. isDebugEnabled = $isDebugEnabled")
             handler.post(broadcastRunnable)
-            var d = DataLoader().loadDataAndLabels(applicationContext, "data_20.bin")
+            val d = DataLoader().loadDataAndLabels(applicationContext, "data_20.bin")
             data = d.slice(200..800).toTypedArray()
-            d = emptyArray()
             System.gc()
         }
         else{ // BLE mode
@@ -86,11 +85,8 @@ class SampleBroadcastService : Service() {
      * Non-debug: Observe LiveData from BluetoothViewModel
      */
     private val bleDataSampleObserver = Observer<DataSample> { sample ->
-        if (sample != null) {
-            val context = this@SampleBroadcastService.applicationContext
-            if(sample.data.size != 0){
-                sendSampleBroadcastBLE(sample)
-            }
+        if(sample.data.isNotEmpty()){
+            sendSampleBroadcastBLE(sample)
         }
     }
 

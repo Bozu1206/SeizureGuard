@@ -14,10 +14,6 @@ class ModelService() : Service() {
 
     private var isDebugEnabled: Boolean = false
 
-    override fun onCreate() {
-        super.onCreate()
-    }
-
     inner class LocalBinder : Binder() {
         fun getService(): ModelService = this@ModelService
     }

@@ -30,10 +30,10 @@ import com.epfl.ch.seizureguard.biometrics.BiometricAuthenticator
 import com.epfl.ch.seizureguard.dl.MetricsViewModel
 import com.epfl.ch.seizureguard.dl.utils.SampleBroadcastService
 import com.epfl.ch.seizureguard.firebase.FirebaseLoginScreen
-import com.epfl.ch.seizureguard.history.HistoryViewModel
 import com.epfl.ch.seizureguard.inference.InferenceService
 import com.epfl.ch.seizureguard.login.LoginScreen
 import com.epfl.ch.seizureguard.medical_card.WalletViewModel
+import com.epfl.ch.seizureguard.navigation.AppContent
 import com.epfl.ch.seizureguard.onboarding.OnboardingScreen
 import com.epfl.ch.seizureguard.onboarding.OnboardingViewModel
 import com.epfl.ch.seizureguard.onboarding.OnboardingViewModelFactory
@@ -231,7 +231,7 @@ class MainActivity : FragmentActivity() {
                                 }
                                 "MainScreen" -> {
                                     val context = LocalContext.current
-                                    MainScreen(
+                                    AppContent(
                                         onRunInference = { startInferenceServices(isTrainingEnabled, isDebugEnabled) },
                                         onPauseInference  = {
                                             val stopIntent = Intent(context, InferenceService::class.java).apply {
@@ -253,17 +253,6 @@ class MainActivity : FragmentActivity() {
                                     )
                                 }
 
-                            }
-
-                            if (isSeizureDetected) {
-                                val context = LocalContext.current
-                                SeizureDetectedScreen(
-                                    onDismiss = {
-                                        seizureDetectionViewModel.onSeizureHandled()
-                                    },
-                                    onEmergencyCall = { onEmergencyCall(context) },
-                                    profileViewModel = profileViewModel
-                                )
                             }
                         }
                     }

@@ -1,11 +1,9 @@
 package com.epfl.ch.seizureguard.onboarding
 
 import android.annotation.SuppressLint
-import android.view.Gravity
 import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column

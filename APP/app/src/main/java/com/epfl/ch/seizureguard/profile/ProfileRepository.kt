@@ -5,7 +5,6 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.net.Uri
 import android.util.Log
-import androidx.compose.ui.platform.isDebugInspectorInfoEnabled
 import androidx.datastore.core.IOException
 import androidx.datastore.preferences.core.*
 import androidx.datastore.preferences.preferencesDataStore
@@ -20,7 +19,6 @@ import com.google.firebase.storage.FirebaseStorage
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -33,10 +31,7 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody
-import okhttp3.RequestBody.Companion.toRequestBody
-import okhttp3.logging.HttpLoggingInterceptor
 import java.io.File
-import java.io.FileInputStream
 
 val Context.dataStore by preferencesDataStore(name = "user_profile")
 
@@ -90,12 +85,6 @@ class ProfileRepository private constructor(
             }
         }
     }
-
-    private val _debugMode = MutableStateFlow(false)
-    val debugMode: StateFlow<Boolean> = _debugMode
-
-    private val _powerMode = MutableStateFlow("Normal")
-    val powerMode: StateFlow<String> = _powerMode
 
     private val _sampleCount = MutableStateFlow(0)
     val sampleCount: StateFlow<Int> = _sampleCount

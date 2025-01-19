@@ -1,9 +1,5 @@
 package com.epfl.ch.seizureguard.dl.metrics
 
-import android.content.Context
-import com.epfl.ch.seizureguard.profile.ProfileViewModel
-import com.google.gson.Gson
-
 data class Metrics (
     val accuracy: Double = -1.0,
     val precision: Double = -1.0,

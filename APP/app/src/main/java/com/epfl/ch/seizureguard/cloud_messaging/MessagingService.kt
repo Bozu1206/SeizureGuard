@@ -8,13 +8,11 @@ import android.content.Context
 import android.content.Intent
 import android.location.Location
 import android.location.LocationManager
-import android.os.Build
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.epfl.ch.seizureguard.MainActivity
 import com.epfl.ch.seizureguard.R
 import com.epfl.ch.seizureguard.RunningApp
-import com.epfl.ch.seizureguard.inference.InferenceService
 import com.epfl.ch.seizureguard.profile.Profile
 import com.epfl.ch.seizureguard.profile.ProfileRepository
 import com.epfl.ch.seizureguard.profile.ProfileViewModel
@@ -124,14 +122,12 @@ class MessagingService : FirebaseMessagingService() {
         )
 
         // Create a notification channel for Android 8.0+
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(
-                channelId,
-                "SeizureGuard Channel",
-                NotificationManager.IMPORTANCE_HIGH
-            )
-            notificationManager.createNotificationChannel(channel)
-        }
+        val channel = NotificationChannel(
+            channelId,
+            "SeizureGuard Channel",
+            NotificationManager.IMPORTANCE_HIGH
+        )
+        notificationManager.createNotificationChannel(channel)
         // Build the notification
         val notificationBuilder = NotificationCompat.Builder(this, channelId)
             .setSmallIcon(R.drawable.icon) // Replace with your icon
