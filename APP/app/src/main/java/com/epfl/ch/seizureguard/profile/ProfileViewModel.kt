@@ -99,7 +99,6 @@ class ProfileViewModel(context: Context, application: Application) : AndroidView
         val profile = repository.loadProfileFromPreferences()
         _profileState.value = profile
         retrieveAndStoreFcmToken()
-        Log.d("ProfileViewModel", "Loaded profile: $profile")
     }
 
     fun loadProfileFromEmail(email: String, password: String, onComplete: (Profile?) -> Unit) {
@@ -110,7 +109,6 @@ class ProfileViewModel(context: Context, application: Application) : AndroidView
                     _profileState.value = profile
                     repository.saveProfileToPreferences(profile)
                     setAuthenticated(true)
-                    Log.d("ProfileViewModel", "Profile loaded and saved: $profile")
                     onComplete(profile)
                 } else {
                     Log.d("ProfileViewModel", "No matching profile found for email: $email")
@@ -137,7 +135,6 @@ class ProfileViewModel(context: Context, application: Application) : AndroidView
 
     fun setAuthenticated(authenticated: Boolean) = viewModelScope.launch {
         repository.setAuthenticated(authenticated)
-        Log.d("ProfileViewModel", "Set authenticated: $authenticated")
     }
 
     fun saveAuthPreference(isBiometric: Boolean) {
@@ -150,7 +147,6 @@ class ProfileViewModel(context: Context, application: Application) : AndroidView
                 )
             }
             saveProfile()
-            Log.d("ProfileViewModel", "Saved auth preference: isBiometric=$isBiometric")
         }
     }
 
@@ -163,7 +159,6 @@ class ProfileViewModel(context: Context, application: Application) : AndroidView
                 )
             }
             saveProfile()
-            Log.d("ProfileViewModel", "Saved debug preference: isBiometric=$isDebug")
         }
     }
 
@@ -176,7 +171,6 @@ class ProfileViewModel(context: Context, application: Application) : AndroidView
                 )
             }
             saveProfile()
-            Log.d("ProfileViewModel", "Saved power model preference: isBiometric=$powerMode")
         }
     }
 
@@ -237,7 +231,6 @@ class ProfileViewModel(context: Context, application: Application) : AndroidView
         viewModelScope.launch {
             repository.resetPreferences()
             _profileState.value = Profile.empty()
-            Log.d("ProfileViewModel", "Profile reset.")
         }
     }
 
@@ -293,14 +286,12 @@ class ProfileViewModel(context: Context, application: Application) : AndroidView
                 currentProfile.copy(isTrainingEnabled = isEnabled)
             }
             saveProfile()
-            Log.d("ProfileViewModel", "Saved training preference: isEnabled=$isEnabled")
         }
     }
 
     fun saveParentPreference(isEnabled: Boolean) {
         viewModelScope.launch {
             repository.saveParentPreference(isEnabled)
-            Log.d("ProfileViewModel", "Parent mode saved: $isEnabled")
         }
     }
 
@@ -314,7 +305,6 @@ class ProfileViewModel(context: Context, application: Application) : AndroidView
             _profileState.update { currentProfile ->
                 currentProfile.copy(emergencyContacts = updatedContacts)
             }
-            Log.d("ProfileViewModel", "Updated emergencyContacts: $updatedContacts")
             saveProfile()
         }
 
@@ -346,7 +336,6 @@ class ProfileViewModel(context: Context, application: Application) : AndroidView
             }
             repository.updateProfileField("pwd", newPassword)
             saveProfile()
-            Log.d("ProfileViewModel", "Password updated successfully")
         }
     }
 
@@ -428,14 +417,12 @@ class ProfileViewModel(context: Context, application: Application) : AndroidView
                 // Get the new FCM registration token
                 val profile = _profileState.value
                 val token = task.result
-                Log.d("ProfileViewModel", "FCM Token retrieved: $token")
 
                 // If the token is not null or empty, store it in Firestore
                 if (!token.isNullOrEmpty()) {
                     viewModelScope.launch {
                         try {
                             repository.storeFcmToken(profile.uid, token)
-                            Log.d("ProfileViewModel", "Token successfully stored if not present")
                         } catch (e: Exception) {
                             Log.e("ProfileViewModel", "Error storing FCM token", e)
                         }
@@ -471,7 +458,6 @@ class ProfileViewModel(context: Context, application: Application) : AndroidView
                     return@launch
                 }
                 repository.sendFcmNotificationToTokens(tokens, title, updatedBody)
-                Log.d("ProfileViewModel", "Notification sent to ${tokens.size} device(s).")
             } catch (e: Exception) {
                 Log.e("ProfileViewModel", "Error sending notifications", e)
             }

@@ -42,7 +42,6 @@ class SampleBroadcastService : Service() {
         profile = profileViewModel.profileState.value
         isDebugEnabled = profile.isDebugEnabled
         if(isDebugEnabled){ // DEBUG mode
-            Log.d("SampleBroadcastService", "Service created. isDebugEnabled = $isDebugEnabled")
             handler.post(broadcastRunnable)
             val d = DataLoader().loadDataAndLabels(applicationContext, "data_20.bin")
             data = d.slice(200..800).toTypedArray()
@@ -61,7 +60,6 @@ class SampleBroadcastService : Service() {
         else{ // BLE mode
             stopObservingLiveData()
         }
-        Log.d("SampleBroadcastService", "Service destroyed, broadcast loop stopped")
     }
 
     private fun sendSampleBroadcast() { // for DEBUG mode
@@ -92,12 +90,10 @@ class SampleBroadcastService : Service() {
 
     private fun startObservingLiveData() {
         bluetoothViewModel.lastValues.observeForever(bleDataSampleObserver)
-        Log.d("InferenceService", "Started observing bluetoothViewModel.dataSample")
     }
 
     private fun stopObservingLiveData() {
         bluetoothViewModel.lastValues.removeObserver(bleDataSampleObserver)
-        Log.d("InferenceService", "Stopped observing bluetoothViewModel.dataSample")
     }
 
     override fun onBind(intent: Intent?): IBinder? = null

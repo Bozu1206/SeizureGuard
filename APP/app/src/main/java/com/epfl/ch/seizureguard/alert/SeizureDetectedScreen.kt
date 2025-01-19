@@ -53,7 +53,6 @@ fun SeizureDetectedScreen(
     onEmergencyCall: () -> Unit,
     profileViewModel: ProfileViewModel,
 ) {
-    Log.d("SeizureDetectedScreen", "Screen composing")
     var isLogging by remember { mutableStateOf(false) }
     var hasLogged by remember { mutableStateOf(false) }
 

@@ -117,7 +117,6 @@ class ProfileRepository private constructor(
                     val metrics = gson.fromJson(latestMetricsJson, Metrics::class.java)
                     if (metrics != null) {
                         _latestMetrics.value = metrics
-                        Log.d("ProfileRepository", "Initialized latestMetrics from preferences: $metrics")
                     } else {
                         Log.w("ProfileRepository", "Could not parse metrics from JSON: $latestMetricsJson")
                     }
@@ -141,7 +140,6 @@ class ProfileRepository private constructor(
             val currentProfile = loadProfileFromPreferences()
             val updatedProfile = currentProfile.copy(latestMetrics = metrics)
             saveProfileToFirestore(updatedProfile)
-            Log.d("ProfileRepository", "Metrics updated everywhere: $metrics")
         } catch (e: Exception) {
             Log.e("ProfileRepository", "Error updating metrics in Firestore", e)
         }
@@ -167,7 +165,6 @@ class ProfileRepository private constructor(
                 preferences[Keys.MEDICATIONS] = gson.toJson(profile.medications)
                 preferences[Keys.MEDICAL_NOTES] = gson.toJson(profile.medicalNotes)
             }
-            Log.d("ProfileRepository", "Profile saved to preferences successfully: $profile")
         } catch (e: Exception) {
             Log.e("ProfileRepository", "Error saving profile to preferences", e)
         }
@@ -251,9 +248,6 @@ class ProfileRepository private constructor(
                 Log.e("ProfileRepository", "No user ID found in preferences")
                 return
             }
-            
-            Log.d("ProfileRepository", "Starting Firestore save for user $userId")
-            Log.d("ProfileRepository", "Profile to save: $profile")
 
             if (profile.uri.isNotEmpty()) {
                 uploadImageToStorage(userId, Uri.parse(profile.uri))
@@ -264,7 +258,6 @@ class ProfileRepository private constructor(
                 .set(profile)
                 .await()
             
-            Log.d("ProfileRepository", "Profile successfully saved to Firestore")
         } catch (e: Exception) {
             Log.e("ProfileRepository", "Error saving profile to Firestore", e)
             throw e
@@ -273,11 +266,8 @@ class ProfileRepository private constructor(
 
     private suspend fun uploadImageToStorage(uid: String, imageUri: Uri) {
         try {
-            Log.d("ProfileRepository", uid)
-            Log.d("ProfileRepository", imageUri.toString())
             val imageRef = storage.reference.child("profile_images/$uid.jpg")
             imageRef.putFile(imageUri).await()
-            Log.d("ProfileRepository", "Image uploaded to Firebase Storage: $imageRef")
         } catch (e: Exception) {
             Log.e("ProfileRepository", "Failed to upload image to Firebase Storage: ${e.message}", e)
         }
@@ -285,14 +275,12 @@ class ProfileRepository private constructor(
 
     suspend fun loadProfileFromFirestore(email: String, password: String): Profile? {
         try {
-            Log.d("ProfileRepository", "Loading profile from Firestore with email: $email")
             val querySnapshot = firestore.collection("profiles")
                 .whereEqualTo("email", email)
                 .whereEqualTo("pwd", password)
                 .get()
                 .await()
             val profile = querySnapshot.documents.mapNotNull { it.toObject<Profile>() }.firstOrNull()
-            Log.d("ProfileRepository", "Loaded profile from Firestore: $profile")
             profile?.uri = profile?.uid?.let { loadProfilePicture(it).toString() }.toString()
             return profile
         } catch (e: Exception) {
@@ -305,7 +293,6 @@ class ProfileRepository private constructor(
         try {
             val imageRef = storage.reference.child("profile_images/$uid.jpg")
             val uri = imageRef.downloadUrl.await()
-            Log.d("ProfileRepository", "Loaded profile picture from Firebase Storage: $uri")
             return uri
         } catch (e: Exception) {
             Log.e("ProfileRepository", "Failed to load profile picture from Firebase Storage: ${e.message}", e)
@@ -330,14 +317,12 @@ class ProfileRepository private constructor(
             preferences[Keys.AUTH_MODE] = if (isBiometric) "biometric" else "password"
             preferences[Keys.IS_BIOMETRIC_ENABLED] = isBiometric
         }
-        Log.d("ProfileRepository", "Saved auth preference: isBiometric=$isBiometric")
     }
 
     suspend fun resetPreferences() {
         context.dataStore.edit { preferences ->
             preferences.clear()
         }
-        Log.d("ProfileRepository", "Preferences reset.")
     }
 
     suspend fun updateProfileField(key: String, value: String) {
@@ -360,8 +345,6 @@ class ProfileRepository private constructor(
             saveProfileToPreferences(updatedProfile)
             saveProfileToFirestore(updatedProfile)
 
-            Log.d("ProfileRepository", "Updated field $key with value $value")
-            Log.d("ProfileRepository", "Updated profile: $updatedProfile")
         } catch (e: Exception) {
             Log.e("ProfileRepository", "Error updating profile field", e)
             throw e
@@ -378,28 +361,24 @@ class ProfileRepository private constructor(
         context.dataStore.edit { preferences ->
             preferences[Keys.IS_TRAINING_ENABLED] = isEnabled
         }
-        Log.d("ProfileRepository", "Saved training preference: isEnabled=$isEnabled")
     }
 
     suspend fun saveDebugPreference(isEnabled: Boolean) {
         context.dataStore.edit { preferences ->
             preferences[Keys.IS_DEBUG_ENABLED] = isEnabled
         }
-        Log.d("ProfileRepository", "Saved debug preference: isEnabled=$isEnabled")
     }
 
     suspend fun savePowerModePreference(powerMode: String) {
         context.dataStore.edit { preferences ->
             preferences[Keys.POWER_MODE] = powerMode
         }
-        Log.d("ProfileRepository", "Saved power mode preference: isEnabled=$powerMode")
     }
 
     suspend fun saveParentPreference(isEnabled: Boolean) {
         context.dataStore.edit { preferences ->
             preferences[Keys.IS_PARENT_MODE] = isEnabled
         }
-        Log.d("ProfileRepository", "Parent preference saved locally: $isEnabled")
     }
 
     fun getParentPreference(): Flow<Boolean> {
@@ -432,7 +411,6 @@ class ProfileRepository private constructor(
                         Log.e("ProfileRepository", "Error uploading model for user $userId", e)
                     }
 
-                Log.d("ProfileRepository", "Model saved locally at: ${localModelFile.absolutePath}")
             } catch (e: Exception) {
                 Log.e("ProfileRepository", "Error saving model", e)
             }
@@ -470,8 +448,6 @@ class ProfileRepository private constructor(
                                 prefs[Keys.LOCAL_MODEL_PATH] = localModelFile.absolutePath
                             }
                         }
-                        
-                        Log.d("ProfileRepository", "Model downloaded and cached locally")
                         onComplete(localModelFile)
                     }
                     .addOnFailureListener { e ->
@@ -499,7 +475,6 @@ class ProfileRepository private constructor(
             if (!documentSnapshot.exists()) {
                 // If it doesn’t exist, create/set the token document
                 tokenDocRef.set(mapOf("token" to token)).await()
-                Log.d("ProfileRepository", "FCM token stored in 'profiles/$uid/tokens': $token")
             } else {
                 Log.d("ProfileRepository", "Token already exists in 'profiles/$uid/tokens': $token")
             }

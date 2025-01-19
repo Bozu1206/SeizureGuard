@@ -85,7 +85,6 @@ class InferenceService : Service() {
 
     private val serviceConnection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName?, service: IBinder?) { // triggered when this service gets connected
-            Log.d("onServiceConnected","Connecting ModelService, isDebugEnabled: $isDebugEnabled")
             modelService = (service as ModelService.LocalBinder).getService()
 
             when (pendingAction) { // parse what action we have to perform
@@ -132,8 +131,6 @@ class InferenceService : Service() {
         profile = profileViewModel.profileState.value
         fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this)
 
-        Log.d("InferenceService", "onCreate called")
-
         // 1) Load any custom model from Firebase
         loadCustomModel()
 
@@ -153,7 +150,6 @@ class InferenceService : Service() {
         }
         bindService(modelServiceIntent, serviceConnection, BIND_AUTO_CREATE)
 
-        Log.d("InferenceService", "onCreate finished")
     }
 
     private fun doTraining() {
@@ -181,12 +177,10 @@ class InferenceService : Service() {
      * Triggered when MainActivity sends the intent (startForegroundService(...)).
      */
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        Log.d("InferenceService", "onStartCommand called")
 
         pendingAction = intent?.action
 
         if (pendingAction == Actions.STOP.toString()) { // when  we receive the stop command from the ongoing notification
-            Log.d("InferenceService", "Stopping service and BLE from onStartCommand")
             bluetoothViewModel.stopBLE()
             profileViewModel.setInferenceRunning(false)
             stopForeground(STOP_FOREGROUND_REMOVE)
@@ -205,9 +199,6 @@ class InferenceService : Service() {
                 ).addOnSuccessListener { initialLocation ->
                     if (initialLocation != null) {
                         location = initialLocation
-                        Log.d("InferenceService", "Initial Location: Lat=${location?.latitude}, Long=${location?.longitude}")
-                    } else {
-                        Log.w("InferenceService", "Initial location is null")
                     }
                 }.addOnFailureListener { e ->
                     Log.e("InferenceService", "Failed to get initial location", e)
@@ -260,12 +251,10 @@ class InferenceService : Service() {
 
     private fun startObservingLiveData() {
         bluetoothViewModel.dataSample.observeForever(bleDataSampleObserver)
-        Log.d("InferenceService", "Started observing bluetoothViewModel.dataSample")
     }
 
     private fun stopObservingLiveData() {
         bluetoothViewModel.dataSample.removeObserver(bleDataSampleObserver)
-        Log.d("InferenceService", "Stopped observing bluetoothViewModel.dataSample")
     }
 
     /**
@@ -279,27 +268,23 @@ class InferenceService : Service() {
             filter,
             ContextCompat.RECEIVER_EXPORTED
         )
-        Log.d("InferenceService", "SampleReceiver registered (DEBUG MODE)")
     }
 
     /**
      * Unregister things & unbind service
      */
     override fun onDestroy() {
-        Log.d("InferenceService", "onDestroy called")
         super.onDestroy()
 
         unbindService(serviceConnection)
 
         if (isDebugEnabled) {
             unregisterReceiver(sampleReceiver)
-            Log.d("InferenceService", "SampleReceiver unregistered (DEBUG MODE)")
         } else {
             stopObservingLiveData()
         }
 
         unregisterReceiver(trainingCompleteReceiver)
-        Log.d("InferenceService", "trainingCompleteReceiver unregistered")
     }
 
     /**
@@ -317,7 +302,6 @@ class InferenceService : Service() {
 
         // Example trigger: If we want to train after 100 samples
         if (samples.size >= 100 && isTrainingEnabled) {
-            Log.d("InferenceService", "Training triggered")
             isPaused = true
             profileViewModel.setInferenceRunning(false)
             doTraining()
@@ -335,7 +319,6 @@ class InferenceService : Service() {
                 if (app.appLifecycleObserver.isAppInForeground) {
                     seizureDetectionViewModel.onSeizureDetected()
                 } else {
-                    Log.d("InferenceService", "app is in background, sending notification")
                     sendSeizureDetectedNotification()
                     profileViewModel.sendNotificationToMyDevices("Seizure Detected!", location)
                 }

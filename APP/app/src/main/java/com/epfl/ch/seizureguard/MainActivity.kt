@@ -265,7 +265,6 @@ class MainActivity : FragmentActivity() {
     private fun startInferenceServices(
         isTrainingEnabled: Boolean,
         isDebugEnabled: Boolean) {
-        Log.d("startInferenceServices", "isTrainingEnabled: $isTrainingEnabled ; isDebugEnabled: $isDebugEnabled")
         Intent(applicationContext, SampleBroadcastService::class.java).also {
             startService(it)
         }
@@ -285,7 +284,6 @@ class MainActivity : FragmentActivity() {
     private fun requestSavePass(request: GoogleWalletToken.PassRequest) {
         lifecycleScope.launch {
             val token = generateToken(request)
-            Log.d("MainActivity", "Generated token: $token")
             walletViewModel.savePassesJwt(token, this@MainActivity, addToGoogleWalletRequestCode)
         }
     }

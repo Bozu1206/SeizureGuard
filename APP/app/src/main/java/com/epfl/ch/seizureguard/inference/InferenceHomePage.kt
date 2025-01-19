@@ -133,7 +133,6 @@ fun InferenceHomePage(
                     EEGChart(
                         debugMode,
                         isInferenceRunning = isInferenceRunning,
-                        isInferenceRunning
                     )
                     InferenceOverlay(
                         debugMode,
@@ -662,8 +661,6 @@ fun InferenceOverlay( // big clickable box with the plots
                 .clip(RoundedCornerShape(20.dp))
                 .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.9f))
                 .clickable {
-                    Log.e("InferenceOverlay", "debugMode: $debugMode")
-                    Log.e("InferenceOverlay", "isConnected: $isConnected")
                     if (!debugMode && !isConnected) { // if no EEG device connected
                         Toast
                             .makeText(context, "No device connected!", Toast.LENGTH_LONG)

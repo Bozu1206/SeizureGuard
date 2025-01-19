@@ -96,7 +96,6 @@ class ModelManager() {
     }
 
     fun performInference(sample: DataSample): Int {
-        Log.d("performInference", "sample size : ${sample.data.size}")
         ortSession = ortEnv?.createSession(inferenceModelPath)
         ortEnv?.use {
             val shape = longArrayOf(1, 18, 1024)
@@ -140,15 +139,12 @@ class ModelManager() {
                 }
             }
         }
-
         val metrics = computeMetrics(true_labels.toIntArray(), predictions.toIntArray())
-        Log.d("Trainer", "Metrics: $metrics")
         return metrics
     }
 
     fun saveModel(context: Context, profileViewModel: ProfileViewModel? = null) {
         val currentMetrics = validate(context)
-        Log.d("Trainer", "Current metrics: $currentMetrics")
 
         val modelDirectory = context.filesDir
         modelDirectory.listFiles()?.forEach {
@@ -166,7 +162,6 @@ class ModelManager() {
 
         inferenceModelPath = modelPath.toString()
         val newMetrics = validate(context)
-        Log.d("Trainer", "New metrics: $newMetrics")
 
         ortTrainingSession = ortEnv?.createTrainingSession(
             checkpointPath.toString(),

@@ -58,7 +58,6 @@ fun SeizureDetectedParentScreen(
     profileViewModel: ProfileViewModel,
     context: Context
 ) {
-    Log.d("SeizureDetectedScreen", "Screen composing")
     var isLogging by remember { mutableStateOf(false) }
     var hasLogged by remember { mutableStateOf(false) }
     var address by remember { mutableStateOf<String?>(null) }
@@ -116,7 +115,6 @@ fun SeizureDetectedParentScreen(
             )
 
             Spacer(modifier = Modifier.height(32.dp))
-            Log.d("SeizureDetectedParentScreen", "Received location: Latitude: $latitude, Longitude: $longitude")
             if (latitude != null && longitude != null && !latitude.isNaN() && !longitude.isNaN()) { // check if seizure location is avaliable
                 val mapCenter = LatLng(latitude, longitude)
                 val cameraPositionState = rememberCameraPositionState {
