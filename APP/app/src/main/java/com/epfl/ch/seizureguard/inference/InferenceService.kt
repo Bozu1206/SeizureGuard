@@ -329,8 +329,12 @@ class InferenceService : Service() {
     private fun loadCustomModel() {
         profileViewModel.loadLatestModelFromFirebase { modelFile ->
             if (modelFile != null) {
-                Log.d("InferenceService", "Custom model loaded successfully")
-                modelService?.getModelManager()?.updateInferenceModel(modelFile)
+                if (::modelService.isInitialized) {
+                    modelService.getModelManager()?.updateInferenceModel(modelFile)
+                } else {
+                    Log.e("InferenceService", "ModelService not initialized, retrying later")
+                    Handler(mainLooper).postDelayed({ loadCustomModel() }, 100)
+                }
             } else {
                 Log.d("InferenceService", "No custom model found, using default")
             }
