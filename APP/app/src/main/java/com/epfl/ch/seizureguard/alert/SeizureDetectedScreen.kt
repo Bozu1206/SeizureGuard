@@ -82,7 +82,7 @@ fun SeizureDetectedScreen(
                 .padding(top = 32.dp)
         ) {
             Text(
-                text = "Seizure Detected",
+                text = stringResource(R.string.seizure_detected),
                 style = MaterialTheme.typography.headlineLarge,
                 color = MaterialTheme.colorScheme.onErrorContainer,
                 textAlign = TextAlign.Center,

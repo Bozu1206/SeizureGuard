@@ -56,6 +56,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -65,6 +66,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
+import com.epfl.ch.seizureguard.R
 import com.epfl.ch.seizureguard.medical_card.WalletUiState
 import com.epfl.ch.seizureguard.medical_card.WalletViewModel
 import com.epfl.ch.seizureguard.theme.AppTheme
@@ -86,7 +88,6 @@ fun ProfileScreen(
             .fillMaxSize()
             .padding(16.dp),
         contentAlignment = Alignment.TopCenter
-
     ) {
         Column(
             modifier = Modifier.fillMaxWidth(),
@@ -168,11 +169,10 @@ fun UserProfileSection(
                             Box(modifier = Modifier.fillMaxSize()) {
                                 AsyncImage(
                                     model = profile.uri,
-                                    contentDescription = "Profile Picture",
+                                    contentDescription = stringResource(R.string.profile_picture),
                                     modifier = Modifier.fillMaxSize(),
                                     contentScale = ContentScale.Crop,
                                 )
-
 
                                 Box(
                                     modifier = Modifier
@@ -208,7 +208,7 @@ fun UserProfileSection(
                             ) {
                                 Icon(
                                     imageVector = Icons.Rounded.Person,
-                                    contentDescription = "Profile Picture",
+                                    contentDescription = stringResource(R.string.profile_picture),
                                     tint = MaterialTheme.colorScheme.primary,
                                     modifier = Modifier.size(36.dp)
                                 )
@@ -235,7 +235,10 @@ fun UserProfileSection(
                         .weight(1f)
                         .fillMaxHeight(),
                     colors = CardDefaults.cardColors(
-                        containerColor = if (!isSystemInDarkTheme()) MaterialTheme.colorScheme.background else MaterialTheme.colorScheme.secondaryContainer
+                        containerColor = if (!isSystemInDarkTheme())
+                            MaterialTheme.colorScheme.background
+                        else
+                            MaterialTheme.colorScheme.secondaryContainer
                     ),
                     shape = RoundedCornerShape(4.dp)
                 ) {
@@ -249,7 +252,7 @@ fun UserProfileSection(
                                 .fillMaxWidth()
                         ) {
                             Text(
-                                text = "Your information",
+                                text = stringResource(R.string.your_information),
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold
                             )
@@ -261,7 +264,7 @@ fun UserProfileSection(
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Edit,
-                                    contentDescription = "Edit Profile",
+                                    contentDescription = stringResource(R.string.edit_your_profile),
                                     tint = MaterialTheme.colorScheme.primary
                                 )
                             }
@@ -280,12 +283,13 @@ fun UserProfileSection(
                                 .weight(1f),
                             verticalArrangement = Arrangement.SpaceEvenly
                         ) {
-                            InfoRow("Email", profile.email)
-                            InfoRow("Birth Date", profile.birthdate)
-                            InfoRow("Epilepsy Type", profile.epi_type)
+                            InfoRow(stringResource(R.string.email_label), profile.email)
+                            InfoRow(stringResource(R.string.birth_date_label), profile.birthdate)
+                            InfoRow(stringResource(R.string.epilepsy_type_label), profile.epi_type)
                             InfoRow(
-                                "Medication",
-                                if (profile.medications.isEmpty()) "Lorazepam"
+                                stringResource(R.string.medication_label),
+                                if (profile.medications.isEmpty())
+                                    stringResource(R.string.lorazepam_label)
                                 else profile.medications.joinToString(", ")
                             )
                         }
@@ -296,6 +300,7 @@ fun UserProfileSection(
             Spacer(modifier = Modifier.height(16.dp))
 
             if (walletViewModel.walletUiState.value !is WalletUiState.PassAdded) {
+                val medicationString = stringResource(R.string.lorazepam_label)
                 WalletButton(
                     type = ButtonType.Add,
                     modifier = Modifier
@@ -305,10 +310,11 @@ fun UserProfileSection(
                         val request = GoogleWalletToken.PassRequest(
                             uid = profile.uid,
                             patientName = profile.name,
-                            emergencyContact = profileScreenViewModel.profileState.value.emergencyContacts.firstOrNull()?.phone
-                                ?: "",
+                            emergencyContact = profileScreenViewModel.profileState.value.emergencyContacts
+                                .firstOrNull()
+                                ?.phone ?: "",
                             seizureType = profile.epi_type,
-                            medication = "Lorazepam",
+                            medication = medicationString,
                             birthdate = profile.birthdate,
                         )
                         onWalletButtonClick(request)
@@ -343,7 +349,11 @@ fun UserProfileSection(
                     modifier = Modifier.size(20.dp)
                 )
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Medical Notes", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+                Text(
+                    text = stringResource(R.string.medical_notes),
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
             }
         }
     }
@@ -413,7 +423,7 @@ fun EmergencyContactsSection(context: Context, profileViewModel: ProfileViewMode
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Emergency Contacts",
+                    text = stringResource(R.string.emergency_contacts),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold
                 )
@@ -503,21 +513,18 @@ fun EmergencyContactsSection(context: Context, profileViewModel: ProfileViewMode
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Phone,
-                                    contentDescription = "Call contact",
+                                    contentDescription = stringResource(R.string.call_contact),
                                     tint = MaterialTheme.colorScheme.primary
                                 )
                             }
                             IconButton(
                                 onClick = {
-                                    profileViewModel.updateEmergencyContacts(
-                                        contact,
-                                        isAdding = false
-                                    )
+                                    profileViewModel.updateEmergencyContacts(contact, isAdding = false)
                                 }
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Delete,
-                                    contentDescription = "Remove contact",
+                                    contentDescription = stringResource(R.string.remove_contact),
                                     tint = MaterialTheme.colorScheme.error
                                 )
                             }
@@ -546,11 +553,11 @@ fun EmergencyContactsSection(context: Context, profileViewModel: ProfileViewMode
             ) {
                 Icon(
                     imageVector = Icons.Rounded.Add,
-                    contentDescription = "Add contact",
+                    contentDescription = stringResource(R.string.add_contact),
                     modifier = Modifier.size(20.dp)
                 )
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Add Contact")
+                Text(stringResource(R.string.add_contact))
             }
         }
     }
@@ -580,25 +587,24 @@ fun EditProfile(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp)
-
         ) {
             Text(
-                text = "Edit your profile",
+                text = stringResource(R.string.edit_your_profile),
                 style = MaterialTheme.typography.headlineSmall
             )
             Spacer(modifier = Modifier.height(16.dp))
-            ProfileTextField(value = name, onValueChange = { name = it }, label = "Name")
+            ProfileTextField(value = name, onValueChange = { name = it }, label = stringResource(R.string.name_label))
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            ProfileTextField(value = email, onValueChange = {
-                email = it
-            }, label = "Email")
+            ProfileTextField(value = email, onValueChange = { email = it }, label = stringResource(R.string.email_label))
 
             Spacer(modifier = Modifier.height(8.dp))
 
             EpilepsyTypeField(
-                value = type, onValueChange = { type = it }, label = "Epilepsy Type"
+                value = type,
+                onValueChange = { type = it },
+                label = stringResource(R.string.epilepsy_type_label)
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -616,11 +622,12 @@ fun EditProfile(
                 },
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text(text = "Save Changes")
+                Text(text = stringResource(R.string.save_changes))
             }
         }
     }
 }
+
 
 @Preview(showBackground = true)
 @Composable

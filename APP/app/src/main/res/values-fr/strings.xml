@@ -19,4 +19,167 @@
     <string name="normal_power_mode">Normal</string>
     <string name="high_performance_mode">Performance</string>
     <string name="marker_title_text">Localisation de la crise</string>
-</resources> 
+    <string name="change_password">Changer le mot de passe</string>
+    <string name="passwords_do_not_match">Les mots de passe ne correspondent pas</string>
+    <string name="new_password">Nouveau mot de passe</string>
+    <string name="confirm_password">Confirmer le mot de passe</string>
+    <string name="confirm">Confirmer</string>
+    <string name="cancel">Annuler</string>
+    <string name="export_data">Exporter les données</string>
+    <string name="no_seizure_history_to_export">Aucun historique de crises à exporter</string>
+    <string name="do_you_want_to_export_your_seizure_history_as_json">Voulez-vous exporter l’historique de vos crises au format JSON ?</string>
+    <string name="export">Exporter</string>
+    <string name="close">Fermer</string>
+    <string name="settings">Paramètres</string>
+    <string name="security">Sécurité</string>
+    <string name="biometric_login">Connexion biométrique</string>
+    <string name="use_fingerprint_or_face_recognition_to_secure_your_app">Utilisez l’empreinte digitale ou la reconnaissance faciale pour sécuriser votre application</string>
+    <string name="power_options">Options d’alimentation</string>
+    <string name="enable_model_training">Activer l’apprentissage du modèle</string>
+    <string name="allow_the_app_to_learn_from_your_seizure_patterns">Permettre à l’application d’apprendre de vos schémas de crises</string>
+    <string name="power_mode">Mode d’alimentation</string>
+    <string name="adjust_power_consumption_and_detection_accuracy">Ajuster la consommation d’énergie et la précision de détection</string>
+    <string name="parent_mode">Mode parent</string>
+    <string name="enable_monitoring_and_control_features_for_caregivers">Activer les fonctionnalités de suivi et de contrôle pour les aidants</string>
+    <string name="developer_options">Options développeur</string>
+    <string name="export_seizure_history">Exporter l’historique des crises</string>
+    <string name="debug_mode">Mode débogage</string>
+    <string name="show_additional_information_for_troubleshooting">Afficher des informations supplémentaires pour le dépannage</string>
+    <string name="restart_app_to_correctly_update_debug_mode">Redémarrez l’application pour mettre à jour correctement le mode débogage</string>
+    <string name="about_seizureguard">À propos de SeizureGuard</string>
+    <string name="logout">Se déconnecter</string>
+    <string name="version_1_0_0">Version 1.0.0</string>
+    <string name="developed_by">Développé par :</string>
+    <string name="copyright">© 2024 EPFL. Tous droits réservés.</string>
+    <string name="profile_picture">Photo de profil</string>
+    <string name="your_information">Vos informations</string>
+    <string name="email_label">E-mail</string>
+    <string name="birth_date_label">Date de naissance</string>
+    <string name="epilepsy_type_label">Type d’épilepsie</string>
+    <string name="medication_label">Médication</string>
+    <string name="lorazepam_label">Lorazépam</string>
+    <string name="medical_notes">Notes médicales</string>
+    <string name="emergency_contacts">Contacts d’urgence</string>
+    <string name="call_contact">Appeler le contact</string>
+    <string name="remove_contact">Retirer le contact</string>
+    <string name="add_contact">Ajouter un contact</string>
+    <string name="edit_your_profile">Modifier votre profil</string>
+    <string name="name_label">Nom</string>
+    <string name="save_changes">Enregistrer</string>
+
+    <!-- Newly added strings for InferenceHomePage (French) -->
+    <string name="dashboard_title">Tableau de bord</string>
+
+    <!-- Button text / states for inference -->
+    <string name="perform_inference">Lancer l’inférence</string>
+    <string name="inference_running">Inférence en cours</string>
+    <string name="inference_running_cd">Inférence en cours</string>
+    <string name="inference_not_running_cd">Inférence non démarrée</string>
+
+    <!-- Messages for connection status -->
+    <string name="no_device_connected">Aucun appareil connecté !</string>
+    <string name="connected_device">Connecté à %1$s</string>
+    <string name="look_for_devices">Rechercher des appareils</string>
+    <string name="scanning_for_devices">Recherche d’appareils</string>
+    <string name="device_connected">Appareil connecté</string>
+    <string name="device_disconnected">Appareil déconnecté</string>
+
+    <!-- Bluetooth-related warnings -->
+    <string name="bluetooth_not_enabled">Le Bluetooth n’est pas activé !</string>
+    <string name="bluetooth_not_supported">Bluetooth non pris en charge</string>
+
+    <!-- Training -->
+    <string name="train_model">Entraîner le modèle</string>
+    <string name="training_has_started">L’entraînement a commencé</string>
+
+    <!-- Metrics / details -->
+    <string name="metrics_details">Détails des métriques</string>
+    <string name="accuracy">Précision globale</string>
+    <string name="f1_score">Score F1</string>
+    <string name="precision">Précision</string>
+    <string name="recall">Rappel</string>
+    <string name="f1_score_explanation">
+        Le score F1 est calculé comme la moyenne harmonique de la précision et du rappel :
+        f1 = 2 * (precision * recall) / (precision + recall)
+    </string>
+
+    <!-- Inference overlay -->
+    <string name="start_inference">Démarrer l’inférence</string>
+    <string name="tap_anywhere_to_begin_monitoring">Appuyez n’importe où pour commencer</string>
+
+    <!-- Date/time pattern -->
+    <string name="date_time_pattern">dd MMM yyyy HH:mm</string>
+
+    <!-- Welcome Section -->
+    <string name="welcome_text">Bienvenue, </string>
+    <string name="overview_of_health">Voici un aperçu de votre état de santé</string>
+
+    <!-- Health Metrics -->
+    <string name="seizures_label">Crises</string>
+    <string name="last_week">dernière semaine</string>
+    <string name="heart_rate">Rythme cardiaque</string>
+    <string name="bpm">bpm</string>
+    <string name="sleep_label">Sommeil</string>
+    <string name="hours_per_night">heures/nuit</string>
+
+    <!-- QuickActionButton labels -->
+    <string name="emergency">Urgence</string>
+    <string name="log_event">Enregistrer une crise</string>
+    <string name="guidelines_label">Directives</string>
+
+    <!-- Graph Section -->
+    <string name="seizure_trends">Tendance des crises</string>
+    <string name="mon">Lun</string>
+    <string name="tue">Mar</string>
+    <string name="wed">Mer</string>
+    <string name="thu">Jeu</string>
+    <string name="fri">Ven</string>
+    <string name="sat">Sam</string>
+    <string name="sun">Dim</string>
+
+    <!-- Recent Activity -->
+    <string name="last_seizures">Dernières crises</string>
+    <string name="seizure_event">Crise</string>
+    <string name="no_recent_activity">Aucune activité récente</string>
+    <string name="recent_seizure_events_will_appear_here">Vos dernières crises apparaîtront ici</string>
+
+    <!-- Daily Tips -->
+    <string name="daily_tip">Conseil du jour</string>
+    <string name="tip_1">Pensez à prendre vos médicaments régulièrement</string>
+    <string name="tip_2">Assurez-vous de dormir suffisamment</string>
+    <string name="tip_3">Restez hydraté tout au long de la journée</string>
+    <string name="tip_4">Suivez vos déclencheurs dans l’application</string>
+
+    <!-- strings for HistoryScreen (French) -->
+    <string name="history_screen_title">Historique</string>
+    <string name="view_statistics">Voir les statistiques</string>
+    <string name="no_seizures_recorded_yet">Aucune crise enregistrée pour le moment</string>
+    <string name="seizure_label">Crise</string>
+    <string name="minutes_long">minutes</string>
+    <string name="edit_seizure_label">Modifier la crise</string>
+    <string name="delete_seizure_label">Supprimer la crise</string>
+
+    <!-- Date/time format pattern -->
+    <string name="history_date_time_pattern">EEE d MMMM HH:mm</string>
+
+    <!-- strings for SeizureStatsScreen (French) -->
+    <string name="seizure_statistics">Statistiques des crises</string>
+    <string name="back_button">Retour</string>
+    <string name="total_seizures">Nombre total de crises</string>
+    <string name="average_duration">Durée moyenne</string>
+    <string name="average_severity">Gravité moyenne</string>
+    <string name="most_common_type">Type le plus fréquent</string>
+    <string name="most_common_trigger">Déclencheur le plus fréquent</string>
+    <string name="none_trigger">Aucun</string>
+    <string name="unknown_trigger">Inconnu</string>
+    <string name="no_data_string">Indisponible</string>
+    <string name="seizure_frequency">Fréquence des crises</string>
+    <string name="minutes_abbrev">min</string>
+
+    <!-- strings for SeizureDetectedScreen (French) -->
+    <string name="seizure_detected_parent">Crise détectée sur un appareil!</string>
+    <string name="seizure_detected">Crise détectée!</string>
+    <string name="address_prefix">Adresse: %1$s</string>
+    <string name="call_emergency_text">Appeler les urgences</string>
+
+</resources>

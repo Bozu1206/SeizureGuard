@@ -19,6 +19,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Call
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -49,6 +50,7 @@ import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.rememberCameraPositionState
 import java.util.Locale
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SeizureDetectedParentScreen(
     latitude : Double?,
@@ -80,8 +82,7 @@ fun SeizureDetectedParentScreen(
         }
     }
 
-
-    // Fond sombre semi-transparent
+    // Dark semi-transparent background
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -89,7 +90,7 @@ fun SeizureDetectedParentScreen(
             .clickable(enabled = false) {}
     )
 
-    // Contenu principal
+    // Main content background
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -107,7 +108,7 @@ fun SeizureDetectedParentScreen(
                 .padding(top = 32.dp)
         ) {
             Text(
-                text = "Seizure Detected on a device!",
+                text = stringResource(R.string.seizure_detected_parent),
                 style = MaterialTheme.typography.headlineLarge,
                 color = MaterialTheme.colorScheme.onErrorContainer,
                 textAlign = TextAlign.Center,
@@ -115,15 +116,14 @@ fun SeizureDetectedParentScreen(
             )
 
             Spacer(modifier = Modifier.height(32.dp))
-            if (latitude != null && longitude != null && !latitude.isNaN() && !longitude.isNaN()) { // check if seizure location is avaliable
+            if (latitude != null && longitude != null && !latitude.isNaN() && !longitude.isNaN()) {
+                // Show map if location is available
                 val mapCenter = LatLng(latitude, longitude)
                 val cameraPositionState = rememberCameraPositionState {
                     position = CameraPosition.fromLatLngZoom(mapCenter, 15f)
                 }
-                val markerState = remember {
-                    MarkerState(position = mapCenter)
-                }
-                GoogleMap( // map showing current user's location
+                val markerState = remember { MarkerState(position = mapCenter) }
+                GoogleMap(
                     cameraPositionState = cameraPositionState,
                     properties = MapProperties(mapType = MapType.HYBRID),
                     modifier = Modifier
@@ -131,13 +131,15 @@ fun SeizureDetectedParentScreen(
                         .fillMaxWidth()
                         .size(150.dp)
                 ) {
-                    Marker(      // the red marker that points the precise location on the map
+                    Marker(
                         state = markerState,
                         title = stringResource(R.string.marker_title_text),
-                        snippet = address ?: "Latitude: ${mapCenter.latitude}, Longitude: ${mapCenter.longitude}",
+                        snippet = address
+                            ?: "Latitude: ${mapCenter.latitude}, Longitude: ${mapCenter.longitude}"
                     )
                 }
-            }else{ // no location available
+            } else {
+                // No location available, show image
                 Image(
                     painter = painterResource(R.drawable.seizure_alert),
                     contentDescription = null,
@@ -158,9 +160,9 @@ fun SeizureDetectedParentScreen(
                 .fillMaxSize()
                 .padding(top = 250.dp)
         ) {
-            if(address != null){
+            if (address != null) {
                 Text(
-                    text = "Address: $address",
+                    text = stringResource(R.string.address_prefix, address!!),
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onErrorContainer,
                     textAlign = TextAlign.Center,
@@ -169,6 +171,7 @@ fun SeizureDetectedParentScreen(
                 Spacer(modifier = Modifier.height(16.dp))
             }
 
+            // Already localized guidelines in your strings.xml
             Text(
                 text = stringResource(id = R.string.guidelines),
                 style = MaterialTheme.typography.bodyLarge,
@@ -186,11 +189,14 @@ fun SeizureDetectedParentScreen(
         )
 
         if (isLogging) {
-            LogSeizureEventModal(onDismiss = { isLogging = false }, onClick = { seizureEvent ->
-                hasLogged = true
-                profileViewModel.addSeizure(seizureEvent)
-                onDismiss()
-            })
+            LogSeizureEventModal(
+                onDismiss = { isLogging = false },
+                onClick = { seizureEvent ->
+                    hasLogged = true
+                    profileViewModel.addSeizure(seizureEvent)
+                    onDismiss()
+                }
+            )
         }
     }
 }
@@ -200,12 +206,15 @@ fun SeizureAlertButtonsParent(
     onEmergencyCall: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    // Localize "Call Emergency"
+    val callEmergencyText = stringResource(R.string.call_emergency_text)
+
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = modifier.fillMaxWidth()
     ) {
         AlertButton(
-            text = "Call Emergency",
+            text = callEmergencyText,
             icon = Icons.Default.Call,
             onClick = onEmergencyCall,
             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),

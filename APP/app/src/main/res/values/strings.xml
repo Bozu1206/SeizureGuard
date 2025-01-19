@@ -1,4 +1,5 @@
 <resources>
+    <!-- Existing strings -->
     <string name="app_name">SeizureGuard</string>
     <string name="guidelines">
         1. Stay calm and ensure the person is safe.\n
@@ -13,10 +14,171 @@
     <string name="fixed_foregroung_notification_channel_id">foreground service fixed notification</string>
     <string name="seizure_notification_id">"seizure found "</string>
     <string name="about">SeizureGuard is an innovative application designed to detect and monitor epileptic seizures using EEG signals. It provides real-time monitoring, emergency alerts, and detailed seizure history tracking.</string>
-    <string name="authors"><![CDATA[Francesco Poluzzi and François Dumoncel EE-490(g): Lab on App Development for Smartphones \nSupervisor: Ansaloni Giovanni & Amirhossein Shahbazinia]]></string>
-    <string name="low_power_mode">"Low Power"</string>
-    <string name="normal_power_mode">"Normal"</string>
+    <string name="authors"><![CDATA[Francesco Poluzzi and François Dumoncel EE-490(g): Lab on App Development for Smartphones
+Supervisor: Ansaloni Giovanni & Amirhossein Shahbazinia]]></string>
+    <string name="low_power_mode">Low Power</string>
+    <string name="normal_power_mode">Normal</string>
     <string name="high_performance_mode">Performance</string>
     <string name="marker_title_text">Seizure event location</string>
+    <string name="change_password">Change Password</string>
+    <string name="passwords_do_not_match">Passwords do not match</string>
+    <string name="new_password">New Password</string>
+    <string name="confirm_password">Confirm Password</string>
+    <string name="confirm">Confirm</string>
+    <string name="cancel">Cancel</string>
+    <string name="export_data">Export Data</string>
+    <string name="no_seizure_history_to_export">No seizure history to export</string>
+    <string name="do_you_want_to_export_your_seizure_history_as_json">Do you want to export your seizure history as JSON?</string>
+    <string name="export">Export</string>
+    <string name="close">Close</string>
+    <string name="settings">Settings</string>
+    <string name="security">Security</string>
+    <string name="biometric_login">Biometric Login</string>
+    <string name="use_fingerprint_or_face_recognition_to_secure_your_app">Use fingerprint or face recognition to secure your app</string>
+    <string name="power_options">Power Options</string>
+    <string name="enable_model_training">Enable Model Training</string>
+    <string name="allow_the_app_to_learn_from_your_seizure_patterns">Allow the app to learn from your seizure patterns</string>
+    <string name="power_mode">Power Mode</string>
+    <string name="adjust_power_consumption_and_detection_accuracy">Adjust power consumption and detection accuracy. Performance mode increases the accuracy but can drain the battery faster; use Low Power mode if you want to save battery</string>
+    <string name="parent_mode">Parent Mode</string>
+    <string name="enable_monitoring_and_control_features_for_caregivers">Parent mode: get notified at seizures happened in any device connected to this profile</string>
+    <string name="developer_options">Developer options</string>
+    <string name="export_seizure_history">Export Seizure History</string>
+    <string name="debug_mode">Debug Mode</string>
+    <string name="show_additional_information_for_troubleshooting">Enable performing seizure detection on artificial data (meant only for developers)</string>
+    <string name="restart_app_to_correctly_update_debug_mode">Restart the app to correctly update debug mode</string>
+    <string name="about_seizureguard">About SeizureGuard</string>
+    <string name="logout">Logout</string>
+    <string name="version_1_0_0">Version 1.0.0</string>
+    <string name="developed_by">Developed by:</string>
+    <string name="copyright">© 2024 EPFL. All rights reserved.</string>
+    <string name="profile_picture">Profile Picture</string>
+    <string name="your_information">Your information</string>
+    <string name="email_label">Email</string>
+    <string name="birth_date_label">Birth Date</string>
+    <string name="epilepsy_type_label">Epilepsy Type</string>
+    <string name="medication_label">Medication</string>
+    <string name="lorazepam_label">Lorazepam</string>
+    <string name="medical_notes">Medical Notes</string>
+    <string name="emergency_contacts">Emergency Contacts</string>
+    <string name="call_contact">Call contact</string>
+    <string name="remove_contact">Remove contact</string>
+    <string name="add_contact">Add Contact</string>
+    <string name="edit_your_profile">Edit your profile</string>
+    <string name="name_label">Name</string>
+    <string name="save_changes">Save Changes</string>
+    <string name="dashboard_title">Dashboard</string>
+
+    <!-- Button text / states for inference -->
+    <string name="perform_inference">Perform Inference</string>
+    <string name="inference_running">Inference Running</string>
+    <string name="inference_running_cd">Inference running</string>
+    <string name="inference_not_running_cd">Inference not running</string>
+
+    <!-- Messages for connection status -->
+    <string name="no_device_connected">No device connected!</string>
+    <string name="connected_device">Connected to %1$s</string> <!-- Use String.format(...) -->
+    <string name="look_for_devices">Look for Devices</string>
+    <string name="scanning_for_devices">Scanning for devices</string>
+    <string name="device_connected">Device Connected</string>
+    <string name="device_disconnected">Device Disconnected</string>
+
+    <!-- Bluetooth-related warnings -->
+    <string name="bluetooth_not_enabled">Bluetooth is not enabled!</string>
+    <string name="bluetooth_not_supported">Bluetooth not supported</string>
+
+    <!-- Training -->
+    <string name="train_model">Train Model</string>
+    <string name="training_has_started">Training has started</string>
+
+    <!-- Metrics / details -->
+    <string name="metrics_details">Metrics Details</string>
+    <string name="accuracy">Accuracy</string>
+    <string name="f1_score">F1 Score</string>
+    <string name="precision">Precision</string>
+    <string name="recall">Recall</string>
+    <string name="f1_score_explanation">
+        The F1-Score is computed as the harmonic mean of precision and recall:
+        f1 = 2 * (precision * recall) / (precision + recall)
+    </string>
+
+    <!-- Inference overlay -->
+    <string name="start_inference">Start Inference</string>
+    <string name="tap_anywhere_to_begin_monitoring">Tap anywhere to begin monitoring</string>
+
+    <!-- Date/time pattern used in formatDate -->
+    <string name="date_time_pattern">MMM dd, yyyy HH:mm</string>
+
+    <!-- Welcome Section -->
+    <string name="welcome_text">Welcome, </string>
+    <string name="overview_of_health">Here\'s an overview of your health status</string>
+
+    <!-- Health Metrics -->
+    <string name="seizures_label">Seizures</string>
+    <string name="last_week">last week</string>
+    <string name="heart_rate">Heart Rate</string>
+    <string name="bpm">bpm</string>
+    <string name="sleep_label">Sleep</string>
+    <string name="hours_per_night">hrs/night</string>
+
+    <!-- QuickActionButton labels -->
+    <string name="emergency">Emergency</string>
+    <string name="log_event">Log Event</string>
+    <string name="guidelines_label">Guidelines</string>
+
+    <!-- Graph Section -->
+    <string name="seizure_trends">Seizure Trends</string>
+    <string name="mon">Mon</string>
+    <string name="tue">Tue</string>
+    <string name="wed">Wed</string>
+    <string name="thu">Thu</string>
+    <string name="fri">Fri</string>
+    <string name="sat">Sat</string>
+    <string name="sun">Sun</string>
+
+    <!-- Recent Activity -->
+    <string name="last_seizures">Last seizures</string>
+    <string name="seizure_event">Seizure Event</string>
+    <string name="no_recent_activity">No Recent Activity</string>
+    <string name="recent_seizure_events_will_appear_here">Your recent seizure events will appear here</string>
+
+    <!-- Daily Tips -->
+    <string name="daily_tip">Daily Tip</string>
+    <string name="tip_1">Remember to take your medication regularly</string>
+    <string name="tip_2">Ensure you get enough sleep</string>
+    <string name="tip_3">Stay hydrated throughout the day</string>
+    <string name="tip_4">Track your triggers in the app</string>
+
+    <!-- strings for HistoryScreen -->
+    <string name="history_screen_title">History</string>
+    <string name="view_statistics">View Statistics</string>
+    <string name="no_seizures_recorded_yet">No seizures recorded yet</string>
+    <string name="seizure_label">Seizure</string>
+    <string name="minutes_long">minutes long</string>
+    <string name="edit_seizure_label">Edit Seizure</string>
+    <string name="delete_seizure_label">Remove Seizure</string>
+
+    <!-- Date/time format pattern for history events -->
+    <string name="history_date_time_pattern">EEE, MMMM d K:mm a</string>
+
+    <!-- strings for SeizureStatsScreen -->
+    <string name="seizure_statistics">Seizure Statistics</string>
+    <string name="back_button">Back</string>
+    <string name="total_seizures">Total Seizures</string>
+    <string name="average_duration">Average Duration</string>
+    <string name="average_severity">Average Severity</string>
+    <string name="most_common_type">Most Common Type</string>
+    <string name="most_common_trigger">Most Common Trigger</string>
+    <string name="none_trigger">None</string>
+    <string name="unknown_trigger">Unknown</string>
+    <string name="no_data_string">N/A</string>
+    <string name="seizure_frequency">Seizure Frequency</string>
+    <string name="minutes_abbrev">min</string>
+
+    <!-- strings for SeizureDetectedScreen -->
+    <string name="seizure_detected_parent">Seizure Detected on a device!</string>
+    <string name="seizure_detected">Seizure Detected!</string>
+    <string name="address_prefix">Address: %1$s</string>
+    <string name="call_emergency_text">Call Emergency</string>
 
 </resources>

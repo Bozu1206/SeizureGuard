@@ -1,8 +1,5 @@
 package com.epfl.ch.seizureguard.history
 
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -45,15 +42,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.epfl.ch.seizureguard.profile.ProfileViewModel
 import com.epfl.ch.seizureguard.seizure_event.SeizureEvent
-import java.time.LocalDate
-import java.time.ZoneId
-import java.time.temporal.ChronoUnit
-import androidx.compose.runtime.derivedStateOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
-import java.time.format.DateTimeFormatter
-import androidx.compose.material3.FilterChip
-import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.res.stringResource
+import com.epfl.ch.seizureguard.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -64,18 +54,34 @@ fun SeizureStatsScreen(
     val profile by profileViewModel.profileState.collectAsState()
     val seizures = profile.pastSeizures
 
-    val stats = remember(seizures) {
-        calculateSeizureStats(seizures)
-    }
+    // Capture localized strings for "N/A" and "Unknown"
+    val noDataString = stringResource(R.string.no_data_string)       // "N/A"
+    val unknownTriggerString = stringResource(R.string.unknown_trigger) // "Unknown"
 
+    // Compute stats with localized strings passed in
+    val stats = remember(seizures, noDataString, unknownTriggerString) {
+        calculateSeizureStats(
+            seizures = seizures,
+            noDataString = noDataString,
+            unknownTriggerString = unknownTriggerString
+        )
+    }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Seizure Statistics", fontWeight = FontWeight.Bold) },
+                title = {
+                    Text(
+                        text = stringResource(R.string.seizure_statistics), // "Seizure Statistics"
+                        fontWeight = FontWeight.Bold
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, "Back")
+                        Icon(
+                            Icons.Default.ArrowBack,
+                            contentDescription = stringResource(R.string.back_button) // "Back"
+                        )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -84,6 +90,14 @@ fun SeizureStatsScreen(
             )
         }
     ) { padding ->
+        // Strings for stat titles
+        val totalSeizuresText = stringResource(R.string.total_seizures)
+        val averageDurationText = stringResource(R.string.average_duration)
+        val averageSeverityText = stringResource(R.string.average_severity)
+        val mostCommonTypeText = stringResource(R.string.most_common_type)
+        val mostCommonTriggerText = stringResource(R.string.most_common_trigger)
+        val noneTriggerText = stringResource(R.string.none_trigger)
+        val minutesAbbrev = stringResource(R.string.minutes_abbrev) // "min"
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
@@ -94,7 +108,7 @@ fun SeizureStatsScreen(
         ) {
             item {
                 StatCard(
-                    title = "Total Seizures",
+                    title = totalSeizuresText,
                     value = stats.totalSeizures.toString(),
                     icon = Icons.Default.Numbers,
                     iconTint = Color(0xFF2196F3)
@@ -103,8 +117,8 @@ fun SeizureStatsScreen(
 
             item {
                 StatCard(
-                    title = "Average Duration",
-                    value = "${String.format("%.1f", stats.averageDuration)} min",
+                    title = averageDurationText,
+                    value = "${String.format("%.1f", stats.averageDuration)} $minutesAbbrev",
                     icon = Icons.Default.Timer,
                     iconTint = Color(0xFF4CAF50)
                 )
@@ -112,7 +126,7 @@ fun SeizureStatsScreen(
 
             item {
                 StatCard(
-                    title = "Average Severity",
+                    title = averageSeverityText,
                     value = String.format("%.1f", stats.averageSeverity),
                     icon = Icons.Default.TrendingUp,
                     iconTint = Color(0xFFF44336)
@@ -121,7 +135,7 @@ fun SeizureStatsScreen(
 
             item {
                 StatCard(
-                    title = "Most Common Type",
+                    title = mostCommonTypeText,
                     value = stats.mostCommonType,
                     icon = Icons.Default.Category,
                     iconTint = Color(0xFF9C27B0)
@@ -129,9 +143,12 @@ fun SeizureStatsScreen(
             }
 
             item {
+                // if mostCommonTrigger is null, show "None"
+                val triggerValue = stats.mostCommonTrigger ?: noneTriggerText
+
                 StatCard(
-                    title = "Most Common Trigger",
-                    value = stats.mostCommonTrigger ?: "None",
+                    title = mostCommonTriggerText,
+                    value = triggerValue,
                     icon = Icons.Default.Warning,
                     iconTint = Color(0xFFFF9800)
                 )
@@ -191,6 +208,9 @@ private fun StatCard(
     }
 }
 
+/**
+ * Data class to hold computed stats about seizures.
+ */
 private data class SeizureStats(
     val totalSeizures: Int,
     val averageDuration: Double,
@@ -199,9 +219,23 @@ private data class SeizureStats(
     val mostCommonTrigger: String?
 )
 
-private fun calculateSeizureStats(seizures: List<SeizureEvent>): SeizureStats {
+/**
+ * Non-composable function to calculate stats. We pass in localized
+ * fallback strings instead of calling `stringResource(...)` here.
+ */
+private fun calculateSeizureStats(
+    seizures: List<SeizureEvent>,
+    noDataString: String,        // e.g. "N/A"
+    unknownTriggerString: String // e.g. "Unknown"
+): SeizureStats {
     if (seizures.isEmpty()) {
-        return SeizureStats(0, 0.0, 0.0, "N/A", null)
+        return SeizureStats(
+            totalSeizures = 0,
+            averageDuration = 0.0,
+            averageSeverity = 0.0,
+            mostCommonType = noDataString,    // "N/A"
+            mostCommonTrigger = null
+        )
     }
 
     val totalSeizures = seizures.size
@@ -209,7 +243,7 @@ private fun calculateSeizureStats(seizures: List<SeizureEvent>): SeizureStats {
     val averageSeverity = seizures.map { it.severity }.average()
 
     val typeFrequency = seizures.groupBy { it.type }
-    val mostCommonType = typeFrequency.maxByOrNull { it.value.size }?.key ?: "Unknown"
+    val mostCommonType = typeFrequency.maxByOrNull { it.value.size }?.key ?: unknownTriggerString
 
     val allTriggers = seizures.flatMap { it.triggers }
     val mostCommonTrigger = allTriggers
@@ -226,12 +260,12 @@ private fun calculateSeizureStats(seizures: List<SeizureEvent>): SeizureStats {
     )
 }
 
-@Composable 
+@Composable
 private fun SeizureChart(
     seizures: List<SeizureEvent>,
     modifier: Modifier = Modifier
 ) {
-
+    val seizureFrequencyText = stringResource(R.string.seizure_frequency) // "Seizure Frequency"
 
     Card(
         modifier = modifier
@@ -258,15 +292,15 @@ private fun SeizureChart(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Seizure Frequency",
+                    text = seizureFrequencyText, // "Seizure Frequency"
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
-                
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
+            // Some chart drawing logic here...
         }
     }
 }
