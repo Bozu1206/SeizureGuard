@@ -168,7 +168,7 @@ fun WelcomeSection(profileViewModel: ProfileViewModel) {
                             fontWeight = FontWeight.ExtraBold
                         )
                     ) {
-                        append("${profile.value.name.split(" ")[0]}!")
+                        append(" ${profile.value.name.split(" ")[0]}!")
                     }
                 },
                 style = MaterialTheme.typography.headlineLarge,
@@ -215,6 +215,8 @@ fun HealthMetricsSection(profileViewModel: ProfileViewModel) {
                 value = numbersOfSeizureLastWeek.toString(),
                 unit = lastWeekText
             )
+
+            // Not real data; just placeholders -- idea is to show different metrics
             MetricCard(title = heartRateText, value = "76", unit = bpmText)
             MetricCard(title = sleepLabel, value = "6.5", unit = hoursPerNight)
         }
@@ -624,15 +626,6 @@ fun EmptyStateCard() {
                 textAlign = TextAlign.Center
             )
         }
-    }
-}
-
-
-@Preview(showBackground = true)
-@Composable
-fun HomeScreenPreview() {
-    AppTheme {
-        //HomeScreen({})
     }
 }
 
