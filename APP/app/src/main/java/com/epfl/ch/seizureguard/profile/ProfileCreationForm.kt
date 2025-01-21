@@ -29,6 +29,7 @@ import java.text.SimpleDateFormat
 import java.util.*
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.selection.TextSelectionColors
 import androidx.compose.material.icons.filled.Email
@@ -54,16 +55,12 @@ fun ProfileCreationForm(profile: Profile) {
     var showDatePicker by remember { mutableStateOf(false) }
 
     Column(
-        horizontalAlignment = Alignment.Start,
         modifier = Modifier
-            .fillMaxWidth()
-            .fillMaxHeight()
+            .fillMaxSize()
             .padding(16.dp)
             .pointerInput(Unit) {
                 detectTapGestures(
-                    onTap = {
-                        focusManager.clearFocus()
-                    }
+                    onTap = { focusManager.clearFocus() }
                 )
             }
     ) {
@@ -97,62 +94,85 @@ fun ProfileCreationForm(profile: Profile) {
 
         ProfilePicturePicker(profile = profile)
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(16.dp))
 
-        ProfileTextField(
-            value = userName,
-            onValueChange = {
-                userName = it
-                profile.name = it
-            },
-            label = "Name"
-        )
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+        ) {
+            item {
+                ProfileTextField(
+                    value = userName,
+                    onValueChange = {
+                        userName = it
+                        profile.name = it
+                    },
+                    label = "Name"
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+            }
 
-        Spacer(modifier = Modifier.height(8.dp))
+            item {
+                ProfileTextField(
+                    value = email,
+                    onValueChange = {
+                        email = it
+                        profile.email = it
+                    },
+                    label = "Email"
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+            }
 
-        ProfileTextField(
-            value = email,
-            onValueChange = { email = it; profile.email = it },
-            label = "Email"
-        )
+            item {
+                // Birthdate field & Date Picker
+                BirthDateField(
+                    birthDate = birthDate,
+                    onClick = { showDatePicker = true }
+                )
+                if (showDatePicker) {
+                    DatePickerModal(
+                        onDateSelected = { selectedDateMillis ->
+                            birthDate = selectedDateMillis?.let { convertMillisToDate(it) } ?: ""
+                            profile.birthdate = birthDate
+                            showDatePicker = false
+                        },
+                        onDismiss = { showDatePicker = false }
+                    )
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+            }
 
-        Spacer(modifier = Modifier.height(8.dp))
+            item {
+                // Epilepsy type dropdown
+                EpilepsyTypeField(
+                    value = epi_type,
+                    onValueChange = {
+                        epi_type = it
+                        profile.epi_type = it
+                    }
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+            }
 
-        // Date of Birth field
-        BirthDateField(
-            birthDate = birthDate,
-            onClick = { showDatePicker = !showDatePicker }
-        )
+            item {
+                // Password field
+                PasswordTextField(
+                    password = password,
+                    onValueChange = {
+                        password = it
+                        profile.pwd = it
+                    }
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+            }
 
-        // Date Picker Modal
-        if (showDatePicker) {
-            DatePickerModal(onDateSelected = { selectedDateMillis ->
-                birthDate = selectedDateMillis?.let { convertMillisToDate(it) } ?: ""
-                profile.birthdate = birthDate
-                showDatePicker = false
-            }, onDismiss = { showDatePicker = false })
+            // TODO: Medication selector
+            // item { ... }
         }
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        // Epilepsy Type field
-        EpilepsyTypeField(
-            value = epi_type,
-            onValueChange = { epi_type = it; profile.epi_type = it }
-        )
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        PasswordTextField(
-            password = password,
-            onValueChange = { password = it; profile.pwd = it }
-        )
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        // TODO: Medication selector
     }
 }
+
 
 @Composable
 private fun textFieldModifier() = Modifier
