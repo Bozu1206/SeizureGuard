@@ -38,8 +38,6 @@ import com.epfl.ch.seizureguard.onboarding.OnboardingScreen
 import com.epfl.ch.seizureguard.onboarding.OnboardingViewModel
 import com.epfl.ch.seizureguard.onboarding.OnboardingViewModelFactory
 import com.epfl.ch.seizureguard.profile.ProfileViewModel
-import com.epfl.ch.seizureguard.seizure_event.SeizureDao
-import com.epfl.ch.seizureguard.seizure_event.SeizureDatabase
 import com.epfl.ch.seizureguard.seizure_event.SeizureEventViewModel
 import com.epfl.ch.seizureguard.theme.AppTheme
 import com.epfl.ch.seizureguard.tools.onEmergencyCall
@@ -59,7 +57,6 @@ class MainActivity : FragmentActivity() {
     private val walletViewModel: WalletViewModel by viewModels()
     private val addToGoogleWalletRequestCode = 1000
 
-    private lateinit var databaseRoom: SeizureDao
     private val NOTIFICATION_PERMISSION_REQUEST_CODE = 2
 
     private val seizureDetectionViewModel by lazy {
@@ -151,7 +148,6 @@ class MainActivity : FragmentActivity() {
         val isSeizureDetectedParentExtra = intent?.getBooleanExtra("EXTRA_SEIZURE_DETECTED_PARENT", false) ?: false
         val isSeizureDetectedExtra = intent?.getBooleanExtra("EXTRA_SEIZURE_DETECTED", false) ?: false
 
-        databaseRoom = initializeDatabase()
         setContent {
             val isSeizureDetected by seizureDetectionViewModel.isSeizureDetected.collectAsState()
             val firebaseLogin by onboardingViewModel.firebaseLogin.collectAsState()
@@ -274,11 +270,6 @@ class MainActivity : FragmentActivity() {
             it.putExtra("IS_DEBUG_ENABLED", isDebugEnabled)
             startForegroundService(it)
         }
-    }
-
-    private fun initializeDatabase(): SeizureDao {
-        val application = requireNotNull(this).application
-        return SeizureDatabase.getInstance(application).seizureDao
     }
 
     private fun requestSavePass(request: GoogleWalletToken.PassRequest) {
