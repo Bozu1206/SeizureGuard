@@ -318,6 +318,7 @@ class InferenceService : Service() {
                 val app = context.applicationContext as RunningApp
                 if (app.appLifecycleObserver.isAppInForeground) {
                     seizureDetectionViewModel.onSeizureDetected()
+                    profileViewModel.sendNotificationToMyDevices("Seizure Detected!", location)
                 } else {
                     sendSeizureDetectedNotification()
                     profileViewModel.sendNotificationToMyDevices("Seizure Detected!", location)
