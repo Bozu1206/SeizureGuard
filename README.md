@@ -3,9 +3,16 @@
 - **Course**: Lab on App Development for Tablets and Smartphones (EPFL)
 - **Authors**: Francesco Poluzzi, François Dumoncel
 
+
 ## Testing the Application
 
 This Android application aims to perform live AI-based epileptic seizure detection.
+
+> ![NOTE]
+> If you want use the app without giving personal informations, you can use our demo account. Just log in with the following credentials:
+> - email: demo@epfl.ch
+> - password: epfl
+
 
 ### Steps for Using the App
 1. Install the SeizureGuard app, accept all permissions, and create a profile. 
