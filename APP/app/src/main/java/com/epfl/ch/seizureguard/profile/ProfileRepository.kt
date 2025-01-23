@@ -244,32 +244,28 @@ class ProfileRepository private constructor(
 
     suspend fun saveProfileToFirestore(profile: Profile) {
         try {
-            val userId = context.dataStore.data.first()[Keys.USER_ID] ?: run {
-                Log.e("ProfileRepository", "No user ID found in preferences")
-                return
-            }
+            val userId = context.dataStore.data.first()[Keys.USER_ID] ?: return
+            val imageUri = Uri.parse(profile.uri)
+            if (imageUri.scheme.equals("content", ignoreCase = true)
+                || imageUri.scheme.equals("file", ignoreCase = true))
+            {
+                val imageRef = storage.reference.child("profile_images/$userId.jpg")
+                imageRef.putFile(imageUri).await()
 
-            if (profile.uri.isNotEmpty()) {
-                uploadImageToStorage(userId, Uri.parse(profile.uri))
+                val downloadUrl = imageRef.downloadUrl.await()
+                profile.uri = downloadUrl.toString()
+            }
+            else{
+                Log.w("saveProfileToFirestore", "Skipping upload because URI is already remote: $imageUri")
             }
 
             firestore.collection("profiles")
                 .document(userId)
                 .set(profile)
                 .await()
-            
         } catch (e: Exception) {
             Log.e("ProfileRepository", "Error saving profile to Firestore", e)
             throw e
-        }
-    }
-
-    private suspend fun uploadImageToStorage(uid: String, imageUri: Uri) {
-        try {
-            val imageRef = storage.reference.child("profile_images/$uid.jpg")
-            imageRef.putFile(imageUri).await()
-        } catch (e: Exception) {
-            Log.e("ProfileRepository", "Failed to upload image to Firebase Storage: ${e.message}", e)
         }
     }
 
