@@ -63,77 +63,74 @@ class MessagingService : FirebaseMessagingService() {
      */
     override fun onMessageReceived(remoteMessage: RemoteMessage) {
         super.onMessageReceived(remoteMessage)
-        if (!profileViewModel.parentMode.value) { // do not listen for notifications in non-parent mode
+        if (!profileViewModel.parentMode.value) {// Only handle notifications in parent mode
             return
         }
         val data = remoteMessage.data
         if (data.isNotEmpty()) {
             val title = data["title"] ?: "No title"
-            val body = data["body"] ?: "No body"
-            // --- PARSE LOCATION FROM BODY ---
-            val locationRegex = Regex("""Location:\s*Lat:\s*([-0-9.]+),\s*Long:\s*([-0-9.]+)""")
-            val matchResult = locationRegex.find(body)
+            // Extract latitude and longitude from data
+            val latStr = data["latitude"]
+            val lonStr = data["longitude"]
             var extractedLocation: Location? = null
-            if (matchResult != null) {
-                // groupValues[1] = the latitude string
-                // groupValues[2] = the longitude string
-                val latStr = matchResult.groupValues[1]
-                val lonStr = matchResult.groupValues[2]
+            if (latStr != null && lonStr != null) {
                 val latitude = latStr.toDoubleOrNull()
                 val longitude = lonStr.toDoubleOrNull()
                 if (latitude != null && longitude != null) {
-                    // Construct a Location object using the parsed coords
                     extractedLocation = Location(LocationManager.GPS_PROVIDER).apply {
                         this.latitude = latitude
                         this.longitude = longitude
                     }
-                }else{
-                    Log.d("MyFirebaseMsgService", "Impossible to parse location")
-
+                } else {
+                    Log.d("MyFirebaseMsgService", "Invalid lat/long data in message")
                 }
+            } else {
+                Log.d("MyFirebaseMsgService", "No lat/long data found in message")
             }
-
-            showNotification(title, body, extractedLocation)
+            val displayMessage = if (extractedLocation != null) {
+                "Location received from device"
+            } else {
+                "Location unavailable"
+            }
+            showNotification(title, displayMessage, extractedLocation)
         }
     }
 
     @SuppressLint("ServiceCast")
     private fun showNotification(title: String, message: String, location: Location?) {
-        // A simple example of building and showing a notification:
         val channelId = "seizureguard_channel_id"
-        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-
+        val notificationManager =
+            getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         val contentIntent = Intent(this, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
             putExtra("EXTRA_SEIZURE_DETECTED_PARENT", true)
-            if(location != null){
-                putExtra("EXTRA_LATITUDE", location.latitude)
-                putExtra("EXTRA_LONGITUDE", location.longitude)
-            }
         }
+        profileViewModel.setLatestLocation(location)
         val pendingIntent = PendingIntent.getActivity(
             this,
             0,
             contentIntent,
             PendingIntent.FLAG_IMMUTABLE
         )
-
-        // Create a notification channel for Android 8.0+
         val channel = NotificationChannel(
             channelId,
             "SeizureGuard Channel",
             NotificationManager.IMPORTANCE_HIGH
         )
         notificationManager.createNotificationChannel(channel)
-        // Build the notification
+        val locationString = if (location != null) {
+            "Lat: ${location.latitude}, Long: ${location.longitude}"
+        } else {
+            "Location unavailable"
+        }
         val notificationBuilder = NotificationCompat.Builder(this, channelId)
-            .setSmallIcon(R.drawable.icon) // Replace with your icon
+            .setSmallIcon(R.drawable.icon)
             .setContentTitle(title)
+            .setContentText(locationString)
             .setContentIntent(pendingIntent)
-            .setContentText(message)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)
-        // Issue the notification
+
         notificationManager.notify(0, notificationBuilder.build())
     }
 }

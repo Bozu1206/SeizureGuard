@@ -6,7 +6,6 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
-import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
@@ -145,10 +144,14 @@ class MainActivity : FragmentActivity() {
         )[OnboardingViewModel::class.java]
         profileViewModel = RunningApp.getInstance(application as RunningApp).profileViewModel
 
-        val isSeizureDetectedParentExtra = intent?.getBooleanExtra("EXTRA_SEIZURE_DETECTED_PARENT", false) ?: false
+        var isSeizureDetectedParentExtra = intent?.getBooleanExtra("EXTRA_SEIZURE_DETECTED_PARENT", false) ?: false
         val isSeizureDetectedExtra = intent?.getBooleanExtra("EXTRA_SEIZURE_DETECTED", false) ?: false
 
         setContent {
+            val location by profileViewModel.latestLocation.collectAsState()
+            val latitude = location?.latitude
+            val longitude = location?.longitude
+
             val isSeizureDetected by seizureDetectionViewModel.isSeizureDetected.collectAsState()
             val firebaseLogin by onboardingViewModel.firebaseLogin.collectAsState()
             val isAuthenticated by profileViewModel.isAuthenticated.collectAsState()
@@ -169,8 +172,6 @@ class MainActivity : FragmentActivity() {
             AppTheme {
                 Box(modifier = Modifier.fillMaxSize()) {
                     if(isSeizureDetectedParentExtra){
-                        val latitude = intent?.getDoubleExtra("EXTRA_LATITUDE", Double.NaN)
-                        val longitude = intent?.getDoubleExtra("EXTRA_LONGITUDE", Double.NaN)
                         val context = LocalContext.current
                         SeizureDetectedParentScreen(
                             latitude = latitude,

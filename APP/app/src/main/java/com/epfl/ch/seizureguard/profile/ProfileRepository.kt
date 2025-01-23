@@ -509,18 +509,25 @@ class ProfileRepository private constructor(
         return@withContext googleCredentials.accessToken.tokenValue
     }
 
-    suspend fun sendFcmNotificationToTokens(tokens: List<String>, title: String, body: String) {
+    suspend fun sendFcmNotificationToTokens(
+        tokens: List<String>,
+        title: String,
+        latitude: String?,
+        longitude: String?
+    ) {
         withContext(Dispatchers.IO) {
             val url = "https://fcm.googleapis.com/v1/projects/seizureguard-1e3d9/messages:send"
             val accessToken = getAccessToken()
             tokens.forEach { token ->
+                val dataPayload = mutableMapOf(
+                    "title" to title
+                )
+                latitude?.let { dataPayload["latitude"] = it }
+                longitude?.let { dataPayload["longitude"] = it }
                 val payload = mapOf(
                     "message" to mapOf(
                         "token" to token,
-                        "data" to mapOf(
-                            "title" to title,
-                            "body" to body
-                        ),
+                        "data" to dataPayload,
                         "android" to mapOf("priority" to "high")
                     )
                 )

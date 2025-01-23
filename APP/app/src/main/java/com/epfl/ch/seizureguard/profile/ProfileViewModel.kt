@@ -58,6 +58,12 @@ class ProfileViewModel(context: Context, application: Application) : AndroidView
         _isInferenceRunning.value = newValue
     }
 
+    private val _latestLocation = MutableStateFlow<Location?>(null)
+    val latestLocation: StateFlow<Location?> = _latestLocation
+    fun setLatestLocation(newLocation: Location?) {
+        _latestLocation.value = newLocation
+    }
+
     fun requestTraining() {
         val intent = Intent(getApplication(), InferenceService::class.java).apply {
             action = "ACTION_START_TRAINING"
@@ -454,11 +460,8 @@ class ProfileViewModel(context: Context, application: Application) : AndroidView
             return
         }
 
-        val locationInfo = location?.let {
-            "Lat: ${it.latitude}, Long: ${it.longitude}"
-        } ?: "Location unavailable"
-
-        val updatedBody = "Location: $locationInfo"
+        val latString = location?.latitude?.toString()
+        val lonString = location?.longitude?.toString()
 
         viewModelScope.launch {
             try {
@@ -470,7 +473,7 @@ class ProfileViewModel(context: Context, application: Application) : AndroidView
                     )
                     return@launch
                 }
-                repository.sendFcmNotificationToTokens(tokens, title, updatedBody)
+                repository.sendFcmNotificationToTokens(tokens, title, latString, lonString)
             } catch (e: Exception) {
                 Log.e("ProfileViewModel", "Error sending notifications", e)
             }
