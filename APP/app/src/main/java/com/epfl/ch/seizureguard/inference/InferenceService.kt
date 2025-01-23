@@ -184,6 +184,7 @@ class InferenceService : Service() {
         if (pendingAction == Actions.STOP.toString()) { // when  we receive the stop command from the ongoing notification
             bluetoothViewModel.stopBLE()
             profileViewModel.setInferenceRunning(false)
+            fusedLocationProviderClient.removeLocationUpdates(locationCallback)
             stopForeground(STOP_FOREGROUND_REMOVE)
             stopSelf()
             return START_NOT_STICKY
