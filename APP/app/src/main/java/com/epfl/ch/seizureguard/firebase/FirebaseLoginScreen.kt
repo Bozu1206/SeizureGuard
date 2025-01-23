@@ -160,6 +160,8 @@ fun FirebaseLoginScreen(
                                     delay(500)
                                     isLoading = false
                                     if (result != null) {
+                                        // Set authentication state to true and bypass biometric check
+                                        profileViewModel.setAuthenticated(true)
                                         profileViewModel.retrieveAndStoreFcmToken()
                                         onLoggedIn()
                                     } else {

@@ -90,6 +90,7 @@ Supervisor: Ansaloni Giovanni & Amirhossein Shahbazinia]]></string>
     <!-- Training -->
     <string name="train_model">Train Model</string>
     <string name="training_has_started">Training has started</string>
+    <string name="samples_collected">Samples collected: %1$d/100</string>
 
     <!-- Metrics / details -->
     <string name="metrics_details">Metrics Details</string>

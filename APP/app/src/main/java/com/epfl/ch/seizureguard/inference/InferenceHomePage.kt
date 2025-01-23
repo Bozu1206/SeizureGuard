@@ -426,6 +426,7 @@ private fun MetricsCardContent(
     profileViewModel: ProfileViewModel
 ) {
     val profile by profileViewModel.profileState.collectAsState()
+    val sampleCount by profileViewModel.sampleCount.collectAsState()
 
     Card(
         shape = RoundedCornerShape(20.dp),
@@ -482,6 +483,15 @@ private fun MetricsCardContent(
                         color = MaterialTheme.colorScheme.onPrimary
                     )
                 }
+                Text(
+                    text = stringResource(R.string.samples_collected, sampleCount),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 4.dp),
+                    textAlign = TextAlign.Center
+                )
             }
         }
     }

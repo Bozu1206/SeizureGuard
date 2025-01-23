@@ -61,8 +61,11 @@ class ProfileViewModel(context: Context, application: Application) : AndroidView
     fun requestTraining() {
         val intent = Intent(getApplication(), InferenceService::class.java).apply {
             action = "ACTION_START_TRAINING"
+            putExtra("IS_DEBUG_ENABLED", profileState.value.isDebugEnabled)
+            putExtra("IS_TRAINING_ENABLED", profileState.value.isTrainingEnabled)
         }
 
+        // Send action to Inference Service
         getApplication<Application>().startService(intent)
     }
 
@@ -108,7 +111,7 @@ class ProfileViewModel(context: Context, application: Application) : AndroidView
                 if (profile != null) {
                     _profileState.value = profile
                     repository.saveProfileToPreferences(profile)
-                    setAuthenticated(true)
+                    repository.updateMetrics(profile.latestMetrics)
                     onComplete(profile)
                 } else {
                     Log.d("ProfileViewModel", "No matching profile found for email: $email")
@@ -121,6 +124,16 @@ class ProfileViewModel(context: Context, application: Application) : AndroidView
         }
     }
 
+    fun logout() = viewModelScope.launch {
+        // Reset authentication state
+        repository.setAuthenticated(false)
+        // Reset all other states
+        repository.resetPreferences()
+        // Reset profile state
+        _profileState.value = Profile.empty()
+        // Reset inference state
+        _isInferenceRunning.value = false
+    }
 
     fun saveProfile() = viewModelScope.launch {
         try {

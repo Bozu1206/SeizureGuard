@@ -278,6 +278,12 @@ class ProfileRepository private constructor(
                 .await()
             val profile = querySnapshot.documents.mapNotNull { it.toObject<Profile>() }.firstOrNull()
             profile?.uri = profile?.uid?.let { loadProfilePicture(it).toString() }.toString()
+            
+            // Update local metrics state when loading a new profile
+            if (profile != null) {
+                _latestMetrics.value = profile.latestMetrics
+            }
+            
             return profile
         } catch (e: Exception) {
             Log.e("ProfileRepository", "Failed to load profile from Firestore: ${e.message}", e)
@@ -469,7 +475,7 @@ class ProfileRepository private constructor(
             // Check if this token document already exists
             val documentSnapshot = tokenDocRef.get().await()
             if (!documentSnapshot.exists()) {
-                // If it doesn’t exist, create/set the token document
+                // If it doesn't exist, create/set the token document
                 tokenDocRef.set(mapOf("token" to token)).await()
             } else {
                 Log.d("ProfileRepository", "Token already exists in 'profiles/$uid/tokens': $token")
