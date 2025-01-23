@@ -21,7 +21,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.core.app.ActivityCompat
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import com.epfl.ch.seizureguard.alert.SeizureDetectedParentScreen
 import com.epfl.ch.seizureguard.alert.SeizureDetectedScreen
