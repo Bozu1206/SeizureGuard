@@ -20,7 +20,7 @@ import kotlinx.coroutines.flow.collect
 // this handles broadcasting values from the known dataset to the model (only in debug mode)
 class SampleBroadcastService : LifecycleService() {
     private val handler = Handler()
-    private val interval: Long = 100
+    private val interval: Long = 4000
 
     private lateinit var profileViewModel: ProfileViewModel
     private lateinit var profile : Profile
