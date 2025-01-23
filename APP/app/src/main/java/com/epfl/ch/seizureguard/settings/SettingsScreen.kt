@@ -411,7 +411,10 @@ fun SettingsScreen(
                     )
                     SettingsItem(
                         title = stringResource(R.string.logout),
-                        onClick = onLogoutClicked,
+                        onClick = {
+                            profileViewModel.logout()
+                            onLogoutClicked()
+                        },
                         icon = Icons.AutoMirrored.Filled.Logout,
                         tint = MaterialTheme.colorScheme.error,
                         background = MaterialTheme.colorScheme.errorContainer.copy(0.6f),

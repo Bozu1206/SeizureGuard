@@ -87,13 +87,14 @@ class InferenceService : Service() {
         override fun onServiceConnected(name: ComponentName?, service: IBinder?) { // triggered when this service gets connected
             modelService = (service as ModelService.LocalBinder).getService()
 
+            Log.d("InferenceService", "Pending action is: $pendingAction")
+
             when (pendingAction) { // parse what action we have to perform
                 Actions.START.toString() -> start()             // safe now
                 Actions.STOP.toString()  -> stopSelf()          // or stop
-                "ACTION_START_TRAINING"  -> doTraining()        // or train
+                else  -> doTraining()        // or train
             }
-            pendingAction = null
-
+//            pendingAction = null
         }
 
         override fun onServiceDisconnected(name: ComponentName?) {
@@ -143,7 +144,6 @@ class InferenceService : Service() {
             ContextCompat.RECEIVER_EXPORTED
         )
 
-        // 3) Bind to ModelService
         // 2) Bind to ModelService (Android will create it)
         val modelServiceIntent = Intent(this, ModelService::class.java).apply {
             putExtra("IS_DEBUG_ENABLED", profile.isDebugEnabled)
@@ -155,7 +155,8 @@ class InferenceService : Service() {
     private fun doTraining() {
         Thread {
             samples.shuffle()
-            modelService?.getModelManager()?.let { modelManager ->
+            Log.d("InferenceService", "Training on ${samples.size} samples")
+            modelService.getModelManager().let { modelManager ->
                 for (i in 0..20) {
                     modelManager.performTrainingEpoch(samples.toTypedArray())
                 }
@@ -186,6 +187,14 @@ class InferenceService : Service() {
             stopForeground(STOP_FOREGROUND_REMOVE)
             stopSelf()
             return START_NOT_STICKY
+        }
+        else if (pendingAction == "ACTION_START_TRAINING") {
+            Log.d("InferenceService", "Training requested")
+            if (::modelService.isInitialized) {
+                doTraining()
+            }
+            // If modelService is not initialized yet, pendingAction will be handled in onServiceConnected
+            return START_STICKY
         }
         else{
             if (ActivityCompat.checkSelfPermission(
@@ -299,16 +308,17 @@ class InferenceService : Service() {
         }
 
         samples.add(sample)
+        Log.d("InferenceService", "Collected (${samples.size} samples)")
 
         // Example trigger: If we want to train after 100 samples
         if (samples.size >= 100 && isTrainingEnabled) {
             isPaused = true
             profileViewModel.setInferenceRunning(false)
-            doTraining()
+            // doTraining()
         }
 
         // Inference
-        modelService?.getModelManager()?.let { modelManager ->
+        modelService.getModelManager().let { modelManager ->
             val prediction = modelManager.performInference(sample)
             Log.d("InferenceService",
                 "Predictions: $prediction (${repository.sampleCount} | Ground Truth: ${sample.label})"
@@ -412,7 +422,7 @@ class InferenceService : Service() {
     }
 
     enum class Actions {
-        START, STOP
+        START, STOP, TRAINING
     }
 
     companion object {
