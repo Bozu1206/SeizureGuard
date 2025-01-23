@@ -8,7 +8,7 @@
 
 This Android application aims to perform live AI-based epileptic seizure detection.
 
-> ![NOTE]
+> [!NOTE]
 > If you want use the app without giving personal informations, you can use our demo account. Just log in with the following credentials:
 > - email: demo@epfl.ch
 > - password: epfl
