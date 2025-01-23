@@ -31,7 +31,6 @@ import com.epfl.ch.seizureguard.dl.utils.SampleBroadcastService
 import com.epfl.ch.seizureguard.firebase.FirebaseLoginScreen
 import com.epfl.ch.seizureguard.inference.InferenceService
 import com.epfl.ch.seizureguard.login.LoginScreen
-import com.epfl.ch.seizureguard.medical_card.WalletViewModel
 import com.epfl.ch.seizureguard.navigation.AppContent
 import com.epfl.ch.seizureguard.onboarding.OnboardingScreen
 import com.epfl.ch.seizureguard.onboarding.OnboardingViewModel
@@ -41,6 +40,7 @@ import com.epfl.ch.seizureguard.seizure_event.SeizureEventViewModel
 import com.epfl.ch.seizureguard.theme.AppTheme
 import com.epfl.ch.seizureguard.tools.onEmergencyCall
 import com.epfl.ch.seizureguard.wallet_manager.GoogleWalletToken
+import com.epfl.ch.seizureguard.wallet_manager.WalletViewModel
 import com.epfl.ch.seizureguard.wallet_manager.generateToken
 import kotlinx.coroutines.launch
 
@@ -132,7 +132,8 @@ class MainActivity : FragmentActivity() {
             if (permissionsGranted) {
                 onPermissionsGranted()
             } else {
-                Toast.makeText(this, "Please grant permissions to continue", Toast.LENGTH_LONG).show()
+                Toast.makeText(this, "Please grant permissions to continue", Toast.LENGTH_LONG)
+                    .show()
             }
         }
     }
@@ -144,8 +145,10 @@ class MainActivity : FragmentActivity() {
         )[OnboardingViewModel::class.java]
         profileViewModel = RunningApp.getInstance(application as RunningApp).profileViewModel
 
-        var isSeizureDetectedParentExtra = intent?.getBooleanExtra("EXTRA_SEIZURE_DETECTED_PARENT", false) ?: false
-        val isSeizureDetectedExtra = intent?.getBooleanExtra("EXTRA_SEIZURE_DETECTED", false) ?: false
+        var isSeizureDetectedParentExtra =
+            intent?.getBooleanExtra("EXTRA_SEIZURE_DETECTED_PARENT", false) ?: false
+        val isSeizureDetectedExtra =
+            intent?.getBooleanExtra("EXTRA_SEIZURE_DETECTED", false) ?: false
 
         setContent {
             val location by profileViewModel.latestLocation.collectAsState()
@@ -159,7 +162,8 @@ class MainActivity : FragmentActivity() {
             val profile by profileViewModel.profileState.collectAsState()
             val isTrainingEnabled = profile.isTrainingEnabled
             val isDebugEnabled = profile.isDebugEnabled
-            val skipAuthentication: Boolean = isSeizureDetected || isSeizureDetectedParentExtra || isSeizureDetectedExtra
+            val skipAuthentication: Boolean =
+                isSeizureDetected || isSeizureDetectedParentExtra || isSeizureDetectedExtra
 
             val navigationState = determineNavigationState(
                 showOnboarding = showOnboarding,
@@ -171,7 +175,7 @@ class MainActivity : FragmentActivity() {
 
             AppTheme {
                 Box(modifier = Modifier.fillMaxSize()) {
-                    if(isSeizureDetectedParentExtra){
+                    if (isSeizureDetectedParentExtra) {
                         val context = LocalContext.current
                         SeizureDetectedParentScreen(
                             latitude = latitude,
@@ -183,9 +187,8 @@ class MainActivity : FragmentActivity() {
                             profileViewModel = profileViewModel,
                             context = context
                         )
-                    }else{
-//                        if(isSeizureDetected || isSeizureDetectedExtra){
-                          if(false){
+                    } else {
+                        if (isSeizureDetected || isSeizureDetectedExtra) {
                             val context = LocalContext.current
                             SeizureDetectedScreen(
                                 onDismiss = {
@@ -194,8 +197,7 @@ class MainActivity : FragmentActivity() {
                                 onEmergencyCall = { onEmergencyCall(context) },
                                 profileViewModel = profileViewModel
                             )
-                        }
-                        else{
+                        } else {
                             when (navigationState) {
                                 "Onboarding" -> OnboardingScreen(
                                     onFinish = {
@@ -205,6 +207,7 @@ class MainActivity : FragmentActivity() {
                                     profileViewModel = profileViewModel,
                                     onboardingViewModel = onboardingViewModel
                                 )
+
                                 "FirebaseLogin" -> FirebaseLoginScreen(
                                     profileViewModel = profileViewModel,
                                     onLoggedIn = {
@@ -215,6 +218,7 @@ class MainActivity : FragmentActivity() {
                                         onboardingViewModel.wantsToRegister()
                                     }
                                 )
+
                                 "Login" -> {
                                     val context = LocalContext.current
                                     LoginScreen(
@@ -227,18 +231,26 @@ class MainActivity : FragmentActivity() {
                                         profileViewModel = profileViewModel
                                     )
                                 }
+
                                 "MainScreen" -> {
                                     val context = LocalContext.current
                                     AppContent(
-                                        onRunInference = { startInferenceServices(isTrainingEnabled, isDebugEnabled) },
-                                        onPauseInference  = {
-                                            val stopIntent = Intent(context, InferenceService::class.java).apply {
+                                        onRunInference = {
+                                            startInferenceServices(
+                                                isTrainingEnabled,
+                                                isDebugEnabled
+                                            )
+                                        },
+                                        onPauseInference = {
+                                            val stopIntent = Intent(
+                                                context,
+                                                InferenceService::class.java
+                                            ).apply {
                                                 action = InferenceService.Actions.STOP.toString()
                                             }
                                             context.startService(stopIntent)
                                         },
                                         walletViewModel = walletViewModel,
-                                        payState = walletViewModel.walletUiState.collectAsStateWithLifecycle().value,
                                         requestSavePass = ::requestSavePass,
                                         profileViewModel = profileViewModel,
                                         seizureEventViewModel = seizureEventViewModel,
@@ -262,7 +274,8 @@ class MainActivity : FragmentActivity() {
     // Starting the correct foreground services for starting inference
     private fun startInferenceServices(
         isTrainingEnabled: Boolean,
-        isDebugEnabled: Boolean) {
+        isDebugEnabled: Boolean
+    ) {
         Intent(applicationContext, SampleBroadcastService::class.java).also {
             startService(it)
         }
