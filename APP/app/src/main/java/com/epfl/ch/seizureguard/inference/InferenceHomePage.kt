@@ -91,10 +91,13 @@ fun InferenceHomePage(
     val powerModeValue = when (profile.powerMode) {
         context.getString(R.string.low_power_mode) ->
             context.resources.getInteger(R.integer.low_power_config)
+
         context.getString(R.string.normal_power_mode) ->
             context.resources.getInteger(R.integer.normal_power_config)
+
         context.getString(R.string.high_performance_mode) ->
             context.resources.getInteger(R.integer.high_performance_config)
+
         else ->
             context.resources.getInteger(R.integer.normal_power_config)
     }
@@ -289,7 +292,8 @@ private fun ActionButtonsSection(
                     onClick = {
                         if (!isConnected) {
                             onScanDevices()
-                            Toast.makeText(context, scanningForDevicesText, Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, scanningForDevicesText, Toast.LENGTH_SHORT)
+                                .show()
                         }
                     },
                     icon = if (isConnected) Icons.Default.BluetoothConnected else Icons.Default.BluetoothDisabled,
@@ -486,7 +490,7 @@ private fun MetricsCardContent(
                 Text(
                     text = stringResource(R.string.samples_collected, sampleCount),
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = Color.Black.copy(0.7f),
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(top = 4.dp),
@@ -629,6 +633,7 @@ private fun HandleBluetoothSetup(bluetoothViewModel: BluetoothViewModel) {
             bluetoothViewModel.bluetoothAdapter == null -> {
                 Toast.makeText(context, bluetoothNotSupportedText, Toast.LENGTH_SHORT).show()
             }
+
             !bluetoothViewModel.bluetoothAdapter.isEnabled -> {
                 val enableBtIntent = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
                 resultLauncher.launch(enableBtIntent)
@@ -742,7 +747,8 @@ fun DeviceConnectionIcon(
     buttonColors: ButtonColors = ButtonDefaults.buttonColors(),
     modifier: Modifier = Modifier
 ) {
-    val icon = if (isConnected) Icons.Default.BluetoothConnected else Icons.Default.BluetoothDisabled
+    val icon =
+        if (isConnected) Icons.Default.BluetoothConnected else Icons.Default.BluetoothDisabled
     // Pre-capture the contentDescription
     val contentDescription = if (isConnected) {
         stringResource(R.string.device_connected)

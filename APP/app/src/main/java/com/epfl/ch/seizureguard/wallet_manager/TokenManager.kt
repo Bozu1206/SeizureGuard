@@ -63,7 +63,7 @@ fun generateToken(
             mapOf("id" to "emergency_contact", "header" to "Emergency Contact", "body" to request.emergencyContact),
             mapOf("id" to "birthdate", "header" to "Birthdate", "body" to request.birthdate),
             mapOf("id" to "seizure_type", "header" to "Seizure Type", "body" to request.seizureType),
-            mapOf("id" to "medication", "header" to "Medication", "body" to "medication")
+            mapOf("id" to "medication", "header" to "Medication", "body" to request.medication)
         ),
         "barcode" to mapOf(
             "type" to "QR_CODE",

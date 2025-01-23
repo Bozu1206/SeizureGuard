@@ -56,7 +56,6 @@ fun SeizureDetectedScreen(
     var isLogging by remember { mutableStateOf(false) }
     var hasLogged by remember { mutableStateOf(false) }
 
-    // Fond sombre semi-transparent
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -64,7 +63,6 @@ fun SeizureDetectedScreen(
             .clickable(enabled = false) {}
     )
 
-    // Contenu principal
     Box(
         modifier = Modifier
             .fillMaxSize()

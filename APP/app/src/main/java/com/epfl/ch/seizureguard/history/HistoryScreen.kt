@@ -394,6 +394,3 @@ private fun EditSeizureDialog(
         )
     )
 }
-
-
-

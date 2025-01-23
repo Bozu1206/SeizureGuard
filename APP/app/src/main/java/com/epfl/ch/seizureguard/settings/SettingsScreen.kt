@@ -380,7 +380,8 @@ fun SettingsScreen(
                             MaterialTheme.colorScheme.onSurfaceVariant,
                         caption = stringResource(R.string.show_additional_information_for_troubleshooting),
                         trailing = {
-                            val restartAppString = stringResource(R.string.restart_app_to_correctly_update_debug_mode)
+                            val restartAppString =
+                                stringResource(R.string.restart_app_to_correctly_update_debug_mode)
                             Switch(
                                 checked = profile.isDebugEnabled,
                                 onCheckedChange = { isChecked ->
@@ -502,7 +503,7 @@ private fun SettingsItem(
             Text(
                 text = caption,
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(0.8f),
                 modifier = Modifier.padding(start = 16.dp, top = 4.dp)
             )
         }

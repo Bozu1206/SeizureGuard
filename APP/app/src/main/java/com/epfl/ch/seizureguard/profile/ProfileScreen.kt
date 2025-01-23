@@ -3,8 +3,8 @@ package com.epfl.ch.seizureguard.profile
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
-import android.net.Uri
 import android.provider.ContactsContract
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -67,8 +67,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.epfl.ch.seizureguard.R
-import com.epfl.ch.seizureguard.medical_card.WalletUiState
-import com.epfl.ch.seizureguard.medical_card.WalletViewModel
+import com.epfl.ch.seizureguard.wallet_manager.WalletViewModel
 import com.epfl.ch.seizureguard.theme.AppTheme
 import com.epfl.ch.seizureguard.tools.onEmergencyCall
 import com.epfl.ch.seizureguard.wallet_manager.GoogleWalletToken
@@ -299,28 +298,26 @@ fun UserProfileSection(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            if (walletViewModel.walletUiState.value !is WalletUiState.PassAdded) {
-                val medicationString = stringResource(R.string.lorazepam_label)
-                WalletButton(
-                    type = ButtonType.Add,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(56.dp),
-                    onClick = {
-                        val request = GoogleWalletToken.PassRequest(
-                            uid = profile.uid,
-                            patientName = profile.name,
-                            emergencyContact = profileScreenViewModel.profileState.value.emergencyContacts
-                                .firstOrNull()
-                                ?.phone ?: "",
-                            seizureType = profile.epi_type,
-                            medication = medicationString,
-                            birthdate = profile.birthdate,
-                        )
-                        onWalletButtonClick(request)
-                    }
-                )
-            }
+            val medicationString = stringResource(R.string.lorazepam_label)
+            WalletButton(
+                type = ButtonType.Add,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+                onClick = {
+                    val request = GoogleWalletToken.PassRequest(
+                        uid = profile.uid,
+                        patientName = profile.name,
+                        emergencyContact = profileScreenViewModel.profileState.value.emergencyContacts
+                            .firstOrNull()
+                            ?.phone ?: "",
+                        seizureType = profile.epi_type,
+                        medication = medicationString,
+                        birthdate = profile.birthdate,
+                    )
+                    onWalletButtonClick(request)
+                }
+            )
 
             val gradient = Brush.horizontalGradient(
                 colors = listOf(
@@ -346,13 +343,15 @@ fun UserProfileSection(
                 Icon(
                     imageVector = Icons.Default.Notes,
                     contentDescription = null,
-                    modifier = Modifier.size(20.dp)
+                    modifier = Modifier.size(20.dp),
+                    tint = MaterialTheme.colorScheme.onBackground
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     text = stringResource(R.string.medical_notes),
                     fontSize = 16.sp,
-                    fontWeight = FontWeight.SemiBold
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onBackground
                 )
             }
         }
@@ -519,7 +518,10 @@ fun EmergencyContactsSection(context: Context, profileViewModel: ProfileViewMode
                             }
                             IconButton(
                                 onClick = {
-                                    profileViewModel.updateEmergencyContacts(contact, isAdding = false)
+                                    profileViewModel.updateEmergencyContacts(
+                                        contact,
+                                        isAdding = false
+                                    )
                                 }
                             ) {
                                 Icon(
@@ -593,11 +595,19 @@ fun EditProfile(
                 style = MaterialTheme.typography.headlineSmall
             )
             Spacer(modifier = Modifier.height(16.dp))
-            ProfileTextField(value = name, onValueChange = { name = it }, label = stringResource(R.string.name_label))
+            ProfileTextField(
+                value = name,
+                onValueChange = { name = it },
+                label = stringResource(R.string.name_label)
+            )
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            ProfileTextField(value = email, onValueChange = { email = it }, label = stringResource(R.string.email_label))
+            ProfileTextField(
+                value = email,
+                onValueChange = { email = it },
+                label = stringResource(R.string.email_label)
+            )
 
             Spacer(modifier = Modifier.height(8.dp))
 

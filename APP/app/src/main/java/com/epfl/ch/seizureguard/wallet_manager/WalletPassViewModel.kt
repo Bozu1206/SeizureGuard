@@ -15,12 +15,12 @@
  *
  */
 
-/*
+/*******************
  Borrowed from
     https://github.com/google-wallet/android-sample/blob/main/kotlin/app/src/main/java/com/google/android/gms/samples/wallet/viewmodel/WalletViewModel.kt
- */
+ *******************/
 
-package com.epfl.ch.seizureguard.medical_card
+package com.epfl.ch.seizureguard.wallet_manager
 
 import android.app.Activity
 import android.app.Application
@@ -72,17 +72,10 @@ class WalletViewModel(application: Application) : AndroidViewModel(application) 
      * Exposes the `savePassesJwt` method in the wallet client
      */
     val savePassesJwt: (String, Activity, Int) -> Unit = walletClient::savePassesJwt
-
-    /**
-     * Exposes the `savePasses` method in the wallet client
-     */
-    val savePasses: (String, Activity, Int) -> Unit = walletClient::savePasses
 }
 
 
 abstract class WalletUiState internal constructor(){
-    object Unknown : WalletUiState()
     object Available : WalletUiState()
-    class PassAdded : WalletUiState()
     class Error(val code: Int, val message: String? = null) : WalletUiState()
 }

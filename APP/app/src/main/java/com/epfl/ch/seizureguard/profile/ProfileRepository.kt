@@ -118,7 +118,10 @@ class ProfileRepository private constructor(
                     if (metrics != null) {
                         _latestMetrics.value = metrics
                     } else {
-                        Log.w("ProfileRepository", "Could not parse metrics from JSON: $latestMetricsJson")
+                        Log.w(
+                            "ProfileRepository",
+                            "Could not parse metrics from JSON: $latestMetricsJson"
+                        )
                     }
                 } else {
                     Log.d("ProfileRepository", "No stored metrics found in preferences")
@@ -131,7 +134,7 @@ class ProfileRepository private constructor(
 
     suspend fun updateMetrics(metrics: Metrics) {
         _latestMetrics.value = metrics
-        
+
         context.dataStore.edit { preferences ->
             preferences[Keys.LATEST_METRICS] = gson.toJson(metrics)
         }
@@ -174,7 +177,8 @@ class ProfileRepository private constructor(
         val preferences = context.dataStore.data.first()
         val contactsJson = preferences[Keys.EMERGENCY_CONTACTS] ?: "[]"
         val contacts: List<EmergencyContact> = try {
-            gson.fromJson(contactsJson, object : TypeToken<List<EmergencyContact>>() {}.type) ?: emptyList()
+            gson.fromJson(contactsJson, object : TypeToken<List<EmergencyContact>>() {}.type)
+                ?: emptyList()
         } catch (e: Exception) {
             Log.e("ProfileRepository", "Failed to parse emergencyContacts: ${e.message}", e)
             emptyList()
@@ -182,7 +186,8 @@ class ProfileRepository private constructor(
 
         val pastSeizuresJson = preferences[Keys.PAST_SEIZURES] ?: "[]"
         val pastSeizures: List<SeizureEvent> = try {
-            gson.fromJson(pastSeizuresJson, object : TypeToken<List<SeizureEvent>>() {}.type) ?: emptyList()
+            gson.fromJson(pastSeizuresJson, object : TypeToken<List<SeizureEvent>>() {}.type)
+                ?: emptyList()
         } catch (e: Exception) {
             Log.e("ProfileRepository", "Failed to parse pastSeizures: ${e.message}", e)
             emptyList()
@@ -206,7 +211,8 @@ class ProfileRepository private constructor(
 
         val medicationsJson = preferences[Keys.MEDICATIONS] ?: "[]"
         val medications: List<String> = try {
-            gson.fromJson(medicationsJson, object : TypeToken<List<String>>() {}.type) ?: emptyList()
+            gson.fromJson(medicationsJson, object : TypeToken<List<String>>() {}.type)
+                ?: emptyList()
         } catch (e: Exception) {
             Log.e("ProfileRepository", "Failed to parse medications: ${e.message}", e)
             emptyList()
@@ -214,7 +220,8 @@ class ProfileRepository private constructor(
 
         val medicalNotesJson = preferences[Keys.MEDICAL_NOTES] ?: "[]"
         val medicalNotes: List<Notes> = try {
-            gson.fromJson(medicalNotesJson, object : TypeToken<List<Notes>>() {}.type) ?: emptyList()
+            gson.fromJson(medicalNotesJson, object : TypeToken<List<Notes>>() {}.type)
+                ?: emptyList()
         } catch (e: Exception) {
             Log.e("ProfileRepository", "Failed to parse medicalNotes: ${e.message}", e)
             emptyList()
@@ -247,16 +254,18 @@ class ProfileRepository private constructor(
             val userId = context.dataStore.data.first()[Keys.USER_ID] ?: return
             val imageUri = Uri.parse(profile.uri)
             if (imageUri.scheme.equals("content", ignoreCase = true)
-                || imageUri.scheme.equals("file", ignoreCase = true))
-            {
+                || imageUri.scheme.equals("file", ignoreCase = true)
+            ) {
                 val imageRef = storage.reference.child("profile_images/$userId.jpg")
                 imageRef.putFile(imageUri).await()
 
                 val downloadUrl = imageRef.downloadUrl.await()
                 profile.uri = downloadUrl.toString()
-            }
-            else{
-                Log.w("saveProfileToFirestore", "Skipping upload because URI is already remote: $imageUri")
+            } else {
+                Log.w(
+                    "saveProfileToFirestore",
+                    "Skipping upload because URI is already remote: $imageUri"
+                )
             }
 
             firestore.collection("profiles")
@@ -276,14 +285,15 @@ class ProfileRepository private constructor(
                 .whereEqualTo("pwd", password)
                 .get()
                 .await()
-            val profile = querySnapshot.documents.mapNotNull { it.toObject<Profile>() }.firstOrNull()
+            val profile =
+                querySnapshot.documents.firstNotNullOfOrNull { it.toObject<Profile>() }
             profile?.uri = profile?.uid?.let { loadProfilePicture(it).toString() }.toString()
-            
+
             // Update local metrics state when loading a new profile
             if (profile != null) {
                 _latestMetrics.value = profile.latestMetrics
             }
-            
+
             return profile
         } catch (e: Exception) {
             Log.e("ProfileRepository", "Failed to load profile from Firestore: ${e.message}", e)
@@ -292,25 +302,32 @@ class ProfileRepository private constructor(
     }
 
     private suspend fun loadProfilePicture(uid: String): Uri? {
-        try {
+        return try {
             val imageRef = storage.reference.child("profile_images/$uid.jpg")
             val uri = imageRef.downloadUrl.await()
-            return uri
+            uri
         } catch (e: Exception) {
-            Log.e("ProfileRepository", "Failed to load profile picture from Firebase Storage: ${e.message}", e)
-            return null
+            Log.e(
+                "ProfileRepository",
+                "Failed to load profile picture from Firebase Storage: ${e.message}",
+                e
+            )
+            null
         }
     }
 
     suspend fun addSeizure(userId: String, seizure: SeizureEvent) {
-        val profile = firestore.collection("profiles").document(userId).get().await().toObject<Profile>()
+        val profile =
+            firestore.collection("profiles").document(userId).get().await().toObject<Profile>()
         profile?.pastSeizures = profile?.pastSeizures?.plus(seizure) ?: listOf(seizure)
         firestore.collection("profiles").document(userId).set(profile!!)
     }
 
     suspend fun removeSeizure(userId: String, timestamp: Long) {
-        val profile = firestore.collection("profiles").document(userId).get().await().toObject<Profile>()
-        profile?.pastSeizures = profile?.pastSeizures?.filter { it.timestamp != timestamp } ?: emptyList()
+        val profile =
+            firestore.collection("profiles").document(userId).get().await().toObject<Profile>()
+        profile?.pastSeizures =
+            profile?.pastSeizures?.filter { it.timestamp != timestamp } ?: emptyList()
         firestore.collection("profiles").document(userId).set(profile!!)
     }
 
@@ -331,7 +348,7 @@ class ProfileRepository private constructor(
         try {
             // Charger le profil actuel
             val currentProfile = loadProfileFromPreferences()
-            
+
             // Mettre à jour le champ spécifique
             val updatedProfile = when (key) {
                 "name" -> currentProfile.copy(name = value)
@@ -396,7 +413,7 @@ class ProfileRepository private constructor(
 
                 val localModelFile = File(context.filesDir, "local_model.onnx")
                 modelFile.copyTo(localModelFile, overwrite = true)
-                
+
                 context.dataStore.edit { prefs ->
                     prefs[Keys.LOCAL_MODEL_PATH] = localModelFile.absolutePath
                 }
@@ -439,12 +456,12 @@ class ProfileRepository private constructor(
                     .child("$userId.onnx")
 
                 val downloadedFile = File(context.filesDir, "downloaded_model.onnx")
-                
+
                 modelRef.getFile(downloadedFile)
                     .addOnSuccessListener {
                         val localModelFile = File(context.filesDir, "local_model.onnx")
                         downloadedFile.copyTo(localModelFile, overwrite = true)
-                        
+
                         runBlocking {
                             context.dataStore.edit { prefs ->
                                 prefs[Keys.LOCAL_MODEL_PATH] = localModelFile.absolutePath
@@ -501,8 +518,9 @@ class ProfileRepository private constructor(
         }
     }
 
-    suspend fun getAccessToken(): String = withContext(Dispatchers.IO) {
-        val credentialsStream = context.assets.open("seizureguard-1e3d9-firebase-adminsdk-bmgtm-812b9e8cb0.json")
+    private suspend fun getAccessToken(): String = withContext(Dispatchers.IO) {
+        val credentialsStream =
+            context.assets.open("seizureguard-1e3d9-firebase-adminsdk-bmgtm-812b9e8cb0.json")
         val googleCredentials = GoogleCredentials.fromStream(credentialsStream)
             .createScoped(listOf("https://www.googleapis.com/auth/firebase.messaging"))
         googleCredentials.refreshIfExpired()
@@ -546,7 +564,6 @@ class ProfileRepository private constructor(
             }
         }
     }
-
 
     suspend fun updateMedications(medications: List<String>) {
         context.dataStore.edit { preferences ->

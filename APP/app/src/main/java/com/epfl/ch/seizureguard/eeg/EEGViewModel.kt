@@ -25,6 +25,7 @@ class EEGViewModel : ViewModel() {
 
     private val amplificationFactor = 1000f
 
+    // Channels of Interest
     private val selectedChannels = listOf(
         0,  // FP1-F7
         1,  // F7-T7
@@ -37,10 +38,8 @@ class EEGViewModel : ViewModel() {
     private val _samplesPerChannel = MutableStateFlow(1024)
     val samplesPerChannel = _samplesPerChannel.asStateFlow()
 
-    // Garder tous les samples
     private val buffers = List(6) { mutableListOf<Float>() }
 
-    // Pour le scrolling
     private val _scrollOffset = MutableStateFlow(0f)
     val scrollOffset = _scrollOffset.asStateFlow()
 
@@ -126,7 +125,6 @@ class EEGViewModel : ViewModel() {
         val sampleWidth = graphWidth / sampleWidthRatio
         val maxScroll = 0f
         val minScroll = -(totalSamples * sampleWidth) + graphWidth
-
          _scrollOffset.value = (_scrollOffset.value + delta).coerceIn(minScroll, maxScroll)
     }
 }

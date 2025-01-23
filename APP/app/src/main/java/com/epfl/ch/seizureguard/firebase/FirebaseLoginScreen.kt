@@ -19,6 +19,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.ArrowBack
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -49,7 +50,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 
 @Composable
 fun FirebaseLoginScreen(
-    profileViewModel: ProfileViewModel, 
+    profileViewModel: ProfileViewModel,
     onLoggedIn: () -> Unit,
     onBackToOnboarding: () -> Unit
 ) {
@@ -60,10 +61,9 @@ fun FirebaseLoginScreen(
     val scrollState = rememberScrollState()
     val coroutineScope = rememberCoroutineScope()
 
-    // Animation de sortie
     val alpha by animateFloatAsState(
         targetValue = if (isLoading) 0f else 1f,
-        animationSpec = tween(durationMillis = 500)
+        animationSpec = tween(durationMillis = 500), label = ""
     )
 
     Box(
@@ -73,7 +73,6 @@ fun FirebaseLoginScreen(
             .navigationBarsPadding()
             .padding(bottom = 16.dp)
     ) {
-        // Contenu principal avec animation de fade
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -89,7 +88,7 @@ fun FirebaseLoginScreen(
                     .clip(CircleShape)
             ) {
                 Icon(
-                    imageVector = Icons.Rounded.ArrowBack,
+                    imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
                     contentDescription = "Back to onboarding",
                     tint = Color.White
                 )
@@ -115,7 +114,7 @@ fun FirebaseLoginScreen(
                         contentDescription = "Login",
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(top=16.dp)
+                            .padding(top = 16.dp)
                             .clip(RoundedCornerShape(16.dp))
                     )
                 }
@@ -131,7 +130,11 @@ fun FirebaseLoginScreen(
                             .padding(horizontal = 8.dp)
                             .padding(bottom = 16.dp)
                     ) {
-                        ProfileTextField(value = email, onValueChange = { email = it }, label = "Email")
+                        ProfileTextField(
+                            value = email,
+                            onValueChange = { email = it },
+                            label = "Email"
+                        )
                         Spacer(modifier = Modifier.size(8.dp))
                         PasswordTextField(password = pwd, onValueChange = { pwd = it })
                     }
@@ -160,7 +163,6 @@ fun FirebaseLoginScreen(
                                     delay(500)
                                     isLoading = false
                                     if (result != null) {
-                                        // Set authentication state to true and bypass biometric check
                                         profileViewModel.setAuthenticated(true)
                                         profileViewModel.retrieveAndStoreFcmToken()
                                         onLoggedIn()
@@ -193,7 +195,6 @@ fun FirebaseLoginScreen(
             }
         }
 
-        // Loading indicator centré sur l'écran
         if (isLoading) {
             Box(
                 modifier = Modifier.fillMaxSize(),
@@ -207,5 +208,4 @@ fun FirebaseLoginScreen(
             }
         }
     }
-
 }

@@ -1,13 +1,11 @@
 package com.epfl.ch.seizureguard.dl.utils
 
-import android.app.Service
 import android.content.Intent
 import android.os.Handler
 import android.os.IBinder
-import android.util.Log
+import androidx.lifecycle.LifecycleService
 import androidx.lifecycle.Observer
 import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.LifecycleService
 import com.epfl.ch.seizureguard.RunningApp
 import com.epfl.ch.seizureguard.dl.DataLoader
 import com.epfl.ch.seizureguard.dl.DataSample
@@ -15,12 +13,11 @@ import com.epfl.ch.seizureguard.profile.Profile
 import com.epfl.ch.seizureguard.profile.ProfileViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.flow.collect
 
-// this handles broadcasting values from the known dataset to the model (only in debug mode)
+// This handles broadcasting values from the known dataset to the model (only in debug mode)
 class SampleBroadcastService : LifecycleService() {
     private val handler = Handler()
-    private val interval: Long = 4000
+    private val interval: Long = 100
 
     private lateinit var profileViewModel: ProfileViewModel
     private lateinit var profile : Profile

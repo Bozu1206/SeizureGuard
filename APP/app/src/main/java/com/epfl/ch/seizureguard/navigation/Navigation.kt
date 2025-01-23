@@ -34,13 +34,11 @@ import com.epfl.ch.seizureguard.homescreen.HomeScreen
 import com.epfl.ch.seizureguard.profile.ProfileScreen
 import com.epfl.ch.seizureguard.wallet_manager.GoogleWalletToken
 import com.epfl.ch.seizureguard.inference.InferenceHomePage
-import com.epfl.ch.seizureguard.medical_card.MedicalCardScreen
 import com.epfl.ch.seizureguard.seizure_event.SeizureEventViewModel
 import com.epfl.ch.seizureguard.settings.SettingsScreen
-import com.epfl.ch.seizureguard.medical_card.WalletUiState
 import com.epfl.ch.seizureguard.profile.ProfileViewModel
 import androidx.compose.foundation.layout.Box
-import com.epfl.ch.seizureguard.medical_card.WalletViewModel
+import com.epfl.ch.seizureguard.wallet_manager.WalletViewModel
 import com.epfl.ch.seizureguard.profile.MedicalNotesScreen
 import com.epfl.ch.seizureguard.history.SeizureStatsScreen
 
@@ -50,7 +48,6 @@ sealed class Screen(val route: String, val label: String, val icon: ImageVector)
     object Profile : Screen("profile", "Profile", Icons.Default.Person)
     object History : Screen("history", "History", Icons.Default.DateRange)
     object Settings : Screen("settings", "Settings", Icons.Default.Settings)
-    object MedicalCard : Screen("medicalCardForm", "Medical Card", Icons.Default.Person)
     object MedicalNotes : Screen("medical_notes", "Medical Notes", Icons.Default.Notes)
     object SeizureStats : Screen("seizure_stats", "Statistics", Icons.Default.ShowChart)
 
@@ -67,7 +64,6 @@ sealed class Screen(val route: String, val label: String, val icon: ImageVector)
 fun AppContent(
     onRunInference: () -> Unit,
     onPauseInference: () -> Unit,
-    payState: WalletUiState,
     requestSavePass: (GoogleWalletToken.PassRequest) -> Unit,
     onLogoutClicked: () -> Unit,
     profileViewModel: ProfileViewModel,
@@ -113,7 +109,7 @@ fun AppContent(
     ) { innerPadding ->
         NavHost(
             navController = navController,
-            startDestination = Screen.Profile.route,
+            startDestination = Screen.Home.route,
             Modifier.padding(innerPadding)
         ) {
             composable(Screen.Monitor.route) {
@@ -128,6 +124,7 @@ fun AppContent(
                 HomeScreen(
                     seizureEventViewModel = seizureEventViewModel,
                     profileViewModel = profileViewModel,
+                    navController = navController
                 )
             }
             composable(Screen.Profile.route) {
@@ -143,9 +140,6 @@ fun AppContent(
                     profileViewModel = profileViewModel,
                     navController = navController
                 )
-            }
-            composable(Screen.MedicalCard.route) {
-                MedicalCardScreen(payState, requestSavePass)
             }
             composable(Screen.Settings.route) {
                 SettingsScreen(profileViewModel = profileViewModel, onLogoutClicked = onLogoutClicked)

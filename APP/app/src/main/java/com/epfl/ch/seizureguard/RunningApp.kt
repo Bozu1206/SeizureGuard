@@ -31,12 +31,12 @@ class RunningApp : Application(), ViewModelStoreOwner {
 
     override fun onCreate() {
         super.onCreate()
-        
+
         seizureDetectionViewModel = ViewModelProvider(
             this,
             ViewModelProvider.NewInstanceFactory()
         )[SeizureDetectionViewModel::class.java]
-        
+
         profileViewModel = ViewModelProvider(
             this,
             ProfileViewModelFactory(applicationContext, this)
@@ -106,7 +106,6 @@ class AppLifecycleObserver : DefaultLifecycleObserver, Application.ActivityLifec
         isAppInForeground = false
     }
 
-    // Implémentation des méthodes requises de ActivityLifecycleCallbacks
     override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {}
     override fun onActivityStarted(activity: Activity) {}
     override fun onActivityResumed(activity: Activity) {}

@@ -1,23 +1,20 @@
 package com.epfl.ch.seizureguard.history
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.Numbers
 import androidx.compose.material.icons.filled.Timer
-import androidx.compose.material.icons.filled.TrendingUp
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -38,12 +35,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.epfl.ch.seizureguard.R
 import com.epfl.ch.seizureguard.profile.ProfileViewModel
 import com.epfl.ch.seizureguard.seizure_event.SeizureEvent
-import androidx.compose.ui.res.stringResource
-import com.epfl.ch.seizureguard.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -55,8 +52,8 @@ fun SeizureStatsScreen(
     val seizures = profile.pastSeizures
 
     // Capture localized strings for "N/A" and "Unknown"
-    val noDataString = stringResource(R.string.no_data_string)       // "N/A"
-    val unknownTriggerString = stringResource(R.string.unknown_trigger) // "Unknown"
+    val noDataString = stringResource(R.string.no_data_string)
+    val unknownTriggerString = stringResource(R.string.unknown_trigger)
 
     // Compute stats with localized strings passed in
     val stats = remember(seizures, noDataString, unknownTriggerString) {
@@ -79,7 +76,7 @@ fun SeizureStatsScreen(
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(
-                            Icons.Default.ArrowBack,
+                            Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = stringResource(R.string.back_button) // "Back"
                         )
                     }
@@ -128,7 +125,7 @@ fun SeizureStatsScreen(
                 StatCard(
                     title = averageSeverityText,
                     value = String.format("%.1f", stats.averageSeverity),
-                    icon = Icons.Default.TrendingUp,
+                    icon = Icons.AutoMirrored.Filled.TrendingUp,
                     iconTint = Color(0xFFF44336)
                 )
             }
@@ -143,7 +140,6 @@ fun SeizureStatsScreen(
             }
 
             item {
-                // if mostCommonTrigger is null, show "None"
                 val triggerValue = stats.mostCommonTrigger ?: noneTriggerText
 
                 StatCard(
@@ -258,49 +254,4 @@ private fun calculateSeizureStats(
         mostCommonType = mostCommonType,
         mostCommonTrigger = mostCommonTrigger
     )
-}
-
-@Composable
-private fun SeizureChart(
-    seizures: List<SeizureEvent>,
-    modifier: Modifier = Modifier
-) {
-    val seizureFrequencyText = stringResource(R.string.seizure_frequency) // "Seizure Frequency"
-
-    Card(
-        modifier = modifier
-            .fillMaxWidth()
-            .height(280.dp)
-            .shadow(
-                elevation = 4.dp,
-                shape = RoundedCornerShape(16.dp),
-                spotColor = Color.Black.copy(alpha = 0.3f)
-            ),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        )
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = seizureFrequencyText, // "Seizure Frequency"
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Some chart drawing logic here...
-        }
-    }
 }

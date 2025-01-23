@@ -33,8 +33,8 @@ import com.epfl.ch.seizureguard.eeg.EEGViewModel
 
 @Composable
 fun EEGChart(
-    isDebugEnabled : Boolean,
-    isInferenceRunning : Boolean,
+    isDebugEnabled: Boolean,
+    isInferenceRunning: Boolean,
     eegViewModel: EEGViewModel = viewModel(),
     modifier: Modifier = Modifier
 ) {
@@ -44,7 +44,7 @@ fun EEGChart(
     val scrollOffset by eegViewModel.scrollOffset.collectAsState()
     val samplesPerChannel by eegViewModel.samplesPerChannel.collectAsState()
 
-    val sampleWidthRatio : Float = if(isDebugEnabled) 4f else 16f
+    val sampleWidthRatio: Float = if (isDebugEnabled) 4f else 16f
 
     var isDragging by remember { mutableStateOf(false) }
     var canvasWidth by remember { mutableStateOf(0f) }
@@ -89,7 +89,11 @@ fun EEGChart(
                             change.consume()
                             if (isInferenceRunning && isDragging) {
                                 val graphWidth = canvasWidth - leftMargin
-                                eegViewModel.updateScrollOffset(dragAmount.x, graphWidth, sampleWidthRatio)
+                                eegViewModel.updateScrollOffset(
+                                    dragAmount.x,
+                                    graphWidth,
+                                    sampleWidthRatio
+                                )
                             }
                         }
                     )
@@ -103,7 +107,7 @@ fun EEGChart(
                 val sampleWidth = graphWidth / sampleWidthRatio
                 val safetyMargin = sampleWidth / 2
                 val minScroll = -(totalSamples * sampleWidth) + graphWidth + safetyMargin
-                
+
                 if (scrollOffset > minScroll) {
                     eegViewModel.updateScrollOffset(minScroll, graphWidth, sampleWidthRatio)
                 }
@@ -117,7 +121,7 @@ fun EEGChart(
                 "FZ-CZ", "FP2-F4", "FP2-F8"
             )
 
-            drawLabelsAndGrid(leftMargin, graphWidth, canvasHeight, spacingY, channelNames)
+            drawLabelsAndGrid(leftMargin, graphWidth, spacingY, channelNames)
 
             clipRect(
                 left = leftMargin,
@@ -136,8 +140,7 @@ fun EEGChart(
                                 graphWidth,
                                 sampleWidthRatio,
                                 spacingY,
-                                samplesPerChannel,
-                                channelData.size / samplesPerChannel
+                                samplesPerChannel
                             )
                         }
                     }
@@ -150,7 +153,6 @@ fun EEGChart(
 private fun DrawScope.drawLabelsAndGrid(
     leftMargin: Float,
     graphWidth: Float,
-    canvasHeight: Float,
     spacingY: Float,
     channelNames: List<String>
 ) {
@@ -187,19 +189,17 @@ private fun DrawScope.drawChannel(
     graphWidth: Float,
     sampleWidthRatio: Float,
     spacingY: Float,
-    samplesPerChannel: Int,
-    totalSamples: Int
+    samplesPerChannel: Int
 ) {
     if (channelData.isEmpty()) return
-    
+
     val path = Path()
     val amplitudeY = spacingY * 1.2f
     val sampleWidth = graphWidth / sampleWidthRatio
-    val totalWidth = sampleWidth * totalSamples
     val pixelsPerPoint = sampleWidth / samplesPerChannel
-    
+
     path.moveTo(leftMargin, yCenter - channelData[0] * amplitudeY)
-    
+
     for (i in channelData.indices) {
         val xPos = leftMargin + (i * pixelsPerPoint)
         val yPos = yCenter - channelData[i] * amplitudeY
