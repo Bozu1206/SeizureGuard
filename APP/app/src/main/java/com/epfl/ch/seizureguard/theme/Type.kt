@@ -7,26 +7,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.googlefonts.GoogleFont
 import com.epfl.ch.seizureguard.R
 
-val provider = GoogleFont.Provider(
-    providerAuthority = "com.google.android.gms.fonts",
-    providerPackage = "com.google.android.gms",
-    certificates = R.array.com_google_android_gms_fonts_certs
-)
-
-//val bodyFontFamily = FontFamily(
-//    Font(
-//        googleFont = GoogleFont("Space Grotesk"),
-//        fontProvider = provider,
-//    )
-//)
-//
-//val displayFontFamily = FontFamily(
-//    Font(
-//        googleFont = GoogleFont("Space Grotesk"),
-//        fontProvider = provider,
-//    )
-//)
-
 val displayFontFamily = FontFamily(
     Font(R.font.sfr_light, FontWeight.Light),
     Font(R.font.sfr_bold, FontWeight.Bold),
@@ -37,7 +17,6 @@ val displayFontFamily = FontFamily(
 )
 
 
-// Default Material 3 typography values
 val baseline = Typography()
 
 val AppTypography = Typography(

@@ -64,20 +64,5 @@ val onSurfaceVariantDark = Color(0xFFE0E0E0)
 val outlineDark = Color(0xFF666666)
 val outlineVariantDark = Color(0xFF454545)
 
-// Shared Colors
-val scrim = Color(0xFF000000)
-
-// Surface Containers
-val surfaceContainerLowestLight = Color(0xFFFFFFFF)
-val surfaceContainerLowLight = Color(0xFFFAFAFA)
-val surfaceContainerLight = Color(0xFFF5F5F5)
-val surfaceContainerHighLight = Color(0xFFE8E8E8)
-val surfaceContainerHighestLight = Color(0xFFE0E0E0)
-
-val surfaceContainerLowestDark = Color(0xFF121212)
-val surfaceContainerLowDark = Color(0xFF1E1E1E)
-val surfaceContainerDark = Color(0xFF252525)
-val surfaceContainerHighDark = Color(0xFF2C2C2C)
-val surfaceContainerHighestDark = Color(0xFF333333)
 
 

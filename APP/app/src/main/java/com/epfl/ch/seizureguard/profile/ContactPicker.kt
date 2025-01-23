@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.provider.ContactsContract
+import android.widget.Toast
 import androidx.activity.compose.ManagedActivityResultLauncher
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.ActivityResult
@@ -19,10 +20,12 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 
 @Composable
-fun getContactPicker(context: Context, profileViewModel: ProfileViewModel): ManagedActivityResultLauncher<Intent, ActivityResult> {
+fun getContactPicker(
+    context: Context,
+    profileViewModel: ProfileViewModel
+): ManagedActivityResultLauncher<Intent, ActivityResult> {
     var contactName by remember { mutableStateOf<String?>(null) }
     var contactPhone by remember { mutableStateOf<String?>(null) }
-    var contactPicture by remember { mutableStateOf<String?>(null) }
 
     return rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult(),
@@ -37,26 +40,24 @@ fun getContactPicker(context: Context, profileViewModel: ProfileViewModel): Mana
                                 it.getColumnIndex(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME)
                             val phoneIndex =
                                 it.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER)
-                            val pictureIndex =
-                                it.getColumnIndex(ContactsContract.CommonDataKinds.Phone.PHOTO_URI)
 
                             contactName = it.getString(nameIndex)
                             contactPhone = it.getString(phoneIndex)
-                            contactPicture = it.getString(pictureIndex)
 
-//                            var localUri: Uri? = null
-//                            if (contactPicture != null) {
-//                               localUri = copyImageToInternalStorage(
-//                                    context,
-//                                    Uri.parse(contactPicture),
-//                                    "contact_picture_${UUID.randomUUID()}.jpg"
-//                                )
-//                            }
                             val contact = EmergencyContact(
                                 name = contactName!!,
                                 phone = contactPhone!!,
                                 photoUri = null
                             )
+
+                            if (profileViewModel.profileState.value.emergencyContacts.contains(
+                                    contact
+                                )
+                            ) {
+                                Toast.makeText(context, "Contact already added", Toast.LENGTH_SHORT)
+                                    .show()
+                                return@use
+                            }
 
                             profileViewModel.updateEmergencyContacts(contact, isAdding = true)
                         }

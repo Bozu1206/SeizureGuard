@@ -1,3 +1,5 @@
+@file:Suppress("DEPRECATION")
+
 package com.epfl.ch.seizureguard.onboarding
 
 import android.annotation.SuppressLint
@@ -70,7 +72,7 @@ fun OnboardingScreen(
     )
 
     val currentPage by onboardingViewModel.currentPage.collectAsState()
-    
+
     val pagerState = rememberPagerState(
         initialPage = currentPage
     )
@@ -294,7 +296,6 @@ fun BiometricOptInDialog(
     )
 }
 
-
 @Composable
 fun CreateHealthProfileScreen(profile: Profile) {
     Box(
@@ -306,6 +307,3 @@ fun CreateHealthProfileScreen(profile: Profile) {
         )
     }
 }
-
-
-

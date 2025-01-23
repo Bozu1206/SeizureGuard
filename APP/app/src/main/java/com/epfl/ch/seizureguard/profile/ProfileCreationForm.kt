@@ -228,8 +228,17 @@ fun ProfileTextField(
         ),
         trailingIcon = {
             when (label) {
-                "Name" -> Icon(Icons.Default.Person, contentDescription = "Name", tint = Color.Black)
-                "Email" -> Icon(Icons.Default.Email, contentDescription = "Email", tint = Color.Black)
+                "Name" -> Icon(
+                    Icons.Default.Person,
+                    contentDescription = "Name",
+                    tint = Color.Black
+                )
+
+                "Email" -> Icon(
+                    Icons.Default.Email,
+                    contentDescription = "Email",
+                    tint = Color.Black
+                )
             }
         },
         singleLine = true,
@@ -304,7 +313,7 @@ fun PasswordTextField(password: String, onValueChange: (String) -> Unit) {
     OutlinedTextField(
         value = password,
         onValueChange = onValueChange,
-        placeholder = { Text("Password",  color = Color.Gray) },
+        placeholder = { Text("Password", color = Color.Gray) },
         modifier = textFieldModifier(),
         singleLine = true,
         visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
@@ -322,7 +331,7 @@ fun PasswordTextField(password: String, onValueChange: (String) -> Unit) {
             color = Color.Black
         ),
 
-    )
+        )
 }
 
 @Composable

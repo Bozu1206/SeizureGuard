@@ -3,11 +3,10 @@ package com.epfl.ch.seizureguard.dl
 import ai.onnxruntime.*
 import android.content.Context
 import android.util.Log
-import android.widget.Toast
 import com.epfl.ch.seizureguard.dl.metrics.ComputeMetrics.computeMetrics
 import com.epfl.ch.seizureguard.dl.metrics.Metrics
-import com.epfl.ch.seizureguard.dl.utils.utils.floatArrayToFloatBuffer
-import com.epfl.ch.seizureguard.dl.utils.utils.intToLongBuffer
+import com.epfl.ch.seizureguard.dl.utils.Utils.floatArrayToFloatBuffer
+import com.epfl.ch.seizureguard.dl.utils.Utils.intToLongBuffer
 import com.epfl.ch.seizureguard.profile.ProfileViewModel
 import kotlinx.coroutines.runBlocking
 import java.io.File

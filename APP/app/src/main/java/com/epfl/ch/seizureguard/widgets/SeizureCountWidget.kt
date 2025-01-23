@@ -56,23 +56,21 @@ class SeizureCountWidget : GlanceAppWidget() {
     }
 
     private fun createGradientBitmap(
-        width: Int,
-        height: Int,
         startColor: Int,
         endColor: Int
     ): Bitmap {
-        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        val bitmap = Bitmap.createBitmap(300, 100, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
         val paint = Paint()
 
         val gradient = LinearGradient(
-            0f, 0f, width.toFloat(), 0f,
+            0f, 0f, 300.toFloat(), 0f,
             startColor, endColor,
             Shader.TileMode.CLAMP
         )
 
         paint.shader = gradient
-        canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), paint)
+        canvas.drawRect(0f, 0f, 300.toFloat(), 100.toFloat(), paint)
         return bitmap
     }
 
@@ -93,8 +91,6 @@ class SeizureCountWidget : GlanceAppWidget() {
                         .background(
                             ImageProvider(
                                 createGradientBitmap(
-                                    300,
-                                    100,
                                     0xFFffa751.toInt(),
                                     0xFFffe259.toInt()
                                 )

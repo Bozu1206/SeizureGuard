@@ -35,6 +35,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.google.accompanist.flowlayout.FlowRow
 
+/**
+ * Represent the default state for the SeizureEvent modal.
+ */
 data class DefaultState(
     val type: String = "Focal",
     val duration: Int = 0,

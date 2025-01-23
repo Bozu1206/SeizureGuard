@@ -510,11 +510,11 @@ class ProfileViewModel(context: Context, application: Application) : AndroidView
             try {
                 val updatedNotes = _profileState.value.medicalNotes.toMutableList()
                 updatedNotes.add(note)
-                
+
                 _profileState.value = _profileState.value.copy(
                     medicalNotes = updatedNotes
                 )
-                
+
                 repository.saveProfileToPreferences(_profileState.value)
                 repository.saveProfileToFirestore(_profileState.value)
             } catch (e: Exception) {
@@ -527,14 +527,14 @@ class ProfileViewModel(context: Context, application: Application) : AndroidView
         viewModelScope.launch {
             try {
                 val updatedNotes = _profileState.value.medicalNotes.filter { it != note }
-                
+
                 _profileState.value = _profileState.value.copy(
                     medicalNotes = updatedNotes
                 )
-                
+
                 repository.saveProfileToPreferences(_profileState.value)
                 repository.saveProfileToFirestore(_profileState.value)
-                
+
             } catch (e: Exception) {
                 Log.e("ProfileViewModel", "Error deleting note: ${e.message}")
             }

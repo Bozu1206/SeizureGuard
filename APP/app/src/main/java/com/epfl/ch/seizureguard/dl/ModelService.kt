@@ -8,7 +8,7 @@ import android.util.Log
 import com.epfl.ch.seizureguard.tools.copyAssetFileOrDir
 
 // Android Service whose main job is to create and manage a single instance of ModelManager
-class ModelService() : Service() {
+class ModelService : Service() {
     private val binder = LocalBinder()
     private lateinit var modelManager: ModelManager
 

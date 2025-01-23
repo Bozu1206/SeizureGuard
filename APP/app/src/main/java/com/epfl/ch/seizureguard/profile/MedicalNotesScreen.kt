@@ -69,7 +69,8 @@ fun MedicalNotesScreen(
                             .size(28.dp)
                             .clip(CircleShape)
                             .background(
-                                Color(0xFFFF9800), CircleShape)
+                                Color(0xFFFF9800), CircleShape
+                            )
                             .padding(4.dp)
                     )
                 }

@@ -51,14 +51,12 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.epfl.ch.seizureguard.guidelines.GuidelinesModal
 import com.epfl.ch.seizureguard.profile.ProfileViewModel
 import com.epfl.ch.seizureguard.seizure_event.LogSeizureEventModal
 import com.epfl.ch.seizureguard.seizure_event.SeizureEventViewModel
 import com.epfl.ch.seizureguard.tools.onEmergencyCall
-import com.epfl.ch.seizureguard.theme.AppTheme
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -66,6 +64,7 @@ import com.epfl.ch.seizureguard.seizure_event.SeizureEvent
 import androidx.compose.material3.Scaffold
 import androidx.compose.ui.res.stringResource
 import com.epfl.ch.seizureguard.R
+import androidx.navigation.NavController
 
 @Composable
 private fun formatDate(timestamp: Long): String {
@@ -79,6 +78,7 @@ private fun formatDate(timestamp: Long): String {
 fun HomeScreen(
     seizureEventViewModel: SeizureEventViewModel,
     profileViewModel: ProfileViewModel,
+    navController: NavController
 ) {
     Scaffold(
         bottomBar = {
@@ -137,7 +137,9 @@ fun HomeScreen(
 }
 
 @Composable
-fun WelcomeSection(profileViewModel: ProfileViewModel) {
+fun WelcomeSection(
+    profileViewModel: ProfileViewModel
+) {
     val profile = profileViewModel.profileState.collectAsState()
 
     // Capture string resources:
@@ -157,23 +159,31 @@ fun WelcomeSection(profileViewModel: ProfileViewModel) {
     Column(
         modifier = Modifier.fillMaxWidth()
     ) {
-        Row {
-            Text(
-                text = buildAnnotatedString {
-                    // "Welcome, " + userName
-                    append(welcomeText)
-                    withStyle(
-                        style = SpanStyle(
-                            brush = gradient,
-                            fontWeight = FontWeight.ExtraBold
-                        )
-                    ) {
-                        append(" ${profile.value.name.split(" ")[0]}!")
-                    }
-                },
-                style = MaterialTheme.typography.headlineLarge,
-                fontWeight = FontWeight.Bold
-            )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = buildAnnotatedString {
+                        // "Welcome, " + userName
+                        append(welcomeText)
+                        withStyle(
+                            style = SpanStyle(
+                                brush = gradient,
+                                fontWeight = FontWeight.ExtraBold
+                            )
+                        ) {
+                            append(" ${profile.value.name.split(" ")[0]}!")
+                        }
+                    },
+                    style = MaterialTheme.typography.headlineLarge,
+                    fontWeight = FontWeight.Bold
+                )
+            }
         }
 
         Text(

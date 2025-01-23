@@ -5,7 +5,7 @@ import androidx.lifecycle.AndroidViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
-class SeizureEventViewModel(application: Application):
+class SeizureEventViewModel(application: Application) :
     AndroidViewModel(application) {
 
     private val _showSeizureLoggingDialog = MutableStateFlow(false)
