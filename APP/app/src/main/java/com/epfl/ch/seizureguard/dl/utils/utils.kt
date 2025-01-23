@@ -5,7 +5,7 @@ import java.nio.ByteOrder
 import java.nio.FloatBuffer
 import java.nio.LongBuffer
 
-object utils {
+object Utils {
 
     fun intToLongBuffer(vararg values: Int): LongBuffer {
         val buffer = LongBuffer.allocate(values.size)
