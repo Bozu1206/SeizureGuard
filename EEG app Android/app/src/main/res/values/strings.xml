@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">BleEEGPeripheral</string>
+
+    <string name="ble_uuid">0000745d-0000-1100-8800-00605f9c34ca</string>
+    <string name="eeg_char_uuid">00002a27-0000-4300-8900-00805a4a21fb</string>
+    <string name="config_char_uuid">bb54968e-e5f8-c6ad-eb11-982cdfb71a46</string>
+
+</resources>
