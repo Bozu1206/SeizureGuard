@@ -117,7 +117,7 @@ fun InferenceHomePage(
             .fillMaxSize()
             .padding(DefaultPadding)
     ) {
-        DashboardHeader()
+//        DashboardHeader()
 
         Box(
             modifier = Modifier

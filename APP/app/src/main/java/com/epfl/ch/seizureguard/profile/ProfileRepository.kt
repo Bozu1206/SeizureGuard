@@ -346,10 +346,8 @@ class ProfileRepository private constructor(
 
     suspend fun updateProfileField(key: String, value: String) {
         try {
-            // Charger le profil actuel
             val currentProfile = loadProfileFromPreferences()
 
-            // Mettre à jour le champ spécifique
             val updatedProfile = when (key) {
                 "name" -> currentProfile.copy(name = value)
                 "email" -> currentProfile.copy(email = value)

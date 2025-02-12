@@ -4,7 +4,6 @@ import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.provider.ContactsContract
-import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -92,7 +91,7 @@ fun ProfileScreen(
             modifier = Modifier.fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            UserProfileSection(profileViewModel, requestSavePass, walletViewModel, navController)
+            UserProfileSection(profileViewModel, requestSavePass, navController)
 
             Spacer(modifier = Modifier.height(24.dp))
             // Emergency Contacts Section
@@ -105,7 +104,6 @@ fun ProfileScreen(
 fun UserProfileSection(
     profileScreenViewModel: ProfileViewModel,
     onWalletButtonClick: (GoogleWalletToken.PassRequest) -> Unit,
-    walletViewModel: WalletViewModel,
     navController: NavController
 ) {
     val profile by profileScreenViewModel.profileState.collectAsState()
@@ -152,7 +150,7 @@ fun UserProfileSection(
                     modifier = Modifier
                         .width(150.dp)
                         .fillMaxHeight()
-                        .clip(RoundedCornerShape(20.dp))
+                        .clip(RoundedCornerShape(16.dp))
                         .clickable {
                             val intent = Intent(Intent.ACTION_PICK).apply {
                                 type = "image/*"
@@ -252,14 +250,14 @@ fun UserProfileSection(
                         ) {
                             Text(
                                 text = stringResource(R.string.your_information),
-                                style = MaterialTheme.typography.titleMedium,
+                                style = MaterialTheme.typography.titleSmall,
                                 fontWeight = FontWeight.Bold
                             )
                             Spacer(modifier = Modifier.weight(1f))
                             IconButton(
                                 onClick = { showProfileSettings = !showProfileSettings },
                                 modifier = Modifier
-                                    .size(20.dp)
+                                    .size(24.dp)
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Edit,
@@ -298,7 +296,7 @@ fun UserProfileSection(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            val medicationString = stringResource(R.string.lorazepam_label)
+
             WalletButton(
                 type = ButtonType.Add,
                 modifier = Modifier
@@ -310,9 +308,9 @@ fun UserProfileSection(
                         patientName = profile.name,
                         emergencyContact = profileScreenViewModel.profileState.value.emergencyContacts
                             .firstOrNull()
-                            ?.phone ?: "",
+                            ?.phone ?: "N/A",
                         seizureType = profile.epi_type,
-                        medication = medicationString,
+                        medication = profile.medications.firstOrNull() ?: "N/A",
                         birthdate = profile.birthdate,
                     )
                     onWalletButtonClick(request)
@@ -344,14 +342,14 @@ fun UserProfileSection(
                     imageVector = Icons.Default.Notes,
                     contentDescription = null,
                     modifier = Modifier.size(20.dp),
-                    tint = MaterialTheme.colorScheme.onBackground
+                    tint = Color.White
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     text = stringResource(R.string.medical_notes),
                     fontSize = 16.sp,
                     fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onBackground
+                    color = Color.White
                 )
             }
         }
@@ -646,9 +644,7 @@ fun ProfileScreenPreview() {
         ProfileScreen(
             viewModel(),
             navController = NavController(context = LocalContext.current),
-            viewModel(),
-            { }
-        )
-
+            viewModel()
+        ) { }
     }
 }

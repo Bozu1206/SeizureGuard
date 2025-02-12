@@ -38,6 +38,7 @@ import com.epfl.ch.seizureguard.seizure_event.SeizureEventViewModel
 import com.epfl.ch.seizureguard.settings.SettingsScreen
 import com.epfl.ch.seizureguard.profile.ProfileViewModel
 import androidx.compose.foundation.layout.Box
+import androidx.compose.ui.draw.shadow
 import com.epfl.ch.seizureguard.wallet_manager.WalletViewModel
 import com.epfl.ch.seizureguard.profile.MedicalNotesScreen
 import com.epfl.ch.seizureguard.history.SeizureStatsScreen
@@ -79,13 +80,15 @@ fun AppContent(
         bottomBar = { 
             Box{
                 NavigationBar(
-                    containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                    containerColor = MaterialTheme.colorScheme.background,
                     tonalElevation = 0.dp,
+                    modifier = Modifier.shadow(16.dp)
                 ) {
                     Screen.getNavItems(isParentMode).forEach { screen ->
                         NavigationBarItem(
                             icon = { Icon(screen.icon, contentDescription = screen.label) },
                             label = { Text(screen.label) },
+                            alwaysShowLabel = true,
                             selected = currentRoute == screen.route,
                             onClick = {
                                 navController.navigate(screen.route) {

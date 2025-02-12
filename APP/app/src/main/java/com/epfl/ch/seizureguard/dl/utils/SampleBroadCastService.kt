@@ -17,7 +17,7 @@ import kotlinx.coroutines.launch
 // This handles broadcasting values from the known dataset to the model (only in debug mode)
 class SampleBroadcastService : LifecycleService() {
     private val handler = Handler()
-    private val interval: Long = 100
+    private val interval: Long = 4000
 
     private lateinit var profileViewModel: ProfileViewModel
     private lateinit var profile : Profile
@@ -68,7 +68,7 @@ class SampleBroadcastService : LifecycleService() {
         
         if(isDebugEnabled){ // DEBUG mode
             val d = DataLoader().loadDataAndLabels(applicationContext, "data_20.bin")
-            data = d.slice(500..800).toTypedArray()
+            data = d.slice(0..100).toTypedArray()
             
             // Only start broadcasting if inference is already running
             if (profileViewModel.isInferenceRunning.value) {
