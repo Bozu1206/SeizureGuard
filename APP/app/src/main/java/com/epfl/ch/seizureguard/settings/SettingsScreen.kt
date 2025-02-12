@@ -413,13 +413,14 @@ fun SettingsScreen(
                     SettingsItem(
                         title = stringResource(R.string.logout),
                         onClick = {
+                            profileViewModel.saveAuthPreference(false)
                             profileViewModel.logout()
                             onLogoutClicked()
                         },
                         icon = Icons.AutoMirrored.Filled.Logout,
                         tint = MaterialTheme.colorScheme.error,
                         background = MaterialTheme.colorScheme.errorContainer.copy(0.6f),
-                        weight = FontWeight.Bold
+                        weight = FontWeight.Normal
                     )
                 }
             }

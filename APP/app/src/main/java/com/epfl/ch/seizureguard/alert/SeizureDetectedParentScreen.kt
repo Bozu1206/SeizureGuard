@@ -31,13 +31,19 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.epfl.ch.seizureguard.R
+import com.epfl.ch.seizureguard.RunningApp
 import com.epfl.ch.seizureguard.profile.ProfileViewModel
 import com.epfl.ch.seizureguard.seizure_event.LogSeizureEventModal
 import com.google.android.gms.maps.model.CameraPosition
@@ -50,14 +56,13 @@ import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.rememberCameraPositionState
 import java.util.Locale
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SeizureDetectedParentScreen(
     latitude : Double?,
     longitude: Double?,
     onDismiss: () -> Unit,
     onEmergencyCall: () -> Unit,
-    profileViewModel: ProfileViewModel,
+    profileViewModel: ProfileViewModel?,
     context: Context
 ) {
     var isLogging by remember { mutableStateOf(false) }
@@ -112,42 +117,62 @@ fun SeizureDetectedParentScreen(
                 style = MaterialTheme.typography.headlineLarge,
                 color = MaterialTheme.colorScheme.onErrorContainer,
                 textAlign = TextAlign.Center,
-                fontWeight = FontWeight.ExtraBold
+                fontWeight = FontWeight.ExtraBold,
+                modifier = Modifier.padding(horizontal = 8.dp)
             )
 
             Spacer(modifier = Modifier.height(32.dp))
-            if (latitude != null && longitude != null && !latitude.isNaN() && !longitude.isNaN()) {
-                // Show map if location is available
-                val mapCenter = LatLng(latitude, longitude)
-                val cameraPositionState = rememberCameraPositionState {
-                    position = CameraPosition.fromLatLngZoom(mapCenter, 15f)
-                }
-                val markerState = remember { MarkerState(position = mapCenter) }
-                GoogleMap(
-                    cameraPositionState = cameraPositionState,
-                    properties = MapProperties(mapType = MapType.HYBRID),
+            val isInPreview = LocalInspectionMode.current
+            // Here to debug
+            if (isInPreview) {
+                Box(
                     modifier = Modifier
+                        .padding(16.dp)
+                        .shadow(8.dp, RoundedCornerShape(16.dp))
                         .clip(RoundedCornerShape(16.dp))
                         .fillMaxWidth()
-                        .size(150.dp)
+                        .size(180.dp)
+                        .background(Color.Gray),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Marker(
-                        state = markerState,
-                        title = stringResource(R.string.marker_title_text),
-                        snippet = address
-                            ?: "Latitude: ${mapCenter.latitude}, Longitude: ${mapCenter.longitude}"
-                    )
+                    Text(text = "Map Preview", color = Color.White)
                 }
             } else {
-                // No location available, show image
-                Image(
-                    painter = painterResource(R.drawable.seizure_alert),
-                    contentDescription = null,
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(16.dp))
-                        .fillMaxWidth()
-                        .size(220.dp)
-                )
+                if (latitude != null && longitude != null && !latitude.isNaN() && !longitude.isNaN()) {
+                    // Show map if location is available
+                    val mapCenter = LatLng(latitude, longitude)
+                    val cameraPositionState = rememberCameraPositionState {
+                        position = CameraPosition.fromLatLngZoom(mapCenter, 15f)
+                    }
+                    val markerState = remember { MarkerState(position = mapCenter) }
+                    GoogleMap(
+                        cameraPositionState = cameraPositionState,
+                        properties = MapProperties(mapType = MapType.NORMAL),
+                        modifier = Modifier
+                            .padding(16.dp)
+                            .shadow(12.dp, RoundedCornerShape(16.dp))
+                            .clip(RoundedCornerShape(16.dp))
+                            .fillMaxWidth()
+                            .size(180.dp)
+                    ) {
+                        Marker(
+                            state = markerState,
+                            title = stringResource(R.string.marker_title_text),
+                            snippet = address
+                                ?: "Latitude: ${mapCenter.latitude}, Longitude: ${mapCenter.longitude}"
+                        )
+                    }
+                } else {
+                    // No location available, show image
+                    Image(
+                        painter = painterResource(R.drawable.icon),
+                        contentDescription = null,
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(16.dp))
+                            .fillMaxWidth()
+                            .size(220.dp)
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(128.dp))
@@ -188,12 +213,16 @@ fun SeizureDetectedParentScreen(
                 .padding(16.dp)
         )
 
+        val ctx = LocalContext.current
         if (isLogging) {
             LogSeizureEventModal(
+                context = ctx,
                 onDismiss = { isLogging = false },
                 onClick = { seizureEvent ->
                     hasLogged = true
-                    profileViewModel.addSeizure(seizureEvent)
+                    if (profileViewModel != null) {
+                        profileViewModel.addSeizure(seizureEvent)
+                    }
                     onDismiss()
                 }
             )
@@ -221,4 +250,18 @@ fun SeizureAlertButtonsParent(
             modifier = Modifier.fillMaxWidth()
         )
     }
+}
+
+@Preview
+@Composable
+fun SeizureDetectedParentScreenPreview() {
+
+    SeizureDetectedParentScreen(
+        latitude = 46.519962,
+        longitude = 6.633597,
+        onDismiss = {},
+        onEmergencyCall = {},
+        profileViewModel = null,
+        context = androidx.compose.ui.platform.LocalContext.current
+    )
 }

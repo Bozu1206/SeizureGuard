@@ -51,7 +51,7 @@ Supervisor: Ansaloni Giovanni & Amirhossein Shahbazinia]]></string>
     <string name="logout">Logout</string>
     <string name="version_1_0_0">Version 1.0.0</string>
     <string name="developed_by">Developed by:</string>
-    <string name="copyright">© 2024 EPFL. All rights reserved.</string>
+    <string name="copyright">© 2025 EPFL. All rights reserved.</string>
     <string name="profile_picture">Profile Picture</string>
     <string name="your_information">Your information</string>
     <string name="email_label">Email</string>
@@ -177,9 +177,10 @@ Supervisor: Ansaloni Giovanni & Amirhossein Shahbazinia]]></string>
     <string name="minutes_abbrev">min</string>
 
     <!-- strings for SeizureDetectedScreen -->
-    <string name="seizure_detected_parent">Seizure Detected on a device!</string>
+    <string name="seizure_detected_parent">A seizure was detected on a device!</string>
     <string name="seizure_detected">Seizure Detected!</string>
     <string name="address_prefix">Address: %1$s</string>
     <string name="call_emergency_text">Call Emergency</string>
+    <string name="med_tracker">Medications</string>
 
 </resources>

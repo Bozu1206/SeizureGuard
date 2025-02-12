@@ -50,7 +50,7 @@ class MainActivity : FragmentActivity() {
     private val seizureEventViewModel: SeizureEventViewModel by viewModels()
     private val metricsViewModel: MetricsViewModel by viewModels()
 
-    private var isLoggedIn by mutableStateOf(false)
+    private var isLoggedIn by mutableStateOf(true)
 
     private val walletViewModel: WalletViewModel by viewModels()
     private val addToGoogleWalletRequestCode = 1000
@@ -144,7 +144,7 @@ class MainActivity : FragmentActivity() {
         )[OnboardingViewModel::class.java]
         profileViewModel = RunningApp.getInstance(application as RunningApp).profileViewModel
 
-        var isSeizureDetectedParentExtra =
+        val isSeizureDetectedParentExtra =
             intent?.getBooleanExtra("EXTRA_SEIZURE_DETECTED_PARENT", false) ?: false
         val isSeizureDetectedExtra =
             intent?.getBooleanExtra("EXTRA_SEIZURE_DETECTED", false) ?: false

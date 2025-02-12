@@ -229,7 +229,7 @@ class ProfileViewModel(context: Context, application: Application) : AndroidView
         }
     }
 
-    fun validateDefaultModel(): Metrics {
+    private fun validateDefaultModel(): Metrics {
         val modelPath = "inference_artifacts/inference.onnx"
         val inferenceModelPath =
             copyAssetToInternalStorage(repository.context, modelPath, "defaults.onnx")

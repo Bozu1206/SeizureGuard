@@ -1,5 +1,6 @@
 package com.epfl.ch.seizureguard.alert
 
+import android.content.res.Configuration
 import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -42,6 +43,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.glance.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.epfl.ch.seizureguard.R
 import com.epfl.ch.seizureguard.profile.ProfileViewModel
@@ -51,7 +53,7 @@ import com.epfl.ch.seizureguard.seizure_event.LogSeizureEventModal
 fun SeizureDetectedScreen(
     onDismiss: () -> Unit,
     onEmergencyCall: () -> Unit,
-    profileViewModel: ProfileViewModel,
+    profileViewModel: ProfileViewModel?,
 ) {
     var isLogging by remember { mutableStateOf(false) }
     var hasLogged by remember { mutableStateOf(false) }
@@ -95,7 +97,7 @@ fun SeizureDetectedScreen(
                 modifier = Modifier
                     .clip(RoundedCornerShape(16.dp))
                     .fillMaxWidth()
-                    .size(220.dp)
+                    .size(200.dp)
             )
 
             Spacer(modifier = Modifier.height(128.dp))
@@ -127,11 +129,15 @@ fun SeizureDetectedScreen(
                 .padding(16.dp)
         )
 
+        val ctx = LocalContext.current
         if (isLogging) {
-            LogSeizureEventModal(onDismiss = { isLogging = false }, onClick = { seizureEvent ->
-                hasLogged = true
-                profileViewModel.addSeizure(seizureEvent)
-                onDismiss()
+            LogSeizureEventModal(
+                context = ctx,
+                onDismiss = { isLogging = false },
+                onClick = { seizureEvent ->
+                    hasLogged = true
+                    profileViewModel?.addSeizure(seizureEvent)
+                    onDismiss()
             })
         }
     }
@@ -171,7 +177,7 @@ fun SeizureAlertButtons(
                 text = "Seizure Terminated",
                 icon = Icons.Default.Check,
                 onClick = onSeizureTerminated,
-                colors = ButtonDefaults.buttonColors(Color(0xFF339933)),
+                colors = ButtonDefaults.buttonColors(Color(0xFF121212)),
                 modifier = Modifier.weight(1f)
             )
         }
@@ -219,8 +225,11 @@ fun AlertButton(
     )
 }
 
-@Preview
+@Preview(
+    name = "Dark Mode",
+    uiMode = Configuration.UI_MODE_NIGHT_YES,
+)
 @Composable
 fun SeizureDetectedScreenPreview() {
-    SeizureDetectedScreen(onDismiss = {}, onEmergencyCall = {}, viewModel())
+    SeizureDetectedScreen(onDismiss = {}, onEmergencyCall = {}, null)
 }

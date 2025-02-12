@@ -51,13 +51,14 @@ fun ProfileCreationForm(profile: Profile) {
     var birthDate by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var epi_type by remember { mutableStateOf("") }
+    var medication by remember { mutableStateOf("") }
 
     var showDatePicker by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp)
+            .padding(horizontal = 16.dp, vertical = 8.dp)
             .pointerInput(Unit) {
                 detectTapGestures(
                     onTap = { focusManager.clearFocus() }
@@ -90,16 +91,17 @@ fun ProfileCreationForm(profile: Profile) {
             fontWeight = FontWeight.Bold
         )
 
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(8.dp))
 
         ProfilePicturePicker(profile = profile)
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(12.dp))
 
         LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
+            modifier = Modifier.fillMaxSize(),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
+            // Basic Information Section - Name
             item {
                 ProfileTextField(
                     value = userName,
@@ -107,11 +109,12 @@ fun ProfileCreationForm(profile: Profile) {
                         userName = it
                         profile.name = it
                     },
-                    label = "Name"
+                    label = "Name",
+                    modifier = Modifier.fillMaxWidth().padding(top = 2.dp)
                 )
-                Spacer(modifier = Modifier.height(8.dp))
             }
 
+            // Email
             item {
                 ProfileTextField(
                     value = email,
@@ -119,17 +122,59 @@ fun ProfileCreationForm(profile: Profile) {
                         email = it
                         profile.email = it
                     },
-                    label = "Email"
+                    label = "Email",
+                    modifier = Modifier.fillMaxWidth()
                 )
-                Spacer(modifier = Modifier.height(8.dp))
             }
 
+            // Password
             item {
-                // Birthdate field & Date Picker
+                PasswordTextField(
+                    password = password,
+                    onValueChange = {
+                        password = it
+                        profile.pwd = it
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+
+            // Birth Date
+            item {
                 BirthDateField(
                     birthDate = birthDate,
                     onClick = { showDatePicker = true }
                 )
+            }
+
+            // Medical Information Section
+            item {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    EpilepsyTypeField(
+                        value = epi_type,
+                        onValueChange = {
+                            epi_type = it
+                            profile.epi_type = it
+                        },
+                        modifier = Modifier.weight(1f)
+                    )
+                    
+                    MedicationField(
+                        value = medication,
+                        onValueChange = {
+                            medication = it
+                            profile.medications = listOf(it)
+                        },
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            }
+
+            // Date Picker Dialog
+            item {
                 if (showDatePicker) {
                     DatePickerModal(
                         onDateSelected = { selectedDateMillis ->
@@ -140,39 +185,15 @@ fun ProfileCreationForm(profile: Profile) {
                         onDismiss = { showDatePicker = false }
                     )
                 }
-                Spacer(modifier = Modifier.height(8.dp))
             }
 
+            // Add a small spacer at the bottom
             item {
-                // Epilepsy type dropdown
-                EpilepsyTypeField(
-                    value = epi_type,
-                    onValueChange = {
-                        epi_type = it
-                        profile.epi_type = it
-                    }
-                )
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(16.dp))
             }
-
-            item {
-                // Password field
-                PasswordTextField(
-                    password = password,
-                    onValueChange = {
-                        password = it
-                        profile.pwd = it
-                    }
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-            }
-
-            // TODO: Medication selector
-            // item { ... }
         }
     }
 }
-
 
 @Composable
 private fun textFieldModifier() = Modifier
@@ -212,7 +233,8 @@ fun customTextFieldColors() = OutlinedTextFieldDefaults.colors(
 fun ProfileTextField(
     value: String,
     onValueChange: (String) -> Unit,
-    label: String
+    label: String,
+    modifier: Modifier = Modifier
 ) {
     val focusManager = LocalFocusManager.current
 
@@ -220,7 +242,9 @@ fun ProfileTextField(
         value = value,
         onValueChange = onValueChange,
         placeholder = { Text("Enter your $label", color = Color.Gray) },
-        modifier = textFieldModifier(),
+        modifier = modifier.then(
+            textFieldModifier()
+        ),
         shape = RoundedCornerShape(16.dp),
         colors = customTextFieldColors(),
         textStyle = LocalTextStyle.current.copy(
@@ -233,7 +257,6 @@ fun ProfileTextField(
                     contentDescription = "Name",
                     tint = Color.Black
                 )
-
                 "Email" -> Icon(
                     Icons.Default.Email,
                     contentDescription = "Email",
@@ -277,7 +300,6 @@ fun BirthDateField(birthDate: String, onClick: () -> Unit) {
     )
 }
 
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DatePickerModal(
@@ -307,14 +329,18 @@ fun convertMillisToDate(millis: Long): String {
 }
 
 @Composable
-fun PasswordTextField(password: String, onValueChange: (String) -> Unit) {
+fun PasswordTextField(
+    password: String, 
+    onValueChange: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
     var passwordVisible by rememberSaveable { mutableStateOf(false) }
 
     OutlinedTextField(
         value = password,
         onValueChange = onValueChange,
         placeholder = { Text("Password", color = Color.Gray) },
-        modifier = textFieldModifier(),
+        modifier = modifier.then(textFieldModifier()),
         singleLine = true,
         visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
@@ -329,23 +355,23 @@ fun PasswordTextField(password: String, onValueChange: (String) -> Unit) {
         shape = RoundedCornerShape(16.dp),
         textStyle = LocalTextStyle.current.copy(
             color = Color.Black
-        ),
-
         )
+    )
 }
 
 @Composable
 fun EpilepsyTypeField(
     value: String,
     onValueChange: (String) -> Unit,
-    label: String = "Epilepsy Type"
+    label: String = "Epilepsy Type",
+    modifier: Modifier = Modifier
 ) {
     var expanded by remember { mutableStateOf(false) }
     val suggestions = listOf("Focal", "Generalized", "Focal + Generalized", "Unknown")
     var selectedText by remember { mutableStateOf(value) }
     var dropDownWidth by remember { mutableStateOf(0) }
 
-    Column {
+    Column(modifier = modifier) {
         OutlinedTextField(
             value = selectedText,
             onValueChange = { },
@@ -390,9 +416,79 @@ fun EpilepsyTypeField(
                             expanded = false
                         },
                         text = {
-
                             Text(
                                 text = label,
+                                color = Color.Black,
+                                modifier = Modifier.padding(horizontal = 8.dp)
+                            )
+                        },
+                        modifier = Modifier.background(Color.White)
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun MedicationField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    label: String = "Medication",
+    modifier: Modifier = Modifier
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val suggestions = listOf("Valproate", "Carbamazepine", "Lamotrigine", "Levetiracetam")
+    var selectedText by remember { mutableStateOf(value) }
+    var dropDownWidth by remember { mutableStateOf(0) }
+
+    Column(modifier = modifier) {
+        OutlinedTextField(
+            value = selectedText,
+            onValueChange = { },
+            modifier = textFieldModifier()
+                .clickable { expanded = true }
+                .onSizeChanged { dropDownWidth = it.width },
+            placeholder = { Text(label) },
+            trailingIcon = {
+                Icon(
+                    Icons.Filled.ArrowDropDown,
+                    contentDescription = "Open menu",
+                    tint = Color.Black
+                )
+            },
+            colors = customTextFieldColors(),
+            shape = RoundedCornerShape(16.dp),
+            readOnly = true,
+            enabled = false
+        )
+
+        Box(
+            modifier = Modifier
+                .background(Color.White, RoundedCornerShape(16.dp))
+                .offset(y = 4.dp)
+        ) {
+            DropdownMenu(
+                shadowElevation = 0.dp,
+                containerColor = Color.Transparent,
+                expanded = expanded,
+                onDismissRequest = { expanded = false },
+                modifier = Modifier
+                    .width(with(LocalDensity.current) { dropDownWidth.toDp() })
+                    .clip(RoundedCornerShape(16.dp))
+                    .border(1.dp, Color.Black, RoundedCornerShape(16.dp))
+                    .background(Color.White)
+            ) {
+                suggestions.forEach { suggestion ->
+                    DropdownMenuItem(
+                        onClick = {
+                            selectedText = suggestion
+                            onValueChange(selectedText)
+                            expanded = false
+                        },
+                        text = {
+                            Text(
+                                text = suggestion,
                                 color = Color.Black,
                                 modifier = Modifier.padding(horizontal = 8.dp)
                             )
