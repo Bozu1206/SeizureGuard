@@ -148,6 +148,8 @@ class MainActivity : FragmentActivity() {
             intent?.getBooleanExtra("EXTRA_SEIZURE_DETECTED_PARENT", false) ?: false
         val isSeizureDetectedExtra =
             intent?.getBooleanExtra("EXTRA_SEIZURE_DETECTED", false) ?: false
+        val isSeizureEnded =
+            intent?.getBooleanExtra("EXTRA_FROM_ENDED_SEIZURE_EVENT", false) ?: false
 
         setContent {
             val location by profileViewModel.latestLocation.collectAsState()
@@ -162,7 +164,7 @@ class MainActivity : FragmentActivity() {
             val isTrainingEnabled = profile.isTrainingEnabled
             val isDebugEnabled = profile.isDebugEnabled
             val skipAuthentication: Boolean =
-                isSeizureDetected || isSeizureDetectedParentExtra || isSeizureDetectedExtra
+                isSeizureDetected || isSeizureDetectedParentExtra || isSeizureDetectedExtra || isSeizureEnded
 
             val navigationState = determineNavigationState(
                 showOnboarding = showOnboarding,
@@ -192,6 +194,10 @@ class MainActivity : FragmentActivity() {
                             SeizureDetectedScreen(
                                 onDismiss = {
                                     seizureDetectionViewModel.onSeizureHandled()
+                                    val intent = Intent(context, MainActivity::class.java).apply {
+                                        putExtra("EXTRA_FROM_ENDED_SEIZURE_EVENT", true)
+                                    }
+                                    context.startActivity(intent)
                                 },
                                 onEmergencyCall = { onEmergencyCall(context) },
                                 profileViewModel = profileViewModel
