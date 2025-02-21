@@ -200,7 +200,8 @@ class MainActivity : FragmentActivity() {
                                     context.startActivity(intent)
                                 },
                                 onEmergencyCall = { onEmergencyCall(context) },
-                                profileViewModel = profileViewModel
+                                profileViewModel = profileViewModel,
+                                context = context
                             )
                         } else {
                             when (navigationState) {
