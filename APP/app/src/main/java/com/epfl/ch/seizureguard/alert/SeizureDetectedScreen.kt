@@ -1,5 +1,6 @@
 package com.epfl.ch.seizureguard.alert
 
+import android.content.Context
 import android.content.res.Configuration
 import android.util.Log
 import androidx.compose.foundation.Image
@@ -54,6 +55,7 @@ fun SeizureDetectedScreen(
     onDismiss: () -> Unit,
     onEmergencyCall: () -> Unit,
     profileViewModel: ProfileViewModel?,
+    context: Context
 ) {
     var isLogging by remember { mutableStateOf(false) }
     var hasLogged by remember { mutableStateOf(false) }
@@ -129,10 +131,9 @@ fun SeizureDetectedScreen(
                 .padding(16.dp)
         )
 
-        val ctx = LocalContext.current
         if (isLogging) {
             LogSeizureEventModal(
-                context = ctx,
+                context = context,
                 onDismiss = { isLogging = false },
                 onClick = { seizureEvent ->
                     hasLogged = true
@@ -231,5 +232,5 @@ fun AlertButton(
 )
 @Composable
 fun SeizureDetectedScreenPreview() {
-    SeizureDetectedScreen(onDismiss = {}, onEmergencyCall = {}, null)
+    SeizureDetectedScreen(onDismiss = {}, onEmergencyCall = {}, null, LocalContext.current)
 }
