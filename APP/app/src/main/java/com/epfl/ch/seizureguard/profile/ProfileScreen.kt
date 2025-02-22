@@ -310,48 +310,12 @@ fun UserProfileSection(
                             .firstOrNull()
                             ?.phone ?: "N/A",
                         seizureType = profile.epi_type,
-                        medication = profile.medications.firstOrNull() ?: "N/A",
+                        medication = profile.medications.firstOrNull()?.name ?: "N/A",
                         birthdate = profile.birthdate,
                     )
                     onWalletButtonClick(request)
                 }
             )
-
-            val gradient = Brush.horizontalGradient(
-                colors = listOf(
-                    Color(0xE2FF5722),
-                    Color(0xBAFF9800),
-                ),
-                startX = 0f,
-                endX = 900f
-            )
-
-            Button(
-                onClick = { navController.navigate("medical_notes") },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 8.dp)
-                    .background(gradient, shape = ButtonDefaults.shape)
-                    .height(38.dp),
-                shape = ButtonDefaults.shape,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color.Transparent
-                )
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Notes,
-                    contentDescription = null,
-                    modifier = Modifier.size(20.dp),
-                    tint = Color.White
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = stringResource(R.string.medical_notes),
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = Color.White
-                )
-            }
         }
     }
 

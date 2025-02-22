@@ -163,14 +163,13 @@ fun FirebaseLoginScreen(
                                     delay(500)
                                     isLoading = false
                                     if (result != null) {
-                                        profileViewModel.setAuthenticated(true)
                                         profileViewModel.retrieveAndStoreFcmToken()
                                         onLoggedIn()
                                     } else {
                                         Toast.makeText(
                                             context,
-                                            "Login failed. Please check your credentials.",
-                                            Toast.LENGTH_SHORT
+                                            "Invalid email or password. Please check your credentials and try again.",
+                                            Toast.LENGTH_LONG
                                         ).show()
                                     }
                                 }

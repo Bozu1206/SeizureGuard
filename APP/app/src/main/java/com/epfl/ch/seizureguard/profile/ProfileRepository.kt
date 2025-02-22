@@ -9,7 +9,12 @@ import androidx.datastore.core.IOException
 import androidx.datastore.preferences.core.*
 import androidx.datastore.preferences.preferencesDataStore
 import com.epfl.ch.seizureguard.dl.metrics.Metrics
+import com.epfl.ch.seizureguard.medication_tracker.LocalDateTimeDeserializer
+import com.epfl.ch.seizureguard.medication_tracker.LocalDateTimeSerializer
+import com.epfl.ch.seizureguard.medication_tracker.Medication
+import com.epfl.ch.seizureguard.medication_tracker.MedicationLog
 import com.epfl.ch.seizureguard.seizure_event.SeizureEvent
+import com.epfl.ch.seizureguard.seizure_event.SeizureLocation
 import com.google.auth.oauth2.GoogleCredentials
 import com.google.firebase.Firebase
 import com.google.firebase.firestore.FirebaseFirestore
@@ -17,6 +22,7 @@ import com.google.firebase.firestore.firestore
 import com.google.firebase.firestore.ktx.toObject
 import com.google.firebase.storage.FirebaseStorage
 import com.google.gson.Gson
+import com.google.gson.GsonBuilder
 import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -32,6 +38,9 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody
 import java.io.File
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
+import java.util.*
 
 val Context.dataStore by preferencesDataStore(name = "user_profile")
 
@@ -57,6 +66,7 @@ object Keys {
     val LOCAL_MODEL_PATH = stringPreferencesKey("local_model_path")
     val MEDICATIONS = stringPreferencesKey("medications")
     val MEDICAL_NOTES = stringPreferencesKey("medical_notes")
+    val MEDICATION_LOGS = stringPreferencesKey("medication_logs")
 }
 
 class ProfileRepository private constructor(
@@ -64,7 +74,10 @@ class ProfileRepository private constructor(
     private val firestore: FirebaseFirestore,
     private val storage: FirebaseStorage
 ) {
-    private val gson = Gson()
+    private val gson = GsonBuilder()
+        .registerTypeAdapter(LocalDateTime::class.java, LocalDateTimeSerializer())
+        .registerTypeAdapter(LocalDateTime::class.java, LocalDateTimeDeserializer())
+        .create()
 
     companion object {
         @SuppressLint("StaticFieldLeak")
@@ -167,6 +180,7 @@ class ProfileRepository private constructor(
                 preferences[Keys.LATEST_METRICS] = gson.toJson(profile.latestMetrics)
                 preferences[Keys.MEDICATIONS] = gson.toJson(profile.medications)
                 preferences[Keys.MEDICAL_NOTES] = gson.toJson(profile.medicalNotes)
+                preferences[Keys.MEDICATION_LOGS] = gson.toJson(profile.medicationLogs)
             }
         } catch (e: Exception) {
             Log.e("ProfileRepository", "Error saving profile to preferences", e)
@@ -210,8 +224,8 @@ class ProfileRepository private constructor(
         }
 
         val medicationsJson = preferences[Keys.MEDICATIONS] ?: "[]"
-        val medications: List<String> = try {
-            gson.fromJson(medicationsJson, object : TypeToken<List<String>>() {}.type)
+        val medications: List<Medication> = try {
+            gson.fromJson(medicationsJson, object : TypeToken<List<Medication>>() {}.type)
                 ?: emptyList()
         } catch (e: Exception) {
             Log.e("ProfileRepository", "Failed to parse medications: ${e.message}", e)
@@ -224,6 +238,15 @@ class ProfileRepository private constructor(
                 ?: emptyList()
         } catch (e: Exception) {
             Log.e("ProfileRepository", "Failed to parse medicalNotes: ${e.message}", e)
+            emptyList()
+        }
+
+        val medicationLogsJson = preferences[Keys.MEDICATION_LOGS] ?: "[]"
+        val medicationLogs: List<MedicationLog> = try {
+            gson.fromJson(medicationLogsJson, object : TypeToken<List<MedicationLog>>() {}.type)
+                ?: emptyList()
+        } catch (e: Exception) {
+            Log.e("ProfileRepository", "Failed to parse medicationLogs: ${e.message}", e)
             emptyList()
         }
 
@@ -245,58 +268,307 @@ class ProfileRepository private constructor(
             defaultsMetrics = defMetrics,
             latestMetrics = latestMetrics,
             medications = medications,
+            medicationLogs = medicationLogs,
             medicalNotes = medicalNotes
         )
     }
 
     suspend fun saveProfileToFirestore(profile: Profile) {
         try {
-            val userId = context.dataStore.data.first()[Keys.USER_ID] ?: return
+            if (profile.uid.isEmpty()) {
+                Log.e("ProfileRepository", "Cannot save profile with empty UID")
+                return
+            }
+
+            Log.d("ProfileRepository", "Saving profile to Firestore with ID: ${profile.uid}")
+            Log.d("ProfileRepository", "Current medications count: ${profile.medications.size}")
+            Log.d("ProfileRepository", "Current medication logs count: ${profile.medicationLogs.size}")
+
             val imageUri = Uri.parse(profile.uri)
             if (imageUri.scheme.equals("content", ignoreCase = true)
                 || imageUri.scheme.equals("file", ignoreCase = true)
             ) {
-                val imageRef = storage.reference.child("profile_images/$userId.jpg")
+                val imageRef = storage.reference.child("profile_images/${profile.uid}.jpg")
                 imageRef.putFile(imageUri).await()
 
                 val downloadUrl = imageRef.downloadUrl.await()
                 profile.uri = downloadUrl.toString()
-            } else {
-                Log.w(
-                    "saveProfileToFirestore",
-                    "Skipping upload because URI is already remote: $imageUri"
+            }
+
+            // Convert medication logs to a format that Firestore can store
+            val medicationLogsData = profile.medicationLogs.map { log ->
+                mapOf(
+                    "medicationId" to log.medicationId,
+                    "timestamp" to log.timestamp.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
+                    "effectiveness" to log.effectiveness,
+                    "mood" to log.mood,
+                    "sideEffects" to log.sideEffects,
+                    "notes" to log.notes
                 )
             }
 
+            // Create a map of the profile data
+            val profileData = mapOf(
+                "name" to profile.name,
+                "email" to profile.email,
+                "birthdate" to profile.birthdate,
+                "uri" to profile.uri,
+                "pwd" to profile.pwd,
+                "epi_type" to profile.epi_type,
+                "auth_mode" to profile.auth_mode,
+                "isBiometricEnabled" to profile.isBiometricEnabled,
+                "isTrainingEnabled" to profile.isTrainingEnabled,
+                "isDebugEnabled" to profile.isDebugEnabled,
+                "powerMode" to profile.powerMode,
+                "emergencyContacts" to profile.emergencyContacts,
+                "pastSeizures" to profile.pastSeizures.map { seizure ->
+                    mapOf(
+                        "timestamp" to seizure.timestamp,
+                        "type" to seizure.type,
+                        "duration" to seizure.duration,
+                        "severity" to seizure.severity,
+                        "latitude" to seizure.location.latitude,
+                        "longitude" to seizure.location.longitude,
+                        "triggers" to seizure.triggers
+                    )
+                },
+                "defaultsMetrics" to profile.defaultsMetrics,
+                "latestMetrics" to profile.latestMetrics,
+                "medications" to profile.medications.map { medication ->
+                    mapOf(
+                        "id" to medication.id,
+                        "name" to medication.name,
+                        "dosage" to medication.dosage,
+                        "frequency" to medication.frequency,
+                        "shape" to medication.shape,
+                        "timeOfDay" to medication.timeOfDay.map { time ->
+                            // Store as ISO-8601 string format
+                            time.toString()
+                        }
+                    )
+                },
+                "medicationLogs" to medicationLogsData,
+                "medicalNotes" to profile.medicalNotes
+            )
+
+            // Use the profile's uid as the document ID
             firestore.collection("profiles")
-                .document(userId)
-                .set(profile)
+                .document(profile.uid)
+                .set(profileData)
                 .await()
+
+            Log.d("ProfileRepository", "Successfully saved profile to Firestore")
+            Log.d("ProfileRepository", "Saved medications count: ${profile.medications.size}")
+            Log.d("ProfileRepository", "Saved medication logs count: ${medicationLogsData.size}")
         } catch (e: Exception) {
             Log.e("ProfileRepository", "Error saving profile to Firestore", e)
+            e.printStackTrace()
             throw e
         }
     }
 
+    private inline fun <reified T> getFirestoreValue(value: Any?, defaultValue: T): T {
+        @Suppress("UNCHECKED_CAST")
+        return when (value) {
+            is T -> value
+            is Map<*, *> -> {
+                when (defaultValue) {
+                    is String -> value["stringValue"] as? T ?: defaultValue
+                    is Boolean -> value["booleanValue"] as? T ?: defaultValue
+                    is Int -> (value["integerValue"] as? String)?.toInt() as? T ?: defaultValue
+                    is Double -> (value["doubleValue"] as? String)?.toDouble() as? T ?: defaultValue
+                    is Long -> (value["longValue"] as? String)?.toLong() as? T ?: defaultValue
+                    else -> defaultValue
+                }
+            }
+            else -> defaultValue
+        }
+    }
+
+    private fun parseSeizureEvent(data: Map<String, Any>): SeizureEvent {
+        val location = try {
+            val latitude = getFirestoreValue(data["latitude"], null as Double?)
+            val longitude = getFirestoreValue(data["longitude"], null as Double?)
+            if (latitude != null && longitude != null) {
+                SeizureLocation(latitude, longitude)
+            } else {
+                SeizureLocation()
+            }
+        } catch (e: Exception) {
+            Log.e("ProfileRepository", "Error parsing location: ${e.message}")
+            SeizureLocation()
+        }
+
+        val triggers = try {
+            @Suppress("UNCHECKED_CAST")
+            (data["triggers"] as? List<String>) ?: emptyList()
+        } catch (e: Exception) {
+            Log.e("ProfileRepository", "Error parsing triggers: ${e.message}")
+            emptyList()
+        }
+
+        return SeizureEvent(
+            timestamp = getFirestoreValue(data["timestamp"], 0L),
+            type = getFirestoreValue(data["type"], ""),
+            duration = getFirestoreValue(data["duration"], 0),
+            severity = getFirestoreValue(data["severity"], 1),
+            location = location,
+            triggers = triggers
+        )
+    }
+
+    private fun parseMedicationLog(data: Map<String, Any>): MedicationLog {
+        val timestamp = try {
+            val timestampStr = getFirestoreValue(data["timestamp"], "")
+            if (timestampStr.isNotEmpty()) {
+                try {
+                    LocalDateTime.parse(timestampStr)
+                } catch (e: Exception) {
+                    Log.e("ProfileRepository", "Error parsing timestamp string: $timestampStr", e)
+                    LocalDateTime.now()
+                }
+            } else {
+                LocalDateTime.now()
+            }
+        } catch (e: Exception) {
+            Log.e("ProfileRepository", "Error getting timestamp value", e)
+            LocalDateTime.now()
+        }
+
+        return MedicationLog(
+            medicationId = getFirestoreValue(data["medicationId"], ""),
+            timestamp = timestamp,
+            effectiveness = getFirestoreValue(data["effectiveness"], 5),
+            mood = getFirestoreValue(data["mood"], 5),
+            sideEffects = getFirestoreValue(data["sideEffects"], null as String?),
+            notes = getFirestoreValue(data["notes"], null as String?)
+        )
+    }
+
     suspend fun loadProfileFromFirestore(email: String, password: String): Profile? {
         try {
-            val querySnapshot = firestore.collection("profiles")
+            Log.d("ProfileRepository", "Attempting to load profile for email: $email")
+            
+            val document = firestore.collection("profiles")
                 .whereEqualTo("email", email)
-                .whereEqualTo("pwd", password)
                 .get()
                 .await()
-            val profile =
-                querySnapshot.documents.firstNotNullOfOrNull { it.toObject<Profile>() }
-            profile?.uri = profile?.uid?.let { loadProfilePicture(it).toString() }.toString()
+                .documents
+                .firstOrNull() ?: return null
+            
+            val data = document.data ?: return null
+            val userId = document.id
+            
+            // Verify password
+            val storedPassword = getFirestoreValue(data["pwd"], "")
+            if (storedPassword != password) {
+                Log.d("ProfileRepository", "Password mismatch for email: $email")
+                return null
+            }
+            
+            // Parse medication logs with better error handling
+            val medicationLogs = try {
+                (data["medicationLogs"] as? List<Map<String, Any>>)?.mapNotNull { logData -> 
+                    try {
+                        parseMedicationLog(logData)
+                    } catch (e: Exception) {
+                        Log.e("ProfileRepository", "Error parsing individual medication log: ${e.message}")
+                        null
+                    }
+                } ?: emptyList()
+            } catch (e: Exception) {
+                Log.e("ProfileRepository", "Error parsing medication logs array: ${e.message}")
+                emptyList()
+            }
+            
+            Log.d("ProfileRepository", "Successfully parsed ${medicationLogs.size} medication logs")
+            
+            // Parse past seizures
+            val pastSeizures = (data["pastSeizures"] as? List<Map<String, Any>>)?.map { 
+                parseSeizureEvent(it)
+            } ?: emptyList()
 
-            // Update local metrics state when loading a new profile
-            if (profile != null) {
-                _latestMetrics.value = profile.latestMetrics
+            // Parse medications with better error handling
+            val medications = try {
+                (data["medications"] as? List<Map<String, Any>>)?.mapNotNull { medicationData ->
+                    try {
+                        val timeOfDayList = (medicationData["timeOfDay"] as? List<*>)?.mapNotNull { timeStr ->
+                            try {
+                                when (timeStr) {
+                                    is String -> LocalDateTime.parse(timeStr)
+                                    is Map<*, *> -> LocalDateTime.parse(timeStr["stringValue"] as? String ?: return@mapNotNull null)
+                                    else -> null
+                                }
+                            } catch (e: Exception) {
+                                Log.e("ProfileRepository", "Error parsing individual timeOfDay: ${e.message}")
+                                null
+                            }
+                        } ?: emptyList()
+
+                        Medication(
+                            id = getFirestoreValue(medicationData["id"], UUID.randomUUID().toString()),
+                            name = getFirestoreValue(medicationData["name"], ""),
+                            dosage = getFirestoreValue(medicationData["dosage"], ""),
+                            frequency = getFirestoreValue(medicationData["frequency"], ""),
+                            shape = getFirestoreValue(medicationData["shape"], ""),
+                            timeOfDay = timeOfDayList
+                        )
+                    } catch (e: Exception) {
+                        Log.e("ProfileRepository", "Error parsing individual medication: ${e.message}")
+                        null
+                    }
+                } ?: emptyList()
+            } catch (e: Exception) {
+                Log.e("ProfileRepository", "Error parsing medications array: ${e.message}")
+                emptyList()
             }
 
+            Log.d("ProfileRepository", "Successfully parsed ${medications.size} medications with their schedules")
+            
+            val profile = Profile(
+                uid = userId,
+                name = getFirestoreValue(data["name"], ""),
+                email = getFirestoreValue(data["email"], ""),
+                birthdate = getFirestoreValue(data["birthdate"], ""),
+                uri = getFirestoreValue(data["uri"], ""),
+                pwd = storedPassword,
+                epi_type = getFirestoreValue(data["epi_type"], ""),
+                auth_mode = getFirestoreValue(data["auth_mode"], ""),
+                isBiometricEnabled = getFirestoreValue(data["isBiometricEnabled"], false),
+                isTrainingEnabled = getFirestoreValue(data["isTrainingEnabled"], false),
+                isDebugEnabled = getFirestoreValue(data["isDebugEnabled"], false),
+                powerMode = getFirestoreValue(data["powerMode"], "Normal"),
+                emergencyContacts = (data["emergencyContacts"] as? List<Map<String, Any>>)?.map { 
+                    EmergencyContact(
+                        name = getFirestoreValue(it["name"], ""),
+                        phone = getFirestoreValue(it["phone"], ""),
+                        photoUri = getFirestoreValue(it["photoUri"], null as String?)
+                    )
+                } ?: emptyList(),
+                pastSeizures = pastSeizures,
+                defaultsMetrics = Metrics(), // TODO: Add proper Metrics deserialization
+                latestMetrics = Metrics(), // TODO: Add proper Metrics deserialization
+                medications = medications,
+                medicationLogs = medicationLogs,
+                medicalNotes = (data["medicalNotes"] as? List<Map<String, Any>>)?.map {
+                    Notes(
+                        title = getFirestoreValue(it["title"], ""),
+                        content = getFirestoreValue(it["content"], "")
+                    )
+                } ?: emptyList()
+            )
+
+            // Load profile picture if available
+            profile.uri = loadProfilePicture(userId)?.toString() ?: ""
+            
+            // Update local metrics state
+            _latestMetrics.value = profile.latestMetrics
+
+            Log.d("ProfileRepository", "Profile loaded successfully: ${profile.medications.size} medications, ${profile.medicationLogs.size} logs")
             return profile
+            
         } catch (e: Exception) {
-            Log.e("ProfileRepository", "Failed to load profile from Firestore: ${e.message}", e)
+            Log.e("ProfileRepository", "Failed to load profile from Firestore", e)
             return null
         }
     }
@@ -317,18 +589,84 @@ class ProfileRepository private constructor(
     }
 
     suspend fun addSeizure(userId: String, seizure: SeizureEvent) {
-        val profile =
-            firestore.collection("profiles").document(userId).get().await().toObject<Profile>()
-        profile?.pastSeizures = profile?.pastSeizures?.plus(seizure) ?: listOf(seizure)
-        firestore.collection("profiles").document(userId).set(profile!!)
+        try {
+            // Get the current document data
+            val documentSnapshot = firestore.collection("profiles")
+                .document(userId)
+                .get()
+                .await()
+            
+            val data = documentSnapshot.data ?: return
+            
+            // Parse existing seizures using our custom parser
+            val existingSeizures = (data["pastSeizures"] as? List<Map<String, Any>>)?.map { 
+                parseSeizureEvent(it)
+            } ?: emptyList()
+            
+            val updatedSeizures = existingSeizures + seizure
+            
+            // Update only the pastSeizures field
+            firestore.collection("profiles")
+                .document(userId)
+                .update("pastSeizures", updatedSeizures.map { event ->
+                    mapOf(
+                        "timestamp" to event.timestamp,
+                        "type" to event.type,
+                        "duration" to event.duration,
+                        "severity" to event.severity,
+                        "latitude" to event.location.latitude,
+                        "longitude" to event.location.longitude,
+                        "triggers" to event.triggers
+                    )
+                })
+                .await()
+            
+            Log.d("ProfileRepository", "Successfully added seizure event with location: ${seizure.location.latitude}, ${seizure.location.longitude}")
+        } catch (e: Exception) {
+            Log.e("ProfileRepository", "Failed to add seizure event", e)
+            throw e
+        }
     }
 
     suspend fun removeSeizure(userId: String, timestamp: Long) {
-        val profile =
-            firestore.collection("profiles").document(userId).get().await().toObject<Profile>()
-        profile?.pastSeizures =
-            profile?.pastSeizures?.filter { it.timestamp != timestamp } ?: emptyList()
-        firestore.collection("profiles").document(userId).set(profile!!)
+        try {
+            // Get the current document data
+            val documentSnapshot = firestore.collection("profiles")
+                .document(userId)
+                .get()
+                .await()
+            
+            val data = documentSnapshot.data ?: return
+            
+            // Parse existing seizures using our custom parser
+            val existingSeizures = (data["pastSeizures"] as? List<Map<String, Any>>)?.map { 
+                parseSeizureEvent(it)
+            } ?: emptyList()
+            
+            // Filter out the seizure to remove
+            val updatedSeizures = existingSeizures.filter { it.timestamp != timestamp }
+            
+            // Update the pastSeizures field
+            firestore.collection("profiles")
+                .document(userId)
+                .update("pastSeizures", updatedSeizures.map { event ->
+                    mapOf(
+                        "timestamp" to event.timestamp,
+                        "type" to event.type,
+                        "duration" to event.duration,
+                        "severity" to event.severity,
+                        "latitude" to event.location.latitude,
+                        "longitude" to event.location.longitude,
+                        "triggers" to event.triggers
+                    )
+                })
+                .await()
+            
+            Log.d("ProfileRepository", "Successfully removed seizure event with timestamp: $timestamp")
+        } catch (e: Exception) {
+            Log.e("ProfileRepository", "Failed to remove seizure event", e)
+            throw e
+        }
     }
 
     suspend fun saveAuthPreference(isBiometric: Boolean) {
