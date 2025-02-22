@@ -491,6 +491,7 @@ private fun SettingsItem(
                         text = title,
                         style = MaterialTheme.typography.bodyLarge,
                         fontWeight = weight,
+                        color = if (title == "Logout") MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
                     )
                 }
                 trailing?.invoke() ?: Icon(

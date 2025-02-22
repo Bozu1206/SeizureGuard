@@ -2,6 +2,8 @@
 package com.epfl.ch.seizureguard.profile
 
 import com.epfl.ch.seizureguard.dl.metrics.Metrics
+import com.epfl.ch.seizureguard.medication_tracker.Medication
+import com.epfl.ch.seizureguard.medication_tracker.MedicationLog
 import com.epfl.ch.seizureguard.seizure_event.SeizureEvent
 
 /** Core data class representing the user profile. */
@@ -22,14 +24,15 @@ data class Profile(
     var pastSeizures: List<SeizureEvent> = emptyList(),
     var defaultsMetrics: Metrics = Metrics(),
     var latestMetrics: Metrics = defaultsMetrics,
-    var medications: List<String> = emptyList(),
+    var medications: List<Medication> = emptyList(),
+    var medicationLogs: List<MedicationLog> = emptyList(),
     var medicalNotes: List<Notes> = emptyList()
 ) {
 
     companion object {
         fun isComplete(profile: Profile): Boolean {
             return with(profile) {
-                name.isNotEmpty() && email.isNotEmpty() && birthdate.isNotEmpty() && pwd.isNotEmpty() && uri.isNotEmpty()
+                name.isNotEmpty() && email.isNotEmpty() && birthdate.isNotEmpty() && pwd.isNotEmpty()
             }
         }
         fun empty() = Profile()

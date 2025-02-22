@@ -42,6 +42,7 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.text.SpanStyle
+import com.epfl.ch.seizureguard.medication_tracker.Medication
 
 @Composable
 fun ProfileCreationForm(profile: Profile) {
@@ -166,7 +167,11 @@ fun ProfileCreationForm(profile: Profile) {
                         value = medication,
                         onValueChange = {
                             medication = it
-                            profile.medications = listOf(it)
+                            profile.medications = listOf(
+                                Medication(
+                                    name = it,
+                                )
+                            )
                         },
                         modifier = Modifier.weight(1f)
                     )

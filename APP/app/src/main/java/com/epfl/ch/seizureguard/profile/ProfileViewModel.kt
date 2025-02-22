@@ -27,11 +27,14 @@ import android.widget.Toast
 import android.app.Activity
 import android.location.Location
 import android.net.Uri
+import com.epfl.ch.seizureguard.medication_tracker.Medication
+import com.epfl.ch.seizureguard.medication_tracker.MedicationLog
 import com.google.firebase.messaging.FirebaseMessaging
 import com.epfl.ch.seizureguard.widgets.SeizureWidgetUpdater
 import com.epfl.ch.seizureguard.widgets.SeizureCountWidget
 import com.google.firebase.storage.FirebaseStorage
 import kotlinx.coroutines.tasks.await
+import java.time.LocalDateTime
 
 class ProfileViewModel(context: Context, application: Application) : AndroidViewModel(application) {
     private val repository: ProfileRepository by lazy {
@@ -118,9 +121,10 @@ class ProfileViewModel(context: Context, application: Application) : AndroidView
                     _profileState.value = profile
                     repository.saveProfileToPreferences(profile)
                     repository.updateMetrics(profile.latestMetrics)
+                    repository.setAuthenticated(true)
                     onComplete(profile)
                 } else {
-                    Log.d("ProfileViewModel", "No matching profile found for email: $email")
+                    Log.d("ProfileViewModel", "Authentication failed for email: $email")
                     onComplete(null)
                 }
             } catch (e: Exception) {
@@ -537,6 +541,87 @@ class ProfileViewModel(context: Context, application: Application) : AndroidView
 
             } catch (e: Exception) {
                 Log.e("ProfileViewModel", "Error deleting note: ${e.message}")
+            }
+        }
+    }
+
+    fun addMedication(medication: Medication) {
+        viewModelScope.launch {
+            try {
+                _profileState.update { currentProfile ->
+                    currentProfile.copy(
+                        medications = currentProfile.medications + medication
+                    )
+                }
+                saveProfile()
+            } catch (e: Exception) {
+                Log.e("ProfileViewModel", "Error adding medication", e)
+            }
+        }
+    }
+
+    fun removeMedication(medicationId: String) {
+        viewModelScope.launch {
+            try {
+                _profileState.update { currentProfile ->
+                    currentProfile.copy(
+                        medications = currentProfile.medications.filter { it.id != medicationId },
+                        medicationLogs = currentProfile.medicationLogs.filter { it.medicationId != medicationId }
+                    )
+                }
+                saveProfile()
+            } catch (e: Exception) {
+                Log.e("ProfileViewModel", "Error removing medication", e)
+            }
+        }
+    }
+
+    fun logMedication(medicationId: String, timestamp: LocalDateTime = LocalDateTime.now()) {
+        _profileState.update { currentState ->
+            currentState.copy(
+                medicationLogs = currentState.medicationLogs + MedicationLog(
+                    medicationId = medicationId,
+                    timestamp = timestamp,
+                    effectiveness = 5, // Default value
+                    mood = 5, // Default value
+                    sideEffects = null,
+                    notes = null
+                )
+            )
+        }
+        saveProfile()
+    }
+
+    fun logMedicationWithDetails(logEntry: MedicationLog) {
+        _profileState.update { currentState ->
+            currentState.copy(
+                medicationLogs = currentState.medicationLogs + logEntry
+            )
+        }
+        saveProfile()
+    }
+
+    fun getMedicationLogs(medicationId: String): List<MedicationLog> {
+        return _profileState.value.medicationLogs.filter { it.medicationId == medicationId }
+    }
+
+    fun getMedicationById(medicationId: String): Medication? {
+        return _profileState.value.medications.find { it.id == medicationId }
+    }
+
+    fun updateMedication(medication: Medication) {
+        viewModelScope.launch {
+            try {
+                _profileState.update { currentProfile ->
+                    currentProfile.copy(
+                        medications = currentProfile.medications.map { 
+                            if (it.id == medication.id) medication else it 
+                        }
+                    )
+                }
+                saveProfile()
+            } catch (e: Exception) {
+                Log.e("ProfileViewModel", "Error updating medication", e)
             }
         }
     }

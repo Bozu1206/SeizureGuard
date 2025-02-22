@@ -1,4 +1,4 @@
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
     <!-- Existing strings -->
     <string name="app_name">SeizureGuard</string>
     <string name="guidelines">
@@ -25,7 +25,6 @@ Supervisor: Ansaloni Giovanni & Amirhossein Shahbazinia]]></string>
     <string name="new_password">New Password</string>
     <string name="confirm_password">Confirm Password</string>
     <string name="confirm">Confirm</string>
-    <string name="cancel">Cancel</string>
     <string name="export_data">Export Data</string>
     <string name="no_seizure_history_to_export">No seizure history to export</string>
     <string name="do_you_want_to_export_your_seizure_history_as_json">Do you want to export your seizure history as JSON?</string>
@@ -90,7 +89,7 @@ Supervisor: Ansaloni Giovanni & Amirhossein Shahbazinia]]></string>
     <!-- Training -->
     <string name="train_model">Train Model</string>
     <string name="training_has_started">Training has started</string>
-    <string name="samples_collected">Samples collected: %1$d/100</string>
+    <string name="samples_collected" translatable="false">Samples collected: %1$d/100</string>
 
     <!-- Metrics / details -->
     <string name="metrics_details">Metrics Details</string>
@@ -164,7 +163,6 @@ Supervisor: Ansaloni Giovanni & Amirhossein Shahbazinia]]></string>
 
     <!-- strings for SeizureStatsScreen -->
     <string name="seizure_statistics">Seizure Statistics</string>
-    <string name="back_button">Back</string>
     <string name="total_seizures">Total Seizures</string>
     <string name="average_duration">Average Duration</string>
     <string name="average_severity">Average Severity</string>
@@ -181,6 +179,17 @@ Supervisor: Ansaloni Giovanni & Amirhossein Shahbazinia]]></string>
     <string name="seizure_detected">Seizure Detected!</string>
     <string name="address_prefix">Address: %1$s</string>
     <string name="call_emergency_text">Call Emergency</string>
-    <string name="med_tracker">Medications</string>
+    <string name="med_tracker" translatable="false">Medications</string>
+
+    <!-- Medical Space -->
+    <string name="medical_space_title" translatable="false">Medical Space</string>
+    <string name="seizure_history" translatable="false">Seizure History</string>
+    <string name="medication_tracker" translatable="false">Medication Tracker</string>
+    <string name="add_medication" translatable="false">Add Medication</string>
+    <string name="medication_name" translatable="false">Medication Name</string>
+    <string name="add" translatable="false">Add</string>
+    <string name="cancel">Cancel</string>
+    <string name="back_button">Back</string>
+    <string name="statistics">Statistics</string>
 
 </resources>

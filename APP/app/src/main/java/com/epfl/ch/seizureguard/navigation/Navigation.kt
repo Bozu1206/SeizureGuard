@@ -9,6 +9,9 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Notes
 import androidx.compose.material.icons.filled.ShowChart
+import androidx.compose.material.icons.filled.HealthAndSafety
+import androidx.compose.material.icons.filled.MedicalServices
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -38,25 +41,30 @@ import com.epfl.ch.seizureguard.seizure_event.SeizureEventViewModel
 import com.epfl.ch.seizureguard.settings.SettingsScreen
 import com.epfl.ch.seizureguard.profile.ProfileViewModel
 import androidx.compose.foundation.layout.Box
+import androidx.compose.runtime.remember
 import androidx.compose.ui.draw.shadow
 import com.epfl.ch.seizureguard.wallet_manager.WalletViewModel
 import com.epfl.ch.seizureguard.profile.MedicalNotesScreen
 import com.epfl.ch.seizureguard.history.SeizureStatsScreen
+import com.epfl.ch.seizureguard.medical_space.MedicalSpaceScreen
+import com.epfl.ch.seizureguard.medication_tracker.MedicationTrackerScreen
 
 sealed class Screen(val route: String, val label: String, val icon: ImageVector) {
     object Home : Screen("home", "Home", Icons.Default.Home)
     object Monitor : Screen("inference", "Monitor", Icons.Default.MonitorHeart)
     object Profile : Screen("profile", "Profile", Icons.Default.Person)
-    object History : Screen("history", "History", Icons.Default.DateRange)
+    object MedicalSpace : Screen("medical_space", "Medical", Icons.Default.HealthAndSafety)
     object Settings : Screen("settings", "Settings", Icons.Default.Settings)
     object MedicalNotes : Screen("medical_notes", "Medical Notes", Icons.Default.Notes)
     object SeizureStats : Screen("seizure_stats", "Statistics", Icons.Default.ShowChart)
+    object MedicationTracker : Screen("medication_tracker", "Medications", Icons.Default.MedicalServices)
+    object SeizureHistory : Screen("seizure_history", "History", Icons.Default.History)
 
     companion object {
         fun getNavItems(isParentMode: Boolean) = if (!isParentMode) {
-            listOf(Home, Monitor, Profile, History, Settings)
+            listOf(Home, Monitor, Profile, MedicalSpace, Settings)
         } else {
-            listOf(Home, Profile, History, Settings)
+            listOf(Home, Profile, MedicalSpace, Settings)
         }
     }
 }
@@ -76,35 +84,50 @@ fun AppContent(
     val isParentMode by profileViewModel.parentMode.collectAsState()
     val currentRoute = currentRoute(navController)
 
+    // Define which routes should hide the bottom bar
+    val hideBottomBarRoutes = remember {
+        setOf(
+            Screen.SeizureHistory.route,
+            Screen.MedicationTracker.route,
+            Screen.MedicalNotes.route,
+            Screen.SeizureStats.route
+        )
+    }
+
+    // Determine if bottom bar should be visible
+    val shouldShowBottomBar = !hideBottomBarRoutes.contains(currentRoute)
+
     Scaffold(
         bottomBar = { 
-            Box{
-                NavigationBar(
-                    containerColor = MaterialTheme.colorScheme.background,
-                    tonalElevation = 0.dp,
-                    modifier = Modifier.shadow(16.dp)
-                ) {
-                    Screen.getNavItems(isParentMode).forEach { screen ->
-                        NavigationBarItem(
-                            icon = { Icon(screen.icon, contentDescription = screen.label) },
-                            label = { Text(screen.label) },
-                            alwaysShowLabel = true,
-                            selected = currentRoute == screen.route,
-                            onClick = {
-                                navController.navigate(screen.route) {
-                                    popUpTo(navController.graph.startDestinationId) { saveState = true }
-                                    launchSingleTop = true
-                                    restoreState = true
-                                }
-                            },
-                            colors = NavigationBarItemDefaults.colors(
-                                selectedIconColor = Color(0xB9FF9800),
-                                selectedTextColor = Color(0xB9FF9800),
-                                indicatorColor = Color.Transparent,
-                                unselectedIconColor = Color.Gray,
-                                unselectedTextColor = Color.Gray
+            if (shouldShowBottomBar) {
+                Box {
+                    NavigationBar(
+                        containerColor = MaterialTheme.colorScheme.background,
+                        tonalElevation = 0.dp,
+                        modifier = Modifier.shadow(16.dp)
+                    ) {
+                        Screen.getNavItems(isParentMode).forEach { screen ->
+                            NavigationBarItem(
+                                icon = { Icon(screen.icon, contentDescription = screen.label) },
+                                label = { Text(screen.label) },
+                                alwaysShowLabel = true,
+                                selected = currentRoute == screen.route,
+                                onClick = {
+                                    navController.navigate(screen.route) {
+                                        popUpTo(navController.graph.startDestinationId) { saveState = true }
+                                        launchSingleTop = true
+                                        restoreState = true
+                                    }
+                                },
+                                colors = NavigationBarItemDefaults.colors(
+                                    selectedIconColor = Color(0xB9FF9800),
+                                    selectedTextColor = Color(0xB9FF9800),
+                                    indicatorColor = Color.Transparent,
+                                    unselectedIconColor = Color.Gray,
+                                    unselectedTextColor = Color.Gray
+                                )
                             )
-                        )
+                        }
                     }
                 }
             }
@@ -138,8 +161,20 @@ fun AppContent(
                     walletViewModel = walletViewModel,
                 )
             }
-            composable(Screen.History.route) {
+            composable(Screen.MedicalSpace.route) {
+                MedicalSpaceScreen(
+                    profileViewModel = profileViewModel,
+                    navController = navController
+                )
+            }
+            composable(Screen.SeizureHistory.route) {
                 HistoryScreen(
+                    profileViewModel = profileViewModel,
+                    navController = navController
+                )
+            }
+            composable(Screen.MedicationTracker.route) {
+                MedicationTrackerScreen(
                     profileViewModel = profileViewModel,
                     navController = navController
                 )
