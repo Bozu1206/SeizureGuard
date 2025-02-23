@@ -109,17 +109,6 @@ fun MedicalSpaceScreen(
                     navController.navigate("medical_notes")
                 }
             }
-
-            // Add space image at the bottom
-            Image(
-                painter = painterResource(id = R.drawable.spaces),
-                contentDescription = "Space illustration",
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f)
-                    .padding(vertical = 16.dp),
-                contentScale = ContentScale.Fit
-            )
         }
     }
 }

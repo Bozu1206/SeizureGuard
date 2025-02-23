@@ -44,6 +44,8 @@ import java.time.format.TextStyle
 import java.util.Locale
 import androidx.compose.ui.platform.LocalConfiguration
 import java.util.UUID
+import androidx.compose.foundation.layout.FlowRow
+import java.time.LocalTime
 
 @Composable
 fun MedicationTrackerScreen(
@@ -579,7 +581,7 @@ fun MedicationSummarySection(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun EditMedicationDialog(
     medication: Medication,
@@ -591,7 +593,9 @@ fun EditMedicationDialog(
     var frequency by remember { mutableStateOf(medication.frequency) }
     var shape by remember { mutableStateOf(medication.shape) }
     var timeOfDay by remember { mutableStateOf(medication.timeOfDay) }
-
+    var showTimePickerDialog by remember { mutableStateOf(false) }
+    var expandedFrequency by remember { mutableStateOf(false) }
+    
     val frequencies = listOf("Daily", "As Needed")
     val shapes = listOf("Pill", "Capsule", "Liquid", "Injection", "Other")
 
@@ -619,28 +623,94 @@ fun EditMedicationDialog(
                     modifier = Modifier.fillMaxWidth()
                 )
 
+                // Frequency dropdown
                 ExposedDropdownMenuBox(
-                    expanded = false,
-                    onExpandedChange = { }
+                    expanded = expandedFrequency,
+                    onExpandedChange = { expandedFrequency = !expandedFrequency }
                 ) {
                     OutlinedTextField(
                         value = frequency,
-                        onValueChange = { frequency = it },
-                        label = { Text("Frequency") },
+                        onValueChange = {},
                         readOnly = true,
-                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = false) },
-                        modifier = Modifier.menuAnchor()
+                        label = { Text("Frequency") },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedFrequency) },
+                        modifier = Modifier
+                            .menuAnchor()
+                            .fillMaxWidth()
                     )
 
                     ExposedDropdownMenu(
-                        expanded = false,
-                        onDismissRequest = { }
+                        expanded = expandedFrequency,
+                        onDismissRequest = { expandedFrequency = false }
                     ) {
                         frequencies.forEach { option ->
                             DropdownMenuItem(
                                 text = { Text(option) },
-                                onClick = { frequency = option }
+                                onClick = {
+                                    frequency = option
+                                    expandedFrequency = false
+                                    // Clear scheduled times if switching to As Needed
+                                    if (option == "As Needed") {
+                                        timeOfDay = emptyList()
+                                    }
+                                }
                             )
+                        }
+                    }
+                }
+
+                // Scheduled Times section (only show for Daily frequency)
+                if (frequency == "Daily") {
+                    Text(
+                        text = "Scheduled Times",
+                        style = MaterialTheme.typography.titleMedium,
+                        modifier = Modifier.padding(top = 8.dp)
+                    )
+
+                    // Display current scheduled times
+                    FlowRow(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.Start,
+                        maxItemsInEachRow = 3
+                    ) {
+                        timeOfDay.forEach { time ->
+                            FilterChip(
+                                selected = false,
+                                onClick = { },
+                                label = { Text(time.format(DateTimeFormatter.ofPattern("h:mm a"))) },
+                                leadingIcon = {
+                                    Icon(
+                                        Icons.Default.Schedule,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                },
+                                trailingIcon = {
+                                    IconButton(
+                                        onClick = {
+                                            timeOfDay = timeOfDay.filter { it != time }
+                                        },
+                                        modifier = Modifier.size(16.dp)
+                                    ) {
+                                        Icon(
+                                            Icons.Default.Delete,
+                                            contentDescription = "Remove time",
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                    }
+                                },
+                                modifier = Modifier.padding(end = 8.dp, bottom = 8.dp)
+                            )
+                        }
+
+                        // Add time button
+                        FilledTonalButton(
+                            onClick = { showTimePickerDialog = true },
+                            modifier = Modifier.padding(top = 4.dp)
+                        ) {
+                            Icon(Icons.Default.Add, contentDescription = "Add time")
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Add Time")
                         }
                     }
                 }
@@ -661,6 +731,66 @@ fun EditMedicationDialog(
                 }
             ) {
                 Text("Save")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
+
+    // Time picker dialog
+    if (showTimePickerDialog) {
+        TimePickerDialog(
+            onDismiss = { showTimePickerDialog = false },
+            onTimeSelected = { hour, minute ->
+                // Create LocalDateTime for today with the selected time
+                val newTime = LocalDateTime.now()
+                    .withHour(hour)
+                    .withMinute(minute)
+                    .withSecond(0)
+                    .withNano(0)
+                timeOfDay = (timeOfDay.toList() + newTime).sortedBy { it.toLocalTime() }
+                showTimePickerDialog = false
+            }
+        )
+    }
+}
+
+@Composable
+fun TimePickerDialog(
+    onDismiss: () -> Unit,
+    onTimeSelected: (hour: Int, minute: Int) -> Unit
+) {
+    var hour by remember { mutableStateOf(8) }
+    var minute by remember { mutableStateOf(0) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Select Time") },
+        text = {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                NumberPicker(
+                    value = hour,
+                    onValueChange = { hour = it },
+                    range = 0..23
+                )
+                Text(":")
+                NumberPicker(
+                    value = minute,
+                    onValueChange = { minute = it },
+                    range = 0..59
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { onTimeSelected(hour, minute) }) {
+                Text("OK")
             }
         },
         dismissButton = {
@@ -875,7 +1005,9 @@ fun MedicationCard(
             }
         )
     }
-}@Composable
+}
+
+@Composable
 fun NumberPicker(
     value: Int,
     onValueChange: (Int) -> Unit,
