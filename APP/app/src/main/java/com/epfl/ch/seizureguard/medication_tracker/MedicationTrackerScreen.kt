@@ -129,7 +129,7 @@ fun MedicationTrackerScreen(
     val takenMedications = remember(selectedDateLogs, medicationUpdateKey) {
         selectedDateLogs.map { it.medicationId }.toSet()
     }
-    
+
     // Calculate total required intakes and completed intakes for selected date
     val totalRequiredIntakes = remember(dailyMedications) {
         dailyMedications.sumOf { medication -> medication.timeOfDay.size }
@@ -140,7 +140,7 @@ fun MedicationTrackerScreen(
             dailyMedications.any { it.id == log.medicationId }
         }
     }
-    
+
     val progressPercentage = remember(totalRequiredIntakes, completedIntakes) {
         if (totalRequiredIntakes > 0) {
             completedIntakes.toFloat() / totalRequiredIntakes
@@ -153,17 +153,17 @@ fun MedicationTrackerScreen(
     val calculateProgressForDate = { date: LocalDate ->
         val dateStart = date.atStartOfDay()
         val dateEnd = date.atTime(23, 59, 59)
-        
+
         val dateLogs = profile.medicationLogs.filter { log ->
             log.timestamp.isAfter(dateStart) && log.timestamp.isBefore(dateEnd)
         }
-        
+
         val dailyMedsForDate = scheduledMedications.filter { it.frequency == "Daily" }
         val totalRequired = dailyMedsForDate.sumOf { it.timeOfDay.size }
         val completed = dateLogs.count { log ->
             dailyMedsForDate.any { it.id == log.medicationId }
         }
-        
+
         if (totalRequired > 0) {
             completed.toFloat() / totalRequired
         } else {
@@ -299,7 +299,11 @@ fun MedicationTrackerScreen(
             if (dailyMedications.isNotEmpty()) {
                 item {
                     Text(
-                        text = if (selectedDate == today) "Today's Medications" else "Medications for ${selectedDate.format(DateTimeFormatter.ofPattern("MMM d"))}",
+                        text = if (selectedDate == today) "Today's Medications" else "Medications for ${
+                            selectedDate.format(
+                                DateTimeFormatter.ofPattern("MMM d")
+                            )
+                        }",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.padding(top = 16.dp, bottom = 8.dp)
@@ -311,7 +315,8 @@ fun MedicationTrackerScreen(
                     key = { medication -> "${medication.id}-${medicationUpdateKey}" }
                 ) { medication ->
                     // Count actual takes for this medication on the selected date
-                    val medicationTakes = selectedDateLogs.count { log -> log.medicationId == medication.id }
+                    val medicationTakes =
+                        selectedDateLogs.count { log -> log.medicationId == medication.id }
                     MedicationCard(
                         medication = medication,
                         currentTakes = medicationTakes,
@@ -345,7 +350,8 @@ fun MedicationTrackerScreen(
                     items = asNeededMedications,
                     key = { medication -> "${medication.id}-${medicationUpdateKey}" }
                 ) { medication ->
-                    val medicationTakes = selectedDateLogs.count { log -> log.medicationId == medication.id }
+                    val medicationTakes =
+                        selectedDateLogs.count { log -> log.medicationId == medication.id }
                     MedicationCard(
                         medication = medication,
                         currentTakes = medicationTakes,
@@ -448,8 +454,7 @@ fun DayItem(
     onClick: () -> Unit
 ) {
     val isDark = isSystemInDarkTheme()
-    val fillColor = Color(0xFF66AFE9) // Brighter blue for better visibility
-    
+
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
@@ -475,15 +480,11 @@ fun DayItem(
                 modifier = Modifier
                     .size(25.dp)
                     .clip(CircleShape)
-                    .border(
-                        BorderStroke(1.dp, Color.Black.copy(alpha = 0.6f)),
-                        shape = CircleShape
-                    )
                     .background(
                         color = if (isDark)
                             Color.DarkGray.copy(alpha = 0.1f)
                         else
-                            Color.LightGray.copy(alpha = 0.1f)
+                            Color.LightGray.copy(alpha = 0.4f)
                     )
             )
 
@@ -491,9 +492,9 @@ fun DayItem(
             if (progressPercentage != null && progressPercentage > 0f) {
                 // Calculate number of segments (assuming each take is 20% for visual clarity)
                 val numberOfSegments = 5
-                val segmentHeight = 30f / numberOfSegments
+                val segmentHeight = 20f / numberOfSegments
                 val filledSegments = (progressPercentage * numberOfSegments).toInt()
-                
+
                 // Draw filled segments
                 for (i in 0 until filledSegments) {
                     Box(
@@ -504,8 +505,8 @@ fun DayItem(
                                 brush = Brush.verticalGradient(
                                     colors = listOf(
                                         Color.Transparent,
-                                        fillColor.copy(alpha = 0.4f),
-                                        fillColor
+                                        Color(0xfffad0c4),
+                                        Color(0xffffd1ff)
                                     ),
                                     startY = 30f - (i + 1) * segmentHeight,
                                     endY = 30f - i * segmentHeight
@@ -531,7 +532,14 @@ fun DayItem(
                     modifier = Modifier
                         .size(25.dp)
                         .clip(CircleShape)
-                        .background(Color(0xFF4CAF50)),
+                        .background(
+                            Brush.verticalGradient(
+                                colors = listOf(
+                                    Color(0xFF4CAF50), // Green
+                                    Color(0xFF388E3C)  // Darker green
+                                )
+                            )
+                        ),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
@@ -595,7 +603,7 @@ fun EditMedicationDialog(
     var timeOfDay by remember { mutableStateOf(medication.timeOfDay) }
     var showTimePickerDialog by remember { mutableStateOf(false) }
     var expandedFrequency by remember { mutableStateOf(false) }
-    
+
     val frequencies = listOf("Daily", "As Needed")
     val shapes = listOf("Pill", "Capsule", "Liquid", "Injection", "Other")
 
@@ -812,10 +820,10 @@ fun MedicationCard(
     onDelete: () -> Unit
 ) {
     var showDeleteConfirmation by remember { mutableStateOf(false) }
-    
+
     // Calculate total required takes
     val totalRequired = if (medication.frequency == "Daily") medication.timeOfDay.size else 1
-    
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -907,9 +915,23 @@ fun MedicationCard(
                                 currentTakes >= totalRequired -> MaterialTheme.colorScheme.surfaceVariant
                                 else -> MaterialTheme.colorScheme.primary
                             },
-                            disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant
+                            disabledContainerColor = Color.Transparent
                         ),
-                        modifier = Modifier.padding(start = 16.dp)
+                        modifier = when {
+                            currentTakes >= totalRequired -> Modifier
+                                .padding(start = 16.dp)
+                                .background(
+                                    brush = Brush.horizontalGradient(
+                                        colors = listOf(
+                                            Color(0xfffad0c4),
+                                            Color(0xffffd1ff)
+                                        )
+                                    ),
+                                    shape = ButtonDefaults.shape
+                                )
+
+                            else -> Modifier.padding(start = 16.dp)
+                        }
                     ) {
                         Row(
                             horizontalArrangement = Arrangement.spacedBy(4.dp),
@@ -923,9 +945,9 @@ fun MedicationCard(
                                 Spacer(modifier = Modifier.width(4.dp))
                             }
                             Icon(
-                                imageVector = if (currentTakes >= totalRequired) 
-                                    Icons.Default.Check 
-                                else 
+                                imageVector = if (currentTakes >= totalRequired)
+                                    Icons.Default.Check
+                                else
                                     Icons.Default.AccessTime,
                                 contentDescription = null,
                                 modifier = Modifier.size(18.dp)

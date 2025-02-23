@@ -166,15 +166,6 @@ fun InferenceHomePage(
     }
 }
 
-@Composable
-private fun DashboardHeader() {
-    Text(
-        text = stringResource(R.string.dashboard_title),
-        style = MaterialTheme.typography.headlineLarge.copy(fontWeight = FontWeight.Bold),
-        modifier = Modifier.padding(bottom = DefaultPadding),
-        textAlign = TextAlign.Start
-    )
-}
 
 @Composable
 private fun MetricsSection(profileViewModel: ProfileViewModel) {
