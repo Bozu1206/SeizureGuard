@@ -37,6 +37,7 @@ import com.epfl.ch.seizureguard.onboarding.OnboardingViewModelFactory
 import com.epfl.ch.seizureguard.profile.ProfileViewModel
 import com.epfl.ch.seizureguard.seizure_event.SeizureEventViewModel
 import com.epfl.ch.seizureguard.theme.AppTheme
+import com.epfl.ch.seizureguard.tools.GradientBorderSmall
 import com.epfl.ch.seizureguard.tools.onEmergencyCall
 import com.epfl.ch.seizureguard.wallet_manager.GoogleWalletToken
 import com.epfl.ch.seizureguard.wallet_manager.WalletViewModel

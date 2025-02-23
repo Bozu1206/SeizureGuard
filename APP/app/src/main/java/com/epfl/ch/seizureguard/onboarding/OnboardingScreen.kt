@@ -80,10 +80,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.zIndex
 import com.epfl.ch.seizureguard.R
 import com.epfl.ch.seizureguard.profile.Profile
 import com.epfl.ch.seizureguard.profile.ProfileCreationForm
 import com.epfl.ch.seizureguard.profile.ProfileViewModel
+import com.epfl.ch.seizureguard.tools.GradientBorderSmall
 import com.google.accompanist.pager.HorizontalPager
 import com.google.accompanist.pager.HorizontalPagerIndicator
 import com.google.accompanist.pager.rememberPagerState
@@ -128,12 +130,9 @@ fun OnboardingScreen(
         R.drawable.ob6,
         R.drawable.ob4
     )
-
     Box(
         modifier = if (pagerState.currentPage == pages.lastIndex) {
-            Modifier
-                .fillMaxSize()
-                .padding(16.dp)
+            Modifier.fillMaxSize()
         } else {
             Modifier
                 .fillMaxSize()
@@ -141,11 +140,21 @@ fun OnboardingScreen(
                     painterResource(id = R.drawable.bg),
                     contentScale = ContentScale.FillBounds
                 )
-                .padding(16.dp)
         }
     ) {
+        GradientBorderSmall(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(0.dp)
+                .zIndex(1f)
+        )
+
+
         Column(
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp)
+                .zIndex(2f),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             HorizontalPager(
@@ -315,15 +324,6 @@ fun OnboardingScreen(
             showWelcomeAnimation = true
         }
     }
-
-    if (showWelcomeAnimation) {
-        WelcomeAnimation(
-            onAnimationComplete = {
-                showWelcomeAnimation = false
-                onFinish()
-            }
-        )
-    }
 }
 
 @Composable
@@ -355,143 +355,6 @@ fun CreateHealthProfileScreen(profile: Profile) {
     }
 }
 
-@Composable
-fun WelcomeAnimation(
-    onAnimationComplete: () -> Unit
-) {
-    var visible by remember { mutableStateOf(true) }
-    val density = LocalDensity.current
-    
-    // Particle system state with more particles and varied sizes
-    val particles = remember {
-        mutableStateListOf<Particle>().apply {
-            repeat(50) {
-                add(Particle(
-                    x = Random.nextFloat() * 1000f,
-                    y = Random.nextFloat() * 2000f,
-                    velocity = Offset(
-                        Random.nextFloat() * 2f - 1f,
-                        Random.nextFloat() * 2f - 1f
-                    )
-                ))
-            }
-        }
-    }
-
-    // Animate particles
-    LaunchedEffect(Unit) {
-        while (true) {
-            particles.forEachIndexed { index, particle ->
-                particles[index] = particle.copy(
-                    x = (particle.x + particle.velocity.x).mod(1000f),
-                    y = (particle.y + particle.velocity.y).mod(2000f)
-                )
-            }
-            delay(16) // ~60 FPS
-        }
-    }
-
-    LaunchedEffect(Unit) {
-        delay(3000) // Show animation for longer
-        visible = false
-        delay(800) // Longer fade out
-        onAnimationComplete()
-    }
-
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(
-                brush = Brush.verticalGradient(
-                    colors = listOf(
-                        Color(0xFFFF8C00), // Dark Orange at top
-                        Color(0xFFFF6B6B), // Coral in middle
-                        Color(0xFFFF4500)  // Orange Red at bottom
-                    )
-                )
-            )
-    ) {
-        // Particle effect layer with warmer colors
-        Canvas(
-            modifier = Modifier
-                .fillMaxSize()
-                .alpha(0.6f)
-        ) {
-            particles.forEach { particle ->
-                drawCircle(
-                    color = Color(0xFFFFF3E0).copy(alpha = 0.3f), // Warm white
-                    radius = particle.size,
-                    center = Offset(particle.x, particle.y),
-                    alpha = 0.5f
-                )
-            }
-        }
-
-        AnimatedVisibility(
-            visible = visible,
-            enter = fadeIn(
-                animationSpec = tween(
-                    durationMillis = 1000,
-                    easing = FastOutSlowInEasing
-                )
-            ) + slideInVertically(
-                animationSpec = tween(1000),
-                initialOffsetY = { it / 2 }
-            ),
-            exit = fadeOut(
-                animationSpec = tween(
-                    durationMillis = 800,
-                    easing = LinearOutSlowInEasing
-                )
-            ) + slideOutVertically(
-                animationSpec = tween(800),
-                targetOffsetY = { -it / 2 }
-            )
-        ) {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(32.dp)
-            ) {
-                Surface(
-                    color = Color(0xFF1A1A1A).copy(alpha = 0.8f),
-                    shape = RoundedCornerShape(24.dp),
-                    modifier = Modifier
-                        .padding(16.dp)
-                        .shadow(16.dp)
-                ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier = Modifier.padding(32.dp)
-                    ) {
-                        Text(
-                            text = "Welcome to",
-                            style = MaterialTheme.typography.headlineSmall,
-                            color = Color.White.copy(alpha = 0.9f),
-                            fontSize = 28.sp
-                        )
-                        Text(
-                            text = "SeizureGuard",
-                            style = MaterialTheme.typography.headlineMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White,
-                            fontSize = 40.sp
-                        )
-                        Spacer(modifier = Modifier.height(24.dp))
-                        Text(
-                            text = "Your trusted companion for safety and peace of mind",
-                            style = MaterialTheme.typography.bodyLarge,
-                            textAlign = TextAlign.Center,
-                            fontSize = 18.sp
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
 
 private data class Particle(
     val x: Float,
@@ -521,7 +384,10 @@ fun OnboardingScreenPreview() {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier
-                    .background(color = Color(0xFF1A1A1A).copy(alpha = 0.8f), shape = RoundedCornerShape(24.dp))
+                    .background(
+                        color = Color(0xFF1A1A1A).copy(alpha = 0.8f),
+                        shape = RoundedCornerShape(24.dp)
+                    )
                     .padding(32.dp)
 
             ) {
