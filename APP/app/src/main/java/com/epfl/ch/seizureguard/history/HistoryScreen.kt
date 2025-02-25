@@ -87,8 +87,9 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import androidx.compose.runtime.key
+import androidx.compose.ui.draw.shadow
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun HistoryScreen(
     modifier: Modifier = Modifier,
@@ -215,21 +216,20 @@ private fun SeizureCard(
     Surface(
         modifier = modifier
             .fillMaxWidth()
-            .clickable { showActions = true },
+            .clickable { showActions = true }
+            .shadow(
+                elevation = 8.dp,
+                shape = RoundedCornerShape(16.dp),
+                spotColor = Black.copy(alpha = 0.2f)
+            ),
         shape = RoundedCornerShape(16.dp),
         color = if (isDark) 
             MaterialTheme.colorScheme.surface.copy(alpha = 0.95f) 
         else 
-            MaterialTheme.colorScheme.surface.copy(alpha = 0.98f),
+            MaterialTheme.colorScheme.surface,
         tonalElevation = 0.dp,
         shadowElevation = 0.dp,
-        border = BorderStroke(
-            width = 0.9.dp,
-            color = if (isDark) 
-                Color.Gray.copy(alpha = 0.2f)
-            else 
-                Color.Gray.copy(alpha = 0.15f)
-        )
+
     ) {
         Row(
             modifier = Modifier
