@@ -287,7 +287,7 @@ fun UserProfileSection(
                                 stringResource(R.string.medication_label),
                                 if (profile.medications.isEmpty())
                                     stringResource(R.string.lorazepam_label)
-                                else profile.medications.joinToString(", ")
+                                else profile.medications.first().name
                             )
                         }
                     }

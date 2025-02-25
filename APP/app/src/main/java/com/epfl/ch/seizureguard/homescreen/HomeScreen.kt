@@ -330,15 +330,13 @@ fun HealthMetricsSection(profileViewModel: ProfileViewModel) {
     // Fixed sleep duration with slight variation
     val sleepDuration = 7.2f
 
-    // Update only heart rate every 3 seconds
     LaunchedEffect(Unit) {
         while (true) {
-            kotlinx.coroutines.delay(3000)
+            delay(3000)
             heartRate = (65..105).random()
         }
     }
 
-    // State for bottom sheets
     var showHeartRateChart by remember { mutableStateOf(false) }
 
     Column(

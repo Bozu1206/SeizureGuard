@@ -322,6 +322,7 @@ fun OnboardingScreen(
         if (biometricDialogDismissed) {
             delay(300) // Wait for dialog dismiss animation
             showWelcomeAnimation = true
+            onFinish()
         }
     }
 }
