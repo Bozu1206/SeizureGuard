@@ -1,15 +1,22 @@
-# Project 7.A - SeizureGuard
+<p align="left">
+  <img src="seizureguard.png" width="150" title="hover text">
+</p>
 
-- **Course**: Lab on App Development for Tablets and Smartphones (EPFL)
-- **Authors**: Francesco Poluzzi, François Dumoncel
 
+# SeizureGuard
+
+This repository contains the source code for the SeizureGuard Android application. The app was designed during fall 2024 at EPFL as part of the course "Lab on App Development for Tablets and Smartphones". It is a native Android application that uses the ONNX framework to deploy and train a machine learning model to detect seizures in real-time, everything happening on-device. You can look at the [slides](./slides/) for more details on the project.
+
+- **Authors**: [Francesco Poluzzi](https://people.epfl.ch/francesco.poluzzi), [François Dumoncel](https://people.epfl.ch/francois.dumoncel-kessler)
+- **Supervisor**: [Amirhossein Shahbazinia](https://people.epfl.ch/amirhossein.shahbazinia)
+
+Note: This project mostly is a proof of concept, but it can be used to build other applications. The model and the data used were provided by [Amirhossein Shahbazinia](https://people.epfl.ch/amirhossein.shahbazinia). Shoud you want to use it, please contact him.
 
 ## Testing the Application
 
-This Android application aims to perform live AI-based epileptic seizure detection.
-
-> **Note**
-> If you want use the app without giving personal informations, you can use our demo account. Just log in with the following credentials:
+> [!NOTE]  
+> If you want use the app without giving personal informations, you can u
+> se our demo account. Just log in with the following credentials:
 > - email: demo@epfl.ch
 > - password: epfl
 
@@ -43,4 +50,3 @@ This project requires API keys stored in `local.properties`, which is **not incl
 - **Google Maps API Key**: Obtain it from the Google Cloud Console by following [this guide](https://developers.google.com/maps/gmp-get-started)
 
 Ensure you have enabled the required services in your **Google Cloud Console** before using the API keys in the app.
-
