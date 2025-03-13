@@ -1,6 +1,8 @@
 <p align="left">
-  <img src="seizureguard.png" width="150" alt="SeizureGuard Logo" title="SeizureGuard">
+  <img src="features.png" alt="SeizureGuard Logo" title="SeizureGuard">
 </p>
+
+
 
 # SeizureGuard
 
