@@ -1,3 +1,6 @@
+> [!Warning]
+> This is a student project that is not longer maintained. You may encounter weird behavior / bugs. Keep your expectations low.
+
 <p align="left">
   <img src="features.png" alt="SeizureGuard Logo" title="SeizureGuard">
 </p>
