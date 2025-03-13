@@ -1,13 +1,12 @@
-> [!Warning]
-> This is a student project that is not longer maintained. You may encounter weird behavior / bugs. Keep your expectations low.
-
 <p align="left">
   <img src="features.png" alt="SeizureGuard Logo" title="SeizureGuard">
 </p>
 
-
-
 # SeizureGuard
+
+> [!Warning]
+> This is a student project that is not longer maintained. You may encounter weird behavior / bugs. Keep your expectations low.
+
 
 SeizureGuard is an open-source Android application that leverages on-device machine learning to detect seizures in real time. Built using the ONNX framework, this native app is designed not only as a proof of concept but also as a foundation for future development in medical monitoring and emergency response systems.
 
