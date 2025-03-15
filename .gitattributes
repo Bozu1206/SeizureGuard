@@ -11,4 +11,4 @@
 *.jar           binary
 
 *.c linguist-vendored
-
+*.h linguist-vendored
