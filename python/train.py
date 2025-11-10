@@ -5,8 +5,7 @@
 import torch
 import os
 from utils.models import FCN2 as Net
-from utils.tools import validate, load_arrays_and_labels_from_bin, train
-from utils.dataset import SeizureDataset
+from utils.tools import validate, load_model, load_data_and_create_loader, print_metrics, train
 from torch.utils.data import DataLoader
 
 
@@ -16,9 +15,10 @@ def main():
     checkpoint_dir = "models/"
 
     data_file = "data/data_20.bin"
-    data, labels = load_arrays_and_labels_from_bin(data_file)
-
-    # Instantiate the dataset
+    # Use utility function to load data and create dataset
+    full_loader, data, labels = load_data_and_create_loader(data_file, batch_size=32, shuffle=False)
+    
+    from utils.dataset import SeizureDataset
     seizure_dataset = SeizureDataset(data=data, labels=labels)
 
     # Split the dataset into training and validation sets
@@ -33,12 +33,9 @@ def main():
     train_loader = DataLoader(seizure_train, batch_size=32, shuffle=True)
     val_loader = DataLoader(seizure_val, batch_size=32, shuffle=False)
 
+    # Use utility function to load model
     model_path = os.path.join(checkpoint_dir, "base_pat_02.pth")
-    model = Net(in_channels=18)
-    model.to(device)
-    model.load_state_dict(
-        torch.load(model_path, map_location=torch.device("cpu"))["state_dict"]
-    )
+    model = load_model(Net, model_path, device=device, in_channels=18)
 
     # # Training the model
     train(
@@ -47,46 +44,18 @@ def main():
 
     print(f"Testing the model")
     test_file = "data/data_21.bin"
-    data, labels = load_arrays_and_labels_from_bin(test_file)
+    # Use utility function to load test data
+    test_loader, _, _ = load_data_and_create_loader(test_file, batch_size=32, shuffle=False)
 
-    # Instantiate the dataset
-    seizure_dataset = SeizureDataset(data=data, labels=labels)
-    test_loader = DataLoader(seizure_dataset, batch_size=32, shuffle=False)
+    # Loading the best model - base_pat_02
+    model = load_model(Net, "models/base_pat_02.pth", device=device, in_channels=18)
+    f1_score, metrics = validate(test_loader, model, device=device)
+    print_metrics(f1_score, metrics)
 
-    # Loading the best model
-    model.load_state_dict(
-        torch.load("models/base_pat_02.pth", map_location=torch.device("cpu"))[
-            "state_dict"
-        ]
-    )
-    f1_score, metrics = validate(
-        test_loader,
-        model,
-        device=device,
-    )
-
-    print(
-        f"F1 = {f1_score:.4f},"
-        f"Precision = {metrics['precision']:.4f}, "
-        f"Recall = {metrics['recall']:.4f}, FPR = {metrics['fpr']:.4f}"
-    )
-
-    model.load_state_dict(
-        torch.load("models/best_model.pth", map_location=torch.device("cpu"))[
-            "state_dict"
-        ]
-    )
-    f1_score, metrics = validate(
-        test_loader,
-        model,
-        device=device,
-    )
-
-    print(
-        f"F1 = {f1_score:.4f},"
-        f"Precision = {metrics['precision']:.4f}, "
-        f"Recall = {metrics['recall']:.4f}, FPR = {metrics['fpr']:.4f}"
-    )
+    # Loading the best model - best_model
+    model = load_model(Net, "models/best_model.pth", device=device, in_channels=18)
+    f1_score, metrics = validate(test_loader, model, device=device)
+    print_metrics(f1_score, metrics)
 
 
 # %%

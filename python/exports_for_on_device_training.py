@@ -5,7 +5,7 @@
 import torch
 import os
 from utils.models import FCN2 as Net
-
+from utils.tools import load_model, export_model_to_onnx
 
 import onnx
 from onnxruntime.training import artifacts
@@ -14,15 +14,15 @@ from onnxruntime.training import artifacts
 def main():
     device = "cpu"
     checkpoint_dir = "models/"
+    
+    # Use utility function to load model
     model_path = os.path.join(checkpoint_dir, "base_pat_02.pth")
-    model = Net(in_channels=18)
-    model.load_state_dict(
-        torch.load(model_path, map_location=torch.device("cpu"))["state_dict"]
-    )
+    model = load_model(Net, model_path, device=device, in_channels=18)
 
     # **Export the model to ONNX**
-    dummy_input = torch.randn(1, 18, 1024, device=device)
     onnx_model_path = "training_artifacts/base_pat_02.onnx"
+    # Export with additional parameters for training artifacts
+    dummy_input = torch.randn(1, 18, 1024, device=device)
     torch.onnx.export(
         model,
         dummy_input,

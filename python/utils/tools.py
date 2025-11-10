@@ -1,11 +1,13 @@
 import numpy as np
 import torch
+import os
 from sklearn.metrics import (
     precision_score,
     recall_score,
     f1_score,
     confusion_matrix,
 )
+from torch.utils.data import DataLoader
 
 
 def compute_metrics(true_labels, pred_labels):
@@ -235,3 +237,88 @@ def load_arrays_and_labels_from_bin(filename):
             labels = None  # Or set default labels if necessary
 
     return data, labels
+
+
+def load_model(model_class, model_path, device="cpu", in_channels=18):
+    """
+    Load a PyTorch model from a checkpoint file.
+    
+    Args:
+        model_class: The model class to instantiate
+        model_path (str): Path to the model checkpoint (.pth file)
+        device (str): Device to load the model on ('cpu' or 'cuda')
+        in_channels (int): Number of input channels for the model
+        
+    Returns:
+        torch.nn.Module: Loaded model
+    """
+    model = model_class(in_channels=in_channels)
+    model.to(device)
+    model.load_state_dict(
+        torch.load(model_path, map_location=torch.device(device))["state_dict"]
+    )
+    return model
+
+
+def load_data_and_create_loader(data_file, batch_size=32, shuffle=False):
+    """
+    Load data from a binary file and create a DataLoader.
+    
+    Args:
+        data_file (str): Path to the binary data file
+        batch_size (int): Batch size for the DataLoader
+        shuffle (bool): Whether to shuffle the data
+        
+    Returns:
+        tuple: (DataLoader, data, labels)
+    """
+    from utils.dataset import SeizureDataset
+    
+    data, labels = load_arrays_and_labels_from_bin(data_file)
+    seizure_dataset = SeizureDataset(data=data, labels=labels)
+    dataloader = DataLoader(seizure_dataset, batch_size=batch_size, shuffle=shuffle)
+    
+    return dataloader, data, labels
+
+
+def print_metrics(f1_score, metrics, prefix=""):
+    """
+    Print evaluation metrics in a consistent format.
+    
+    Args:
+        f1_score (float): F1 score
+        metrics (dict): Dictionary containing precision, recall, and fpr
+        prefix (str): Optional prefix for the output
+    """
+    print(
+        f"{prefix}F1 = {f1_score:.4f}, "
+        f"Precision = {metrics['precision']:.4f}, "
+        f"Recall = {metrics['recall']:.4f}, FPR = {metrics['fpr']:.4f}"
+    )
+
+
+def export_model_to_onnx(model, onnx_path, device="cpu", input_shape=(1, 18, 1024), opset_version=11):
+    """
+    Export a PyTorch model to ONNX format.
+    
+    Args:
+        model: PyTorch model to export
+        onnx_path (str): Path where the ONNX model will be saved
+        device (str): Device the model is on
+        input_shape (tuple): Shape of the input tensor
+        opset_version (int): ONNX opset version
+    """
+    dummy_input = torch.randn(*input_shape, device=device)
+    torch.onnx.export(
+        model,
+        dummy_input,
+        onnx_path,
+        input_names=["input"],
+        output_names=["output"],
+        dynamic_axes={
+            "input": {0: "batch_size"},
+            "output": {0: "batch_size"}
+        },
+        opset_version=opset_version,
+    )
+    print(f"Model exported to {onnx_path}")

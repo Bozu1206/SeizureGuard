@@ -42,28 +42,16 @@ public class DataLoader {
 
         int totalFloats = numArrays * dim1 * dim2;
 
-        // Read float data
+        // Read float data using helper method
         int dataSize = totalFloats * 4; // float32 => 4 bytes
-        byte[] dataBytes = new byte[dataSize];
-        int bytesRead = 0;
-        while (bytesRead < dataSize) {
-            int result = inputStream.read(dataBytes, bytesRead, dataSize - bytesRead);
-            if (result == -1) break;
-            bytesRead += result;
-        }
+        byte[] dataBytes = readBytesFromStream(inputStream, dataSize);
         ByteBuffer dataBuffer = ByteBuffer.wrap(dataBytes).order(ByteOrder.LITTLE_ENDIAN);
 
-        // If labels are present, read them
+        // If labels are present, read them using helper method
         int[] labels = new int[numArrays];
         if (labelsPresent == 1) {
             int labelsSize = numArrays * 4;
-            byte[] labelsBytes = new byte[labelsSize];
-            bytesRead = 0;
-            while (bytesRead < labelsSize) {
-                int result = inputStream.read(labelsBytes, bytesRead, labelsSize - bytesRead);
-                if (result == -1) break;
-                bytesRead += result;
-            }
+            byte[] labelsBytes = readBytesFromStream(inputStream, labelsSize);
             ByteBuffer labelsBuffer = ByteBuffer.wrap(labelsBytes).order(ByteOrder.LITTLE_ENDIAN);
             for (int i = 0; i < numArrays; i++) {
                 labels[i] = labelsBuffer.getInt();
@@ -87,5 +75,25 @@ public class DataLoader {
             dataSamples[i] = new DataSample(sampleData, labels[i]);
         }
         return dataSamples;
+    }
+
+    /**
+     * Helper method to read a specific number of bytes from an InputStream.
+     * Handles the case where read() might not return all bytes in one call.
+     *
+     * @param inputStream The input stream to read from
+     * @param size The number of bytes to read
+     * @return byte array containing the read bytes
+     * @throws IOException if an I/O error occurs
+     */
+    private byte[] readBytesFromStream(InputStream inputStream, int size) throws IOException {
+        byte[] bytes = new byte[size];
+        int bytesRead = 0;
+        while (bytesRead < size) {
+            int result = inputStream.read(bytes, bytesRead, size - bytesRead);
+            if (result == -1) break;
+            bytesRead += result;
+        }
+        return bytes;
     }
 }

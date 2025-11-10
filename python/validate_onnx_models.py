@@ -1,20 +1,17 @@
 import numpy as np
 from torch.utils.data import DataLoader
 from utils.dataset import SeizureDataset
-from utils.tools import load_arrays_and_labels_from_bin
+from utils.tools import load_arrays_and_labels_from_bin, compute_metrics, print_metrics, load_data_and_create_loader
 import onnxruntime.training.api as orttraining
 
 from onnxruntime import InferenceSession
 from onnxruntime.capi import _pybind_state as C
 
-from utils.tools import compute_metrics
 
 def main():
     data_file = "data/data_20.bin"
-    data, labels = load_arrays_and_labels_from_bin(data_file)
-
-    seizure_dataset = SeizureDataset(data=data, labels=labels)
-    train_loader = DataLoader(seizure_dataset, batch_size=32, shuffle=True)
+    # Use utility function to load data
+    train_loader, _, _ = load_data_and_create_loader(data_file, batch_size=32, shuffle=True)
 
     # Instantiate the training session by defining the checkpoint state, module, and optimizer
     # The checkpoint state contains the state of the model parameters at any given time.
@@ -48,10 +45,8 @@ def main():
     session = InferenceSession("inference_artifacts/inference.onnx", providers=C.get_available_providers())
 
     test_file = "data/data_21.bin"
-    data, labels = load_arrays_and_labels_from_bin(test_file)
-
-    seizure_dataset = SeizureDataset(data=data, labels=labels)
-    test_loader = DataLoader(seizure_dataset, batch_size=32, shuffle=False)
+    # Use utility function to load test data
+    test_loader, _, _ = load_data_and_create_loader(test_file, batch_size=32, shuffle=False)
     
     all_preds = []
     all_targets = []
@@ -71,7 +66,8 @@ def main():
     metrics = compute_metrics(all_targets, all_preds)
     val_f1 = metrics["f1"]
 
-    print(f"F1 = {val_f1:.4f}, Precision = {metrics['precision']:.4f}, Recall = {metrics['recall']:.4f}, FPR = {metrics['fpr']:.4f}")
+    # Use utility function to print metrics
+    print_metrics(val_f1, metrics)
 
 
 if __name__ == "__main__":
